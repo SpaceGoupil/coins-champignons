@@ -825,6 +825,7 @@ th:first-child,td:first-child{text-align:left}
         <label>Rayon<select id="bRad"><option value="2">2 km</option><option value="5">5 km</option><option value="10" selected>10 km</option><option value="20">20 km</option><option value="30">30 km</option></select></label>
       </div>
       <div class="row" style="margin-top:8px"><button class="btn pri" id="bGo">Chercher</button><button class="btn" id="bAna">Analyser ce rayon</button></div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--text2)"><input type="checkbox" id="bAuto" checked> Affiner automatiquement le top 10 en 0,5 km²</label>
       <p class="note" id="bMsg" style="margin:6px 2px 0">Classement selon le champignon choisi ici (le même que sur la carte) et la période choisie plus haut.</p>
       <div id="bList"></div>
     </div>
@@ -1917,6 +1918,19 @@ function bestHexes(){
     d.onclick=()=>goHex(h);
     const b=d.querySelector("button");if(b)b.onclick=async e=>{e.stopPropagation();if(await refineHex(h))bestHexes()};
     box.appendChild(d)});
+  bestTop=top;autoRefineTop();
+}
+// affinage automatique : les hexagones du top 10 plus grands que 0,5 km² sont réanalysés en 0,5 km² (une seule analyse
+// groupée), puis le classement est refait ; s'il fait entrer d'autres grands hexagones, on recommence (3 tours au plus)
+let bestTop=[],autoBusy=false;
+async function autoRefineTop(){
+  if(autoBusy||hexBusy||!$("bAuto").checked||!navigator.onLine)return;autoBusy=true;
+  try{for(let round=1;round<=3;round++){const big=bestTop.map(o=>o.h).filter(h=>h.size>.5);if(!big.length)break;
+    const cs=big.flatMap(h=>hexCorners(h.q,h.r,side(h.size))),bb=[Math.min(...cs.map(c=>c[1])),Math.min(...cs.map(c=>c[0])),Math.max(...cs.map(c=>c[1])),Math.max(...cs.map(c=>c[0]))];
+    $("bMsg").textContent=`Affinage automatique du top 10 en 0,5 km² (${big.length} hexagone${big.length>1?"s":""}, tour ${round})…`;
+    const keep=(la,lo)=>big.some(h=>{const [q,r]=ll2hex(la,lo,side(h.size));return q===h.q&&r===h.r});
+    if(!await analyseHex(bb,{size:.5,keep}))break}} // analyseHex refait le classement, donc bestTop
+  finally{autoBusy=false}
 }
 function goHex(h){$("map").scrollIntoView({behavior:"smooth",block:"center"});
   map.setView([h.lat,h.lon],Math.max(map.getZoom(),labZFor(h.size)),{animate:false});drawHexes();
@@ -1941,6 +1955,7 @@ $("bAna").onclick=async()=>{
 showPlace();
 {const b=LS.get("best",null);if(b){$("bCenter").value=b.c==="place"&&!lastPlace?"map":b.c;$("bRad").value=b.r}else if(lastPlace)$("bCenter").value="place";else $("bCenter").value="map"}
 $("bRad").onchange=()=>{if(bestCenter)bestHexes()};
+{const v=LS.get("bAuto",true);$("bAuto").checked=v;$("bAuto").onchange=()=>{LS.set("bAuto",$("bAuto").checked);if($("bAuto").checked&&bestCenter)bestHexes()}}
 $("hexBtn").onclick=()=>analyseHex();
 $("hexClear").onclick=()=>{hexStore={hex:{},pts:hexStore.pts};saveHex();drawHexes();drawGrid();$("hexSteps").innerHTML="";if(bestLayer)bestLayer.clearLayers();$("bList").innerHTML=""};
 // le champignon du classement et celui de la carte restent les mêmes : changer l'un change l'autre
