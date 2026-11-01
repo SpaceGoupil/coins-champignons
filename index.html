@@ -795,6 +795,7 @@ th:first-child,td:first-child{text-align:left}
       </div>
     </div>
     <div class="card" style="padding:8px">
+      <div class="chips" id="vChips" style="margin-bottom:6px"><button class="chip" data-v="heat">🌡 Carte continue</button><button class="chip" data-v="hex">⬡ Hexagones</button></div>
       <div class="chips" id="layerChips" style="margin-bottom:8px"></div>
       <div id="map"></div>
       <div class="row" style="margin-top:8px">
@@ -808,31 +809,31 @@ th:first-child,td:first-child{text-align:left}
       <div class="ttl">Hexagones <small id="hexInfo">grille fixe sur la France</small></div>
       <div class="row">
         <label>Espèce affichée<select id="hSp"></select></label>
-        <label>Taille pour l'analyse<select id="hSize"><option value="0.5">0,5 km²</option><option value="1">1 km²</option><option value="2">2 km²</option><option value="5" selected>5 km²</option><option value="10">10 km²</option></select></label>
+        <label class="hexOnly">Taille pour l'analyse<select id="hSize"><option value="0.5">0,5 km²</option><option value="1">1 km²</option><option value="2">2 km²</option><option value="5" selected>5 km²</option><option value="10">10 km²</option></select></label>
       </div>
       <div style="margin-top:8px;font-size:12px;color:var(--text2)">Indice pour
         <div class="chips" id="hMode" style="margin-top:4px"><button class="chip" data-m="now">Aujourd'hui</button><button class="chip" data-m="tom">Demain</button><button class="chip" data-m="fc">Sur la semaine</button></div>
       </div>
-      <div class="row" style="margin-top:8px"><button class="btn pri" id="hexBtn">⬡ Analyser la zone affichée</button><button class="btn" id="hexClear">Effacer</button></div>
+      <div class="row hexOnly" style="margin-top:8px"><button class="btn pri" id="hexBtn">⬡ Analyser la zone affichée</button><button class="btn" id="hexClear">Effacer</button></div>
       <ul class="steps" id="hexSteps"></ul>
       <div class="prog" id="hexProg" style="display:none"><i></i></div>
       <p class="note" style="margin-bottom:0">Pour chaque hexagone : altitude moyenne, pente et versant (7 points IGN ; versant nord plus frais et humide, sud plus chaud et sec), part de forêt et essences (BD Forêt, 19 points) pondérées selon les arbres hôtes de chaque espèce, météo Météo-France (AROME, via Open-Meteo) moyennée entre les points voisins d'une grille de 0,1° à 0,025° selon la taille des hexagones, corrigée de l'altitude. Restent en gris et hors classement : les hexagones sans forêt (villes, cultures, estives), au-dessus de 2 000 m, et en bord de mer ou hors de France. Touche un hexagone pour le détail, ou pour l'<b>affiner</b> en hexagones plus petits : altitude et forêt plus précises (la météo reste celle de la grille de 0,1°). Les hexagones fins s'affichent par-dessus les grands.</p>
     </div>
 
     <div class="card">
-      <div class="ttl">Meilleurs hexagones autour d'un point <small id="bInfo"></small></div>
+      <div class="ttl"><span id="bTitle">Meilleurs hexagones autour d'un point</span> <small id="bInfo"></small></div>
       <div class="row">
         <label>Champignon<select id="bSp"></select></label>
         <label>Autour de<select id="bCenter"><option value="place" id="bPlaceOpt" disabled>Lieu recherché (aucun)</option><option value="gps">Ma position</option><option value="map">Centre de la carte</option></select></label>
         <label>Rayon<select id="bRad"><option value="2">2 km</option><option value="5">5 km</option><option value="10" selected>10 km</option><option value="20">20 km</option><option value="30">30 km</option></select></label>
       </div>
-      <div class="row" style="margin-top:8px"><button class="btn pri" id="bGo">Chercher</button><button class="btn" id="bAna">Analyser ce rayon</button></div>
-      <label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--text2)"><input type="checkbox" id="bAuto" checked> Affiner automatiquement le top 10 en 0,5 km²</label>
-      <div class="row" style="margin-top:8px"><button class="btn" id="bHeat">🌡 Carte continue et zones chaudes (prototype)</button></div>
+      <div class="row" style="margin-top:8px"><button class="btn pri" id="bGo">Chercher</button><button class="btn hexOnly" id="bAna">Analyser ce rayon</button></div>
+      <label class="hexOnly" style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--text2)"><input type="checkbox" id="bAuto" checked> Affiner automatiquement le top 10 en 0,5 km²</label>
+      <div class="row hexOnly" style="margin-top:8px"><button class="btn" id="bHeat">🌡 Passer à la carte continue</button></div>
       <p class="note" id="hMsg" style="margin:6px 2px 0"></p>
       <div id="hList"></div>
       <p class="note" id="bMsg" style="margin:6px 2px 0">Classement selon le champignon choisi ici (le même que sur la carte) et la période choisie plus haut.</p>
-      <div id="bList"></div>
+      <div id="bList" class="hexOnly"></div>
     </div>
 
     <div class="card">
@@ -979,7 +980,7 @@ th:first-child,td:first-child{text-align:left}
       </table>
       <p class="note">Ces études portent surtout sur le cèpe de Bordeaux, en pinède espagnole ou en hêtraie allemande. Pour les autres espèces, les optimums de température et les préférences de sol restent des estimations. Les poids traduisent l'ordre d'importance trouvé dans ces travaux, pas un ajustement statistique sur des cueillettes : c'est un outil pour comprendre et explorer, pas une garantie.</p>
       <div class="ttl" style="margin-top:12px">Données</div>
-      <p class="note">Météo : Open-Meteo (CC BY 4.0), 92 jours passés (32 affichés) et 7 jours de prévision, avec température et humidité du sol modélisées. Cartes, altitude et BD Forêt : Géoplateforme IGN, licence ouverte Etalab 2.0. Sols : SoilGrids (ISRIC, CC BY 4.0). Tout est gardé sur ton téléphone. Rien n'est envoyé ailleurs, sauf les coordonnées demandées aux services météo et d'altitude.</p>
+      <p class="note">Météo : Open-Meteo (CC BY 4.0), 92 jours passés (32 affichés) et 7 jours de prévision, avec température et humidité du sol modélisées. Cartes, altitude et BD Forêt : Géoplateforme IGN, licence ouverte Etalab 2.0. Sols : SoilGrids (ISRIC, CC BY 4.0). Forêts publiques : ONF, via la Géoplateforme. Coupes récentes : cellules boisées dans la BD Forêt mais absentes du masque forestier IGN 2021-2023 (photos aériennes, détection automatique) ; un écart peut aussi venir d'une différence de cartographie. Routes : BD TOPO IGN (nature et accès en voiture légère). Tout est gardé sur ton téléphone. Rien n'est envoyé ailleurs, sauf les coordonnées demandées aux services météo et d'altitude.</p>
       <div class="row"><button class="btn" id="exportBtn">Copier mes coins (sauvegarde)</button><button class="btn" id="importBtn">Coller une sauvegarde</button></div>
       <textarea id="ioBox" style="display:none;width:100%;height:90px;margin-top:8px;font:12px monospace;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:8px"></textarea>
       <button class="btn" id="ioApply" style="display:none;margin-top:6px">Importer</button>
@@ -1074,7 +1075,11 @@ const WMTS=(layer,fmt,style="normal")=>`https://data.geopf.fr/wmts?SERVICE=WMTS&
 const LAYERS={
   plan:{n:"Plan IGN",url:WMTS("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2","image/png"),max:19},
   ortho:{n:"Photos aériennes",url:WMTS("ORTHOIMAGERY.ORTHOPHOTOS","image/jpeg"),max:19},
-  forest:{n:"Forêts (BD Forêt)",url:WMTS("LANDCOVER.FORESTINVENTORY.V2","image/png"),max:16,overlay:true}
+  forest:{n:"Forêts (BD Forêt)",url:WMTS("LANDCOVER.FORESTINVENTORY.V2","image/png"),max:16,overlay:true},
+  // forêts publiques ONF : vert = domaniale, brun = autre forêt publique (communale…)
+  onf:{n:"Forêts publiques",url:WMTS("FORETS.PUBLIQUES","image/png","FORETS%20PUBLIQUES%20ONF"),max:16,overlay:true},
+  // masque forestier IGN 2021-2023 (photos aériennes, IA) : ce qui est boisé dans la BD Forêt mais absent ici a été coupé
+  masque:{n:"Masque forêt 2021-2023",url:WMTS("IGNF_MASQUE-FORET.2021-2023","image/png"),max:16,overlay:true}
 };
 const tileUrl=(id,z,x,y)=>LAYERS[id].url.replace("{z}",z).replace("{x}",x).replace("{y}",y);
 let netOK=true;
@@ -1099,7 +1104,7 @@ const CachedLayer=L.TileLayer.extend({
     return img;
   }
 });
-let hexLayer,hexRenderer,gridLayer,map,base,forestLayer,markers={},addMode=false,locMarker=null;
+let hexLayer,hexRenderer,gridLayer,map,base,forestLayer,onfLayer,markers={},addMode=false,locMarker=null;
 const ATTR='© <a href="https://geoservices.ign.fr">IGN</a> · Etalab 2.0';
 function initMap(){
   const v=LS.get("view",{c:[45.2,1.5],z:6});
@@ -1110,17 +1115,19 @@ function initMap(){
   hexLayer=L.layerGroup().addTo(map);gridLayer=L.layerGroup().addTo(map);labLayer=L.layerGroup().addTo(map);
   base=new CachedLayer("",{lid:"plan",maxZoom:19,maxNativeZoom:19,attribution:ATTR}).addTo(map);
   forestLayer=new CachedLayer("",{lid:"forest",minZoom:6,maxZoom:19,maxNativeZoom:16,opacity:.45});
+  onfLayer=new CachedLayer("",{lid:"onf",minZoom:6,maxZoom:19,maxNativeZoom:16,opacity:.5});
   map.on("moveend",()=>{LS.set("view",{c:[map.getCenter().lat,map.getCenter().lng],z:map.getZoom()});estimate();drawGrid()});
   map.on("zoomend",()=>drawHexes());
   // sur téléphone la légende recouvre la fiche d'un hexagone : on la masque le temps de la lecture
   map.on("popupopen",()=>{const d=document.getElementById("gradLeg");if(d)d.style.visibility="hidden"});
   map.on("popupclose",()=>{const d=document.getElementById("gradLeg");if(d)d.style.visibility=""});
-  map.on("click",e=>{if(addMode){addMode=false;$("addSpotBtn").classList.remove("on");openSheet(null,e.latlng)}});
+  map.on("click",e=>{if(addMode){addMode=false;$("addSpotBtn").classList.remove("on");openSheet(null,e.latlng)}else if(heatMode()&&heatOverlay)heatPopup(e.latlng)});
   const lc=$("layerChips");
-  [["plan","Plan IGN"],["ortho","Photos aériennes"],["forest","＋ Forêts"]].forEach(([k,n])=>{
+  [["plan","Plan IGN"],["ortho","Photos aériennes"],["forest","＋ Forêts"],["onf","＋ Forêts publiques"]].forEach(([k,n])=>{
     const b=document.createElement("button");b.className="chip"+(k==="plan"?" on":"");b.textContent=n;b.dataset.k=k;
     b.onclick=()=>{
       if(k==="forest"){if(map.hasLayer(forestLayer)){map.removeLayer(forestLayer);b.classList.remove("on")}else{forestLayer.addTo(map);b.classList.add("on")}return}
+      if(k==="onf"){if(map.hasLayer(onfLayer)){map.removeLayer(onfLayer);b.classList.remove("on")}else{onfLayer.addTo(map);b.classList.add("on")}return}
       map.removeLayer(base);base=new CachedLayer("",{lid:k,maxZoom:19,maxNativeZoom:19,attribution:ATTR}).addTo(map);base.bringToBack();
       lc.querySelectorAll('[data-k="plan"],[data-k="ortho"]').forEach(x=>x.classList.toggle("on",x.dataset.k===k));
     };lc.appendChild(b)});
@@ -1577,6 +1584,9 @@ async function prepareZone(it){
   const pMap=downloadTiles(list,(d,f,n)=>{bar.style.width=(d/n*100)+"%";paint({map:` · ${d}/${n}`})}).then(({done,fail})=>{st.map=fail===list.length?"❌":fail?"⚠️":"✅";paint({map:` · ${done-fail} tuiles`});stats()});
   await Promise.all([pAlt,pWx]);
   refreshAllUI();renderZoneResult(s);$("zoneBox").scrollIntoView({behavior:"smooth",block:"start"});
+  if(heatMode()){const R=Math.min(15,Math.max((bb[2]-bb[0])*111.32*Math.cos(it.lat*Math.PI/180),(bb[3]-bb[1])*KY)/2);bestCenter=[it.lat,it.lon];
+    await Promise.all([pMap,heatRun([it.lat,it.lon],R)]);
+    $("qMsg").textContent=`✅ ${s.name} : carte continue prête (${Math.round(R)} km autour du lieu). Les zones chaudes sont sous la carte.`;return}
   // l'analyse n'attend pas la fin des tuiles : elle va chercher elle-même les tuiles forêt qui lui manquent
   await Promise.all([pMap,analyseHex(bb)]);
   $("qMsg").textContent=`✅ ${s.name} : zone prête${wxCache[s.id]?"":" (sans météo : connexion ?)"}. Les hexagones sont sur la carte.`;
@@ -1677,14 +1687,17 @@ function soilOf(grids,pts){const out={};for(const [k,div] of [["phh2o",10],["cla
   const v=pts.map(([la,lo])=>grids[k]&&grids[k].get(la,lo)).filter(x=>x!=null);out[k]=v.length?+(v.reduce((a,b)=>a+b)/v.length/div).toFixed(1):null}
   return out.phh2o==null&&out.clay==null?null:{ph:out.phh2o,clay:out.clay,sand:out.sand}}
 const tileImg={};let forestZ=14;
+// pixels d'une tuile (IndexedDB, sinon réseau), décodés une seule fois
+function tileData(id,z,x,y){const k=`${id}/${z}/${x}/${y}`;
+  if(!(k in tileImg))tileImg[k]=(async()=>{let b=await tGet(k);
+    if(!b){try{b=await fetchTile(id,z,x,y);tPut(k,b)}catch(e){}}
+    if(!b)return null;try{const bm=await createImageBitmap(b);const c=document.createElement("canvas");c.width=c.height=256;const g=c.getContext("2d");g.drawImage(bm,0,0);return g.getImageData(0,0,256,256).data}catch(e){return null}})();
+  return tileImg[k]}
 // classe BD Forêt du point : clé de TREES, "autre" (forêt d'essence non reconnue), "none" (rien), null (tuile indisponible)
 async function forestPixel(lat,lon){
   const z=forestZ,n=2**z,fx=(lon+180)/360*n,rr=lat*Math.PI/180,fy=(1-Math.log(Math.tan(rr)+1/Math.cos(rr))/Math.PI)/2*n;
-  const x=Math.floor(fx),y=Math.floor(fy),k=`forest/${z}/${x}/${y}`;
-  if(!(k in tileImg))tileImg[k]=(async()=>{let b=await tGet(k);
-    if(!b){try{b=await fetchTile("forest",z,x,y);tPut(k,b)}catch(e){}}
-    if(!b)return null;try{const bm=await createImageBitmap(b);const c=document.createElement("canvas");c.width=c.height=256;const g=c.getContext("2d");g.drawImage(bm,0,0);return g.getImageData(0,0,256,256).data}catch(e){return null}})();
-  const d=await tileImg[k];if(!d)return null;const px=Math.floor((fx-x)*256),py=Math.floor((fy-y)*256),o=(py*256+px)*4;
+  const x=Math.floor(fx),y=Math.floor(fy);
+  const d=await tileData("forest",z,x,y);if(!d)return null;const px=Math.floor((fx-x)*256),py=Math.floor((fy-y)*256),o=(py*256+px)*4;
   if(d[o+3]<=40)return"none";
   for(const [c,k] of TREE_COL)if(Math.abs(c[0]-d[o])<14&&Math.abs(c[1]-d[o+1])<14&&Math.abs(c[2]-d[o+2])<14)return k;
   return"autre";
@@ -1865,9 +1878,9 @@ function drawHexes(){if(!hexLayer)return;hexLayer.clearLayers();if(labLayer)labL
 }
 function legend(sp,mode){
   if(!legendCtl){legendCtl=L.control({position:"topright"});legendCtl.onAdd=()=>{const d=L.DomUtil.create("div","grad-leg");d.id="gradLeg";return d};legendCtl.addTo(map)}
-  const has=Object.keys(hexStore.hex).length>0;const d=document.getElementById("gradLeg");if(!d)return;
+  const hm=typeof heatMode==="function"&&heatMode(),has=hm?!!heatOverlay:Object.keys(hexStore.hex).length>0;const d=document.getElementById("gradLeg");if(!d)return;
   d.style.display=has?"":"none";
-  d.innerHTML=`<b>Indice de pousse</b> · ${spName(sp)}<br><span style="color:var(--text2)">${MODE_LAB[mode]}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> écarté : sans forêt, &gt; ${ALT_MAX} m ou bord de mer</div>`;
+  d.innerHTML=`<b>Indice de pousse</b> · ${spName(sp)}<br><span style="color:var(--text2)">${MODE_LAB[mode]}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> ${hm?`<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3c3c3c;vertical-align:middle;margin-left:-14px"></span> coupe récente · incolore : hors forêt ou &gt; ${ALT_MAX} m`:`écarté : sans forêt, &gt; ${ALT_MAX} m ou bord de mer`}</div>`;
 }
 function hexPopup(h,p){const sp=$("hSp").value,sc=hexScore(h.id,sp,"fc"),now=hexScore(h.id,sp,"now"),m=sc&&sc.m,i=m?m.today:0;
   let r7=0;if(m)for(let d=Math.max(0,i-7);d<i;d++)r7+=m.rain[d];
@@ -1978,74 +1991,154 @@ function demAt(la,lo){const col=Math.floor((lo+180)/DEM_TD),row=Math.floor((90-l
   const x=((lo+180)/DEM_TD-col)*256-.5,y=((90-la)/DEM_TD-row)*256-.5,x0=Math.max(0,Math.min(254,Math.floor(x))),y0=Math.max(0,Math.min(254,Math.floor(y))),fx=x-x0,fy=y-y0,g=(i,j)=>t[(y0+j)*256+x0+i];
   const v=g(0,0)*(1-fx)*(1-fy)+g(1,0)*fx*(1-fy)+g(0,1)*(1-fx)*fy+g(1,1)*fx*fy;return v>-100?v:null}
 const gradRGB=v=>{v=Math.max(0,Math.min(1,v));for(let i=1;i<GRAD.length;i++)if(v<=GRAD[i][0]){const [a,ca]=GRAD[i-1],[b,cb]=GRAD[i],t=(v-a)/(b-a);return ca.map((c,k)=>Math.round(c+(cb[k]-c)*t))}return GRAD[GRAD.length-1][1]};
-let heatOverlay=null,heatLayer=null,heatBusy=false;
-async function heatMap(){
-  if(heatBusy)return;if(!bestCenter){try{bestCenter=await getCenter()}catch(e){$("hMsg").textContent=e;return}}
-  const [la0,lo0]=bestCenter,R=Math.min(10,+$("bRad").value||10),sp=$("bSp").value,sps=sp===ALL?Object.keys(SP):[sp];
-  heatBusy=true;$("bHeat").disabled=true;const say=t=>$("hMsg").textContent=t;
-  try{
-  const kx=111.32*Math.cos(la0*Math.PI/180),cell=.075,dLa=cell/KY,dLo=cell/kx,NY=Math.ceil(2*R/cell),NX=NY;
-  const bb=[lo0-R/kx,la0-R/KY,lo0+R/kx,la0+R/KY],cla=j=>bb[3]-(j+.5)*dLa,clo=i=>bb[0]+(i+.5)*dLo,N=NX*NY;
-  // 1. altitude, pente, versant
-  say("Altitude (RGE Alti)…");const tl=[];for(let c=Math.floor((bb[0]+180)/DEM_TD);c<=Math.floor((bb[2]+180)/DEM_TD);c++)for(let r=Math.floor((90-bb[3])/DEM_TD);r<=Math.floor((90-bb[1])/DEM_TD);r++)tl.push([c,r]);
+// ================= CARTE CONTINUE ET ZONES CHAUDES (affichage principal) =================
+// Le milieu (altitude, pente, versant, essence, coupes récentes, forêts publiques, pH) est calculé une fois par zone et
+// gardé en mémoire ; l'indice est recalculé à chaque changement d'espèce ou de période. La météo, connue tous les 2,5 à
+// 5 km, est calculée par point de grille pour plusieurs décalages de température et d'humidité, puis chaque cellule
+// reprend le résultat qui correspond à son altitude et à son versant.
+let heatOverlay=null,heatLayer=null,heatBusy=false,heatEnv=null,heatRes=null;
+const heatMode=()=>LS.get("viewMode","heat")==="heat";
+// pixel d'une tuile WMTS (grille PM) : [r,g,b,a], ou null si la tuile n'existe pas (hors couverture, hors ligne)
+async function tilePx(id,z,lat,lon){const n=2**z,fx=(lon+180)/360*n,rr=lat*Math.PI/180,fy=(1-Math.log(Math.tan(rr)+1/Math.cos(rr))/Math.PI)/2*n,x=Math.floor(fx),y=Math.floor(fy);
+  const d=await tileData(id,z,x,y);if(!d)return null;const o=(Math.floor((fy-y)*256)*256+Math.floor((fx-x)*256))*4;return[d[o],d[o+1],d[o+2],d[o+3]]}
+const lerpT=(arr,x,xs)=>{if(x<=xs[0])return arr[0];for(let q=1;q<xs.length;q++)if(x<=xs[q]){const f=(x-xs[q-1])/(xs[q]-xs[q-1]);return arr[q-1]+(arr[q]-arr[q-1])*f}return arr[arr.length-1]};
+const HDT=[-8,-6,-4,-3,-2,-1,0,1,2,3,4],HDH=[.88,1,1.12];
+const pickMode=(m,mode)=>{if(mode==="now")return m.E[m.today];if(mode==="tom")return m.E[Math.min(m.N-1,m.today+1)];let b=0;for(let i=m.today;i<m.N;i++)b=Math.max(b,m.E[i]);return b};
+
+async function heatBuild(la0,lo0,R,say){
+  // cellules de 75 m, plus grandes sur une grande zone (300 × 300 au plus)
+  const kx=111.32*Math.cos(la0*Math.PI/180),cell=Math.max(.075,2*R/300),NY=Math.ceil(2*R/cell),NX=NY,N=NX*NY;
+  const bb=[lo0-R/kx,la0-R/KY,lo0+R/kx,la0+R/KY],cla=j=>bb[3]-(j+.5)*cell/KY,clo=i=>bb[0]+(i+.5)*cell/kx;
+  // 1. altitude, pente, versant (tuiles d'altitude brute IGN)
+  say("Relief (RGE Alti)…");const tl=[];
+  for(let c=Math.floor((bb[0]+180)/DEM_TD);c<=Math.floor((bb[2]+180)/DEM_TD);c++)for(let r=Math.floor((90-bb[3])/DEM_TD);r<=Math.floor((90-bb[1])/DEM_TD);r++)tl.push([c,r]);
   await Promise.all(tl.map(async([c,r])=>{demTiles[c+"/"+r+"#"]=await demTile(c,r)}));
-  const alt=new Float32Array(N).fill(NaN),slope=new Float32Array(N),aspect=new Float32Array(N),h=cell/2;
-  for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const la=cla(j),lo=clo(i),z=demAt(la,lo);if(z==null)continue;const k=j*NX+i;alt[k]=z;
+  const alt=new Float32Array(N).fill(NaN),slope=new Float32Array(N),aspect=new Float32Array(N),inD=new Uint8Array(N),h=cell/2;
+  for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const la=cla(j),lo=clo(i),k=j*NX+i;if(kmTo(la0,lo0,la,lo).d>R)continue;inD[k]=1;const z=demAt(la,lo);if(z==null)continue;alt[k]=z;
     const e=demAt(la,lo+h/kx),w=demAt(la,lo-h/kx),n=demAt(la+h/KY,lo),s=demAt(la-h/KY,lo);if([e,w,n,s].some(v=>v==null))continue;
     const b=(e-w)/cell,c=(n-s)/cell;slope[k]=Math.atan(Math.hypot(b,c)/1000)*180/Math.PI;aspect[k]=(Math.atan2(-b,-c)*180/Math.PI+360)%360}
-  // 2. essence forestière (BD Forêt, zoom 14 ≈ 7 m)
-  say("Essences forestières (BD Forêt)…");const fz=forestZ;forestZ=14;const cls=new Array(N);
-  for(let j=0;j<NY;j++){const row=await Promise.all(Array.from({length:NX},(_,i)=>forestPixel(cla(j),clo(i))));row.forEach((v,i)=>cls[j*NX+i]=v);if(j%20===0)say(`Essences forestières (BD Forêt)… ${Math.round(j/NY*100)} %`)}
-  forestZ=fz;
+  // 2. essence (BD Forêt), coupe récente (absente du masque forestier 2021-2023), forêt publique (ONF)
+  const fz=forestZ;forestZ=R>10?13:14;const cls=new Array(N),cut=new Uint8Array(N),pub=new Uint8Array(N);
+  try{for(let j=0;j<NY;j++){await Promise.all(Array.from({length:NX},async(_,i)=>{const k=j*NX+i;if(!inD[k])return;const la=cla(j),lo=clo(i);
+      const c=await forestPixel(la,lo);cls[k]=c;if(!c||NON_FOREST.has(c))return;
+      const m=await tilePx("masque",13,la,lo);if(m&&m[3]<40)cut[k]=1; // tuile absente : pas de conclusion
+      const p=await tilePx("onf",13,la,lo);if(p&&p[3]>100)pub[k]=p[1]>p[0]?1:2}));
+    if(j%15===0)say(`Forêts, coupes récentes, forêts publiques… ${Math.round(j/NY*100)} %`)}}finally{forestZ=fz}
   // 3. sol
   say("Sol (SoilGrids)…");let ph=null;try{ph=await soilGrid("phh2o",[bb[0]-.01,bb[1]-.01,bb[2]+.01,bb[3]+.01])}catch(e){}
-  // 4. météo : points de grille 0,025°, modèle calculé pour plusieurs décalages de température (versant, altitude) et d'humidité
-  say("Météo (grille 0,025°)…");const gs=.025,keys=[];
+  // 4. météo : grille de 0,025° (0,05° au-delà de 8 km de rayon), quatre points voisins par cellule
+  const gs=R>8?.05:.025,keys=[],gi={};
   for(let la=Math.floor(bb[1]/gs)*gs-gs;la<=bb[3]+gs;la+=gs)for(let lo=Math.floor(bb[0]/gs)*gs-gs;lo<=bb[2]+gs;lo+=gs)keys.push(gKey(la,lo));
-  await fetchGrid(keys,(d,n)=>say(`Météo (grille 0,025°)… ${d}/${n} points`));saveHex();
-  const DT=[-8,-6,-4,-3,-2,-1,0,1,2,3,4],DH=[.88,1,1.12],pts=keys.map(k=>{const [la,lo]=k.split(",").map(Number);return{la,lo,p:hexStore.pts[k]}}).filter(o=>o.p);
-  say(`Modèle aux ${pts.length} points météo…`);await new Promise(r=>setTimeout(r,0));
-  const pick=m=>{if(hMode==="now")return m.E[m.today];if(hMode==="tom")return m.E[Math.min(m.N-1,m.today+1)];let b=0;for(let i=m.today;i<m.N;i++)b=Math.max(b,m.E[i]);return b};
-  for(const o of pts){o.s={};for(const s of sps){o.s[s]=DT.map(dt=>DH.map(dh=>{const p=o.p,t=v=>v==null?null:v+dt;
-    return pick(compute({dates:p.dates,tmax:p.tmax.map(t),tmin:p.tmin.map(t),rain:p.rain,tsol:p.tsol.map(t),sm:p.sm,sm2:p.sm2,rh:p.rh,real:true},{sp:SP[s],soil:SOIL.limon,expo:{dT:dt,dH:dh},dT:dt}))}))}}
-  const lerp=(arr,x,xs)=>{if(x<=xs[0])return arr[0];for(let q=1;q<xs.length;q++)if(x<=xs[q]){const f=(x-xs[q-1])/(xs[q]-xs[q-1]);return arr[q-1]+(arr[q]-arr[q-1])*f}return arr[arr.length-1]};
-  // 5. indice par cellule
-  say("Calcul de la carte…");await new Promise(r=>setTimeout(r,0));const score=new Float32Array(N).fill(-1);
-  for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const k=j*NX+i,c=cls[k];if(!c||NON_FOREST.has(c)||isNaN(alt[k])||alt[k]>ALT_MAX)continue;
-    const la=cla(j),lo=clo(i);if(kmTo(la0,lo0,la,lo).d>R)continue;const ex=hexExpo({slope:slope[k],aspect:aspect[k]}),near=pts.map(o=>[o,Math.hypot((o.la-la)*KY,(o.lo-lo)*kx)+.3]).sort((a,b)=>a[1]-b[1]).slice(0,4);
-    let tot=0;for(const s of sps){let v=0,w=0;for(const [o,d] of near){const dt=-.0065*(alt[k]-o.p.elev)+ex.dT,wt=1/(d*d);
-        v+=wt*lerp(o.s[s].map(r=>lerp(r,ex.dH,DH)),dt,DT);w+=wt}
-      const site={soil:ph?{ph:(ph.get(la,lo)||0)/10||null}:null,slope:slope[k]},hab=hostAff(s,c);tot+=(v/w)*hab*siteW(site,s)}
+  say(`Météo (grille ${String(gs).replace(".",",")}°)…`);
+  try{await fetchGrid(keys,(d,n)=>say(`Météo… ${d}/${n} points`));saveHex()}catch(e){if(!keys.some(k=>hexStore.pts[k]))throw new Error("météo indisponible (hors ligne ?)")}
+  const pts=keys.map(k=>{const [la,lo]=k.split(",").map(Number);return{k,la,lo,p:hexStore.pts[k]}}).filter(o=>o.p);pts.forEach((o,n)=>gi[o.k]=n);
+  const nnI=new Int32Array(N*4).fill(-1),nnW=new Float32Array(N*4);
+  for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const k=j*NX+i;if(!inD[k])continue;const la=cla(j),lo=clo(i),a0=Math.floor(la/gs)*gs,b0=Math.floor(lo/gs)*gs;let q=0;
+    for(const a of[a0,a0+gs])for(const b of[b0,b0+gs]){const n=gi[gKey(a,b)];if(n==null)continue;const d=Math.hypot((a-la)*KY,(b-lo)*kx)+.3;nnI[k*4+q]=n;nnW[k*4+q]=1/(d*d);q++}}
+  return{la0,lo0,R,kx,cell,NX,NY,N,bb,cla,clo,alt,slope,aspect,inD,cls,cut,pub,ph,pts,nnI,nnW,gs};
+}
+
+function heatScore(env,sp,mode){
+  const {NX,NY,N,cla,clo,alt,slope,aspect,inD,cls,cut,ph,pts,nnI,nnW,cell,la0,lo0,kx}=env,sps=sp===ALL?Object.keys(SP):[sp];
+  for(const o of pts){o.s={};const p=o.p;for(const s of sps)o.s[s]=HDT.map(dt=>HDH.map(dh=>{const t=v=>v==null?null:v+dt;
+    return pickMode(compute({dates:p.dates,tmax:p.tmax.map(t),tmin:p.tmin.map(t),rain:p.rain,tsol:p.tsol.map(t),sm:p.sm,sm2:p.sm2,rh:p.rh,real:true},{sp:SP[s],soil:SOIL.limon,expo:{dT:dt,dH:dh},dT:dt}),mode)}))}
+  // -1 : hors forêt ou écarté ; -2 : coupe récente
+  const score=new Float32Array(N).fill(-1);
+  for(let k=0;k<N;k++){const c=cls[k];if(!inD[k]||!c||NON_FOREST.has(c)||isNaN(alt[k])||alt[k]>ALT_MAX)continue;if(cut[k]){score[k]=-2;continue}
+    const i=k%NX,j=(k-i)/NX,la=cla(j),lo=clo(i),ex=hexExpo({slope:slope[k],aspect:aspect[k]}),site={soil:ph?{ph:(ph.get(la,lo)||0)/10||null}:null,slope:slope[k]};let tot=0;
+    for(const s of sps){let v=0,w=0;for(let q=0;q<4;q++){const n=nnI[k*4+q];if(n<0)continue;const o=pts[n],dt=-.0065*(alt[k]-o.p.elev)+ex.dT;
+        v+=nnW[k*4+q]*lerpT(o.s[s].map(r=>lerpT(r,ex.dH,HDH)),dt,HDT);w+=nnW[k*4+q]}
+      if(w)tot+=(v/w)*hostAff(s,c)*siteW(site,s)}
     score[k]=tot/sps.length}
-  // 6. zones chaudes : lissage 3×3 sur la forêt, seuil (≥ 0,35 et 10 % des meilleures cellules), taches d'au moins 3 cellules (≈ 1,7 ha)
+  // zones chaudes : lissage 3×3, seuil (≥ 0,35 et 10 % des meilleures cellules), taches d'au moins ~1,5 ha
   const sm=new Float32Array(N).fill(-1);for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const k=j*NX+i;if(score[k]<0)continue;let s=0,n=0;
     for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const jj=j+b,ii=i+a;if(jj<0||ii<0||jj>=NY||ii>=NX)continue;const v=score[jj*NX+ii];if(v>=0){s+=v;n++}}sm[k]=s/n}
-  const valid=[...sm].filter(v=>v>=0).sort((a,b)=>a-b),T=Math.max(.35,valid[Math.floor(valid.length*.9)]||1),lab=new Int32Array(N).fill(-1),zones=[];
-  for(let k=0;k<N;k++){if(sm[k]<T||lab[k]>=0)continue;const st=[k],cells=[];lab[k]=zones.length;
-    while(st.length){const q=st.pop();cells.push(q);const qi=q%NX,qj=(q-qi)/NX;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const ii=qi+a,jj=qj+b;if(ii<0||jj<0||ii>=NX||jj>=NY)continue;const r=jj*NX+ii;if(lab[r]<0&&sm[r]>=T){lab[r]=zones.length;st.push(r)}}}
-    zones.push(cells)}
-  const out=zones.filter(c=>c.length>=3).map(c=>{let s=0,la=0,lo=0,al=0;const ess={};c.forEach(k=>{const i=k%NX,j=(k-i)/NX;s+=score[k];la+=cla(j);lo+=clo(i);al+=alt[k];ess[cls[k]]=(ess[cls[k]]||0)+1});
-    const n=c.length,cl=la/n,cn=lo/n,g=kmTo(la0,lo0,cl,cn);let sx=0,sy=0;c.forEach(k=>{sx+=Math.sin(aspect[k]*Math.PI/180);sy+=Math.cos(aspect[k]*Math.PI/180)});
-    return{v:s/n,ha:n*cell*cell*100,la:cl,lo:cn,alt:al/n,ess:Object.entries(ess).sort((a,b)=>b[1]-a[1])[0][0],az:(Math.atan2(sx,sy)*180/Math.PI+360)%360,...g}}).sort((a,b)=>b.v-a.v).slice(0,10);
-  // 7. affichage : une image (une cellule = un pixel), lissée par le navigateur, sur un calque dédié
-  const cv=document.createElement("canvas");cv.width=NX;cv.height=NY;const g=cv.getContext("2d"),img=g.createImageData(NX,NY);
-  for(let k=0;k<N;k++){if(score[k]<0)continue;const [r,gg,b]=gradRGB(score[k]);img.data.set([r,gg,b,255],k*4)}g.putImageData(img,0,0);
-  if(!map.getPane("heatPane")){const hp=map.createPane("heatPane");hp.style.zIndex=395;hp.style.opacity=.75}
-  if(heatOverlay)map.removeLayer(heatOverlay);heatOverlay=L.imageOverlay(cv.toDataURL(),[[bb[1],bb[0]],[bb[3],bb[2]]],{pane:"heatPane"}).addTo(map);
-  if(heatLayer)heatLayer.clearLayers();else heatLayer=L.layerGroup().addTo(map);
-  map.getPane("hexPane").style.display="none";labLayer.clearLayers();gridLayer.clearLayers();if(bestLayer)bestLayer.clearLayers();
-  out.forEach((z,n)=>L.marker([z.la,z.lo],{icon:L.divIcon({className:"",iconSize:[22,22],iconAnchor:[11,11],html:`<div class="brank" style="background:#b4530a">${n+1}</div>`})}).on("click",()=>{map.setView([z.la,z.lo],15)}).addTo(heatLayer));
-  map.fitBounds([[bb[1],bb[0]],[bb[3],bb[2]]]);
-  say(`${valid.length.toLocaleString("fr-FR")} cellules de forêt de 75 m · seuil des zones chaudes ${Math.round(T*100)}/100 · ${spName(sp)} · ${MODE_LAB[hMode]}.`);
-  const box=$("hList");box.innerHTML=out.length?"":'<p class="note">Aucune zone au-dessus du seuil.</p>';
-  out.forEach((z,n)=>{const d=document.createElement("div");d.className="spot";
-    d.innerHTML=`<span class="dot" style="background:${gradColor(z.v)}"></span><div><b>${n+1}. ${Math.round(z.v*100)}/100 · ${z.ha<10?z.ha.toFixed(1).replace(".",","):Math.round(z.ha)} ha</b><small>${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} ${compass(z.dx,z.dy)} · ${Math.round(z.alt)} m · versant ${azName(z.az)} · ${TREE_N[z.ess]||z.ess}</small></div>`;
-    d.onclick=()=>{$("map").scrollIntoView({behavior:"smooth",block:"center"});map.setView([z.la,z.lo],15)};box.appendChild(d)});
-  const back=document.createElement("button");back.className="btn";back.style.marginTop="8px";back.textContent="Revenir aux hexagones";
-  back.onclick=()=>{map.removeLayer(heatOverlay);heatOverlay=null;heatLayer.clearLayers();map.getPane("hexPane").style.display="";box.innerHTML="";say("");drawHexes();drawGrid();if(bestCenter)bestHexes()};box.appendChild(back);
-  }catch(e){say("Carte continue impossible : "+e.message)}finally{heatBusy=false;$("bHeat").disabled=false}
+  const valid=[...sm].filter(v=>v>=0).sort((a,b)=>a-b),T=Math.max(.35,valid[Math.floor(valid.length*.9)]||1),lab=new Int32Array(N).fill(-1),groups=[];
+  for(let k=0;k<N;k++){if(sm[k]<T||lab[k]>=0)continue;const st=[k],cells=[];lab[k]=groups.length;
+    while(st.length){const q=st.pop();cells.push(q);const qi=q%NX,qj=(q-qi)/NX;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const ii=qi+a,jj=qj+b;if(ii<0||jj<0||ii>=NX||jj>=NY)continue;const r=jj*NX+ii;if(lab[r]<0&&sm[r]>=T){lab[r]=groups.length;st.push(r)}}}
+    groups.push(cells)}
+  const minC=Math.max(2,Math.ceil(.015/(cell*cell)));
+  const zones=groups.filter(c=>c.length>=minC).map(c=>{let s=0,la=0,lo=0,al=0,sx=0,sy=0;const ess={},pb=[0,0,0];
+    c.forEach(k=>{const i=k%NX,j=(k-i)/NX;s+=score[k];la+=cla(j);lo+=clo(i);al+=alt[k];ess[cls[k]]=(ess[cls[k]]||0)+1;pb[env.pub[k]]++;sx+=Math.sin(aspect[k]*Math.PI/180);sy+=Math.cos(aspect[k]*Math.PI/180)});
+    const n=c.length,cl=la/n,cn=lo/n,g=kmTo(la0,lo0,cl,cn);
+    return{v:s/n,ha:n*cell*cell*100,la:cl,lo:cn,alt:al/n,ess:Object.entries(ess).sort((a,b)=>b[1]-a[1])[0][0],az:(Math.atan2(sx,sy)*180/Math.PI+360)%360,
+      pub:pb[1]>=pb[2]&&pb[1]>=pb[0]?1:pb[2]>pb[0]?2:0,...g}}).sort((a,b)=>b.v-a.v).slice(0,10);
+  return{score,zones,T,nForest:valid.length,nCut:[...score].filter(v=>v===-2).length,sp,mode};
 }
-$("bHeat").onclick=heatMap;
+const PUB_N=["forêt privée ou non recensée","forêt domaniale","forêt publique (communale…)"];
+
+function heatRender(env,res){
+  const {NX,NY,N,bb}=env,cv=document.createElement("canvas");cv.width=NX;cv.height=NY;const g=cv.getContext("2d"),img=g.createImageData(NX,NY);
+  for(let k=0;k<N;k++){const v=res.score[k];if(v===-2){img.data.set([60,60,60,170],k*4);continue}if(v<0)continue;const [r,gg,b]=gradRGB(v);img.data.set([r,gg,b,255],k*4)}
+  g.putImageData(img,0,0);
+  const msg=`${res.nForest.toLocaleString("fr-FR")} cellules de forêt de ${Math.round(env.cell*1000)} m sur ${Math.round(env.R)} km${res.nCut?` · ${res.nCut.toLocaleString("fr-FR")} en coupe récente (gris foncé)`:""} · seuil des zones chaudes ${Math.round(res.T*100)}/100 · ${spName(res.sp)} · ${MODE_LAB[res.mode]}.`;
+  const saved={bb,url:cv.toDataURL(),zones:res.zones,msg,la0:env.la0,lo0:env.lo0,R:env.R,sp:res.sp,mode:res.mode,t:Date.now()};
+  LS.set("heat",saved);heatShow(saved);
+}
+// affiche une carte calculée (en direct ou enregistrée : elle reste visible hors ligne)
+function heatShow(sv){
+  // l'espèce et la période affichées sont celles de la carte montrée (utile au rechargement)
+  if(sv.sp){$("hSp").value=sv.sp;$("bSp").value=sv.sp}
+  if(sv.mode&&sv.mode!==hMode){hMode=sv.mode;LS.set("hMode",hMode);document.querySelectorAll("#hMode .chip").forEach(b=>b.classList.toggle("on",b.dataset.m===hMode))}
+  if(!map.getPane("heatPane")){const hp=map.createPane("heatPane");hp.style.zIndex=395;hp.style.opacity=.75}
+  if(heatOverlay)map.removeLayer(heatOverlay);heatOverlay=L.imageOverlay(sv.url,[[sv.bb[1],sv.bb[0]],[sv.bb[3],sv.bb[2]]],{pane:"heatPane"}).addTo(map);
+  if(heatLayer)heatLayer.clearLayers();else heatLayer=L.layerGroup().addTo(map);
+  L.circle([sv.la0,sv.lo0],{radius:sv.R*1000,color:"#7a4a22",weight:1.5,fill:false,dashArray:"5 5",interactive:false}).addTo(heatLayer);
+  sv.zones.forEach((z,n)=>L.marker([z.la,z.lo],{icon:L.divIcon({className:"",iconSize:[22,22],iconAnchor:[11,11],html:`<div class="brank" style="background:#7a1f12">${n+1}</div>`})})
+    .on("click",()=>{map.setView([z.la,z.lo],15);heatPopup(L.latLng(z.la,z.lo))}).addTo(heatLayer));
+  $("hMsg").textContent=sv.msg+(Date.now()-sv.t>36e5?` Calculée ${ageTxt(sv.t)}.`:"");
+  const box=$("hList");box.innerHTML=sv.zones.length?"":'<p class="note">Aucune zone au-dessus du seuil.</p>';
+  sv.zones.forEach((z,n)=>{const d=document.createElement("div");d.className="spot";
+    d.innerHTML=`<span class="dot" style="background:${gradColor(z.v)}"></span><div><b>${n+1}. ${Math.round(z.v*100)}/100 · ${z.ha<10?z.ha.toFixed(1).replace(".",","):Math.round(z.ha)} ha</b><small>${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} ${compass(z.dx,z.dy)} · ${Math.round(z.alt)} m · versant ${azName(z.az)} · ${TREE_N[z.ess]||z.ess} · ${PUB_N[z.pub||0]}</small></div><button class="btn" style="padding:6px 9px">⛰</button>`;
+    d.querySelector("button").onclick=e=>{e.stopPropagation();openReliefAt(z.la,z.lo)};
+    d.onclick=()=>{$("map").scrollIntoView({behavior:"smooth",block:"center"});map.setView([z.la,z.lo],15);heatPopup(L.latLng(z.la,z.lo))};box.appendChild(d)});
+  legend($("hSp").value,hMode);
+}
+async function heatRun(center,R){
+  if(heatBusy)return;heatBusy=true;const say=t=>$("hMsg").textContent=t;
+  try{const [la0,lo0]=center;
+    if(!heatEnv||Math.abs(heatEnv.la0-la0)>1e-6||Math.abs(heatEnv.lo0-lo0)>1e-6||heatEnv.R!==R)heatEnv=await heatBuild(la0,lo0,R,say);
+    say("Calcul de l'indice…");await new Promise(r=>setTimeout(r,0));
+    heatRes=heatScore(heatEnv,$("hSp").value,hMode);heatRender(heatEnv,heatRes);
+    map.fitBounds([[heatEnv.bb[1],heatEnv.bb[0]],[heatEnv.bb[3],heatEnv.bb[2]]]);
+  }catch(e){say("Carte continue impossible : "+e.message)}finally{heatBusy=false}
+}
+// changement d'espèce ou de période : seul l'indice est recalculé
+async function heatRescore(){if(!heatEnv||heatBusy)return;heatBusy=true;
+  try{$("hMsg").textContent="Calcul de l'indice…";await new Promise(r=>setTimeout(r,0));heatRes=heatScore(heatEnv,$("hSp").value,hMode);heatRender(heatEnv,heatRes)}finally{heatBusy=false}}
+// détail d'un point touché sur la carte continue
+function heatPopup(ll){const env=heatEnv;let html=`<div style="font-size:13px;min-width:190px">`;
+  if(env&&heatRes){const i=Math.floor((ll.lng-env.bb[0])*env.kx/env.cell),j=Math.floor((env.bb[3]-ll.lat)*KY/env.cell),k=j*env.NX+i;
+    if(i>=0&&j>=0&&i<env.NX&&j<env.NY&&env.inD[k]){const c=env.cls[k],forest=!!c&&!NON_FOREST.has(c),v=heatRes.score[k];
+      html+=`<b>${!forest?"Hors forêt":env.cut[k]?"Coupe récente":v>=0?Math.round(v*100)+"/100":"Écarté"}</b> · ${spName(heatRes.sp)}<br>`+
+        (isNaN(env.alt[k])?"":`Altitude ${Math.round(env.alt[k])} m · pente ${Math.round(env.slope[k])}° · versant ${env.slope[k]<4?"plat":azName(env.aspect[k])}<br>`)+
+        (forest?`Essence : ${TREE_N[c]||c}<br>`:"")+`${PUB_N[env.pub[k]]}<br>`+
+        (env.cut[k]?`<span style="color:var(--warn)">Boisée dans la BD Forêt mais absente du masque forestier 2021-2023 : coupe ou défrichement probable.</span><br>`:"")}}
+  else html+=`<span style="color:var(--muted)">Détail de la cellule disponible après un nouveau calcul (carte enregistrée).</span><br>`;
+  html+=`<button class="btn" style="margin-top:6px;padding:5px 10px" id="ptRel">⛰ Relief et versants ici</button></div>`;
+  L.popup().setLatLng(ll).setContent(html).openOn(map);
+  setTimeout(()=>{const b=document.getElementById("ptRel");if(b)b.onclick=()=>{map.closePopup();openReliefAt(ll.lat,ll.lng)}},0)}
+// fiche « Relief et versants » sur un hexagone de 1 km² centré sur un point quelconque
+async function openReliefAt(la,lo){const s=1,a=side(s),[q,r]=ll2hex(la,lo,a),[hl,ho]=hexCenter(q,r,a),gs=.025,keys=[];
+  for(let x=Math.round((hl-.05)/gs)*gs;x<=hl+.05;x+=gs)for(let y=Math.round((ho-.07)/gs)*gs;y<=ho+.07;y+=gs)if(Math.hypot((x-hl)*KY,(y-ho)*111.32*Math.cos(hl*Math.PI/180))<5)keys.push(gKey(x,y));
+  try{await fetchGrid(keys,()=>{});saveHex()}catch(e){}
+  const c=Math.floor((ho+180)/DEM_TD),rw=Math.floor((90-hl)/DEM_TD);demTiles[c+"/"+rw+"#"]=await demTile(c,rw);
+  openRelief({id:"pt",q,r,lat:hl,lon:ho,size:s,pts:keys,alt:demAt(hl,ho)||0,soil:null});
+}
+// affichage : carte continue (par défaut) ou hexagones
+function setViewMode(v){LS.set("viewMode",v);
+  document.querySelectorAll("#vChips .chip").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  document.querySelectorAll(".hexOnly").forEach(e=>e.style.display=v==="heat"?"none":"");
+  document.querySelectorAll(".heatOnly").forEach(e=>e.style.display=v==="heat"?"":"none");
+  $("bTitle").textContent=v==="heat"?"Zones chaudes autour d'un point":"Meilleurs hexagones autour d'un point";
+  if(v==="heat"){map.getPane("hexPane").style.display="none";labLayer.clearLayers();gridLayer.clearLayers();if(bestLayer)bestLayer.clearLayers();
+    const sv=LS.get("heat",null);if(sv&&!heatOverlay)heatShow(sv);else if(heatOverlay&&!map.hasLayer(heatOverlay))heatOverlay.addTo(map),heatLayer.addTo(map)}
+  else{if(heatOverlay)map.removeLayer(heatOverlay);if(heatLayer)map.removeLayer(heatLayer);heatOverlay=null;heatLayer=null;
+    map.getPane("hexPane").style.display="";drawHexes();drawGrid();if(bestCenter)bestHexes()}
+  legend($("hSp").value,hMode)}
+document.querySelectorAll("#vChips .chip").forEach(b=>b.onclick=()=>setViewMode(b.dataset.v));
+$("bHeat").onclick=()=>{setViewMode("heat");$("bGo").onclick()};
+
 
 // ================= RELIEF ET VERSANTS D'UN HEXAGONE =================
 // Cellules d'environ 40 m dans l'hexagone : altitude, pente et versant (tuiles d'altitude IGN), essence (BD Forêt),
@@ -2188,7 +2281,8 @@ function goHex(h){$("map").scrollIntoView({behavior:"smooth",block:"center"});
   const p=hexPoly[h.id];if(p)hexPopup(h,p)}
 $("bGo").onclick=async()=>{$("bMsg").textContent="Recherche de la position…";
   try{bestCenter=await getCenter()}catch(e){$("bMsg").textContent=e;return}
-  LS.set("best",{c:$("bCenter").value,r:$("bRad").value});bestHexes()};
+  LS.set("best",{c:$("bCenter").value,r:$("bRad").value});
+  if(heatMode())return heatRun(bestCenter,Math.min(15,+$("bRad").value||10));bestHexes()};
 // analyse du disque à la taille la plus fine qui tient dans une analyse (≈ 550 hexagones)
 $("bAna").onclick=async()=>{
   if(hexBusy){$("bMsg").textContent="Une analyse est déjà en cours, patiente un instant.";return}
@@ -2213,9 +2307,9 @@ $("bRad").onchange=()=>{if(bestCenter)bestHexes()};
 $("hexBtn").onclick=()=>analyseHex();
 $("hexClear").onclick=()=>{hexStore={hex:{},pts:hexStore.pts};saveHex();drawHexes();drawGrid();$("hexSteps").innerHTML="";if(bestLayer)bestLayer.clearLayers();$("bList").innerHTML=""};
 // le champignon du classement et celui de la carte restent les mêmes : changer l'un change l'autre
-const setSp=v=>{$("hSp").value=v;$("bSp").value=v;drawHexes();if(bestCenter)bestHexes()};
+const setSp=v=>{$("hSp").value=v;$("bSp").value=v;if(heatMode()){heatRescore();legend(v,hMode);return}drawHexes();if(bestCenter)bestHexes()};
 $("hSp").onchange=()=>setSp($("hSp").value);$("bSp").onchange=()=>setSp($("bSp").value);
-$("hMode").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{hMode=b.dataset.m;LS.set("hMode",hMode);drawHexes()});
+$("hMode").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{hMode=b.dataset.m;LS.set("hMode",hMode);drawHexes();if(heatMode())heatRescore()});
 $("hSize").onchange=()=>{LS.set("hSize",$("hSize").value);drawGrid();drawHexes()};
 // taille d'hexagone de la dernière analyse, pour retrouver les hexagones enregistrés au rechargement
 $("hSize").value=LS.get("hSize",null)||(Object.values(hexStore.hex).pop()||{size:5}).size;
@@ -2237,6 +2331,7 @@ $("soil").value="limon";
 PRESETS.automne.f();
 buildSrc();renderList();stats();
 try{initMap()}catch(e){$("map").innerHTML='<p class="note" style="padding:20px">Carte indisponible.</p>'}
+try{setViewMode(LS.get("viewMode","heat"))}catch(e){}
 // test réseau : la page publiée sur claude.ai bloque les accès externes
 fetch(tileUrl("plan",0,0,0),{mode:"no-cors"}).then(()=>{netOK=true}).catch(()=>{
   if(navigator.onLine){netOK=false;$("envWarn").innerHTML='<div class="warn">Cette version ne peut joindre ni l\'IGN ni le service météo : la carte et la météo réelle sont bloquées. Le simulateur (onglet Prévision) fonctionne. Pour la carte, la météo et le mode avion, ouvre le fichier HTML téléchargé dans le navigateur de ton téléphone.</div>'}});
