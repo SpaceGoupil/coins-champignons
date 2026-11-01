@@ -814,7 +814,7 @@ th:first-child,td:first-child{text-align:left}
       <div class="row" style="margin-top:8px"><button class="btn pri" id="hexBtn">⬡ Analyser la zone affichée</button><button class="btn" id="hexClear">Effacer</button></div>
       <ul class="steps" id="hexSteps"></ul>
       <div class="prog" id="hexProg" style="display:none"><i></i></div>
-      <p class="note" style="margin-bottom:0">Pour chaque hexagone : altitude moyenne (7 points IGN), part de forêt (BD Forêt), météo moyennée entre les points voisins d'une grille de 0,1° et corrigée de l'altitude. Les hexagones sans forêt restent gris. Touche un hexagone pour le détail, ou pour l'<b>affiner</b> en hexagones plus petits : altitude et forêt plus précises (la météo reste celle de la grille de 0,1°). Les hexagones fins s'affichent par-dessus les grands.</p>
+      <p class="note" style="margin-bottom:0">Pour chaque hexagone : altitude moyenne (7 points IGN), part de forêt et essences (BD Forêt, 19 points) pondérées selon les arbres hôtes de chaque espèce, météo moyennée entre les points voisins d'une grille de 0,1° et corrigée de l'altitude. Restent en gris et hors classement : les hexagones sans forêt (villes, cultures, estives), au-dessus de 2 000 m, et en bord de mer ou hors de France. Touche un hexagone pour le détail, ou pour l'<b>affiner</b> en hexagones plus petits : altitude et forêt plus précises (la météo reste celle de la grille de 0,1°). Les hexagones fins s'affichent par-dessus les grands.</p>
     </div>
 
     <div class="card">
@@ -1550,18 +1550,48 @@ async function fetchAlts(pts){ // pts: [[lat,lon]...] → altitudes
   return res.flat();
 }
 const tileImg={};let forestZ=14;
-async function forestPixel(lat,lon){ // 1 si le point est en forêt (BD Forêt, zoom 14)
+// classe BD Forêt du point : clé de TREES, "autre" (forêt d'essence non reconnue), "none" (rien), null (tuile indisponible)
+async function forestPixel(lat,lon){
   const z=forestZ,n=2**z,fx=(lon+180)/360*n,rr=lat*Math.PI/180,fy=(1-Math.log(Math.tan(rr)+1/Math.cos(rr))/Math.PI)/2*n;
   const x=Math.floor(fx),y=Math.floor(fy),k=`forest/${z}/${x}/${y}`;
   if(!(k in tileImg))tileImg[k]=(async()=>{let b=await tGet(k);
     if(!b){try{b=await fetchTile("forest",z,x,y);tPut(k,b)}catch(e){}}
     if(!b)return null;try{const bm=await createImageBitmap(b);const c=document.createElement("canvas");c.width=c.height=256;const g=c.getContext("2d");g.drawImage(bm,0,0);return g.getImageData(0,0,256,256).data}catch(e){return null}})();
   const d=await tileImg[k];if(!d)return null;const px=Math.floor((fx-x)*256),py=Math.floor((fy-y)*256),o=(py*256+px)*4;
-  return d[o+3]>40&&!notForest(d[o],d[o+1],d[o+2])?1:0;
+  if(d[o+3]<=40)return"none";
+  for(const [c,k] of TREE_COL)if(Math.abs(c[0]-d[o])<14&&Math.abs(c[1]-d[o+1])<14&&Math.abs(c[2]-d[o+2])<14)return k;
+  return"autre";
 }
-// BD Forêt V2 : classes opaques mais sans arbres (lande, formation herbacée, forêt sans couvert arboré)
-const NOT_FOREST=[[255,230,191],[255,249,165],[255,255,185],[229,196,93],[179,179,179]];
-const notForest=(r,g,b)=>NOT_FOREST.some(c=>Math.abs(c[0]-r)<14&&Math.abs(c[1]-g)<14&&Math.abs(c[2]-b)<14);
+// BD Forêt V2 : couleur des tuiles WMTS → formation. Les couleurs ne sont pas celles de la légende officielle :
+// chacune a été vérifiée le 01/11/2026 en interrogeant le WFS de l'IGN (point dans le polygone) sous des pixels de 8 régions.
+const TREES={"0,77,46":"chene","102,128,64":"chenevert","0,185,168":"hetre","64,255,38":"chataignier","145,86,51":"robinier",
+  "175,202,89":"feuillu","0,147,27":"feuillus","1,120,56":"feuillus","204,255,191":"feuillus_o",
+  "191,38,255":"pin","153,38,255":"pin","57,11,215":"pin","135,97,250":"pin","255,153,255":"pin","255,26,205":"pin_alep",
+  "26,230,230":"sapin","97,128,255":"meleze","51,153,255":"douglas","0,0,255":"coniferes","1,146,159":"coniferes","128,128,255":"coniferes","153,179,204":"coniferes_o",
+  "255,152,51":"mixte_f","255,64,51":"mixte_c","255,209,56":"mixte_o",
+  "229,196,93":"sans","179,179,179":"sans","255,230,191":"lande","255,255,185":"herbe","255,249,165":"herbe"};
+const TREE_COL=Object.entries(TREES).map(([c,k])=>[c.split(",").map(Number),k]);
+const NON_FOREST=new Set(["none","sans","lande","herbe"]);
+const TREE_N={chene:"chênes",chenevert:"chênes verts",hetre:"hêtre",chataignier:"châtaignier",robinier:"robinier",feuillu:"autre feuillu",
+  feuillus:"feuillus mélangés",feuillus_o:"feuillus clairsemés",pin:"pins",pin_alep:"pin d'Alep",sapin:"sapin / épicéa",meleze:"mélèze",
+  douglas:"douglas",coniferes:"conifères mélangés",coniferes_o:"conifères clairsemés",mixte_f:"feuillus et conifères",mixte_c:"conifères et feuillus",
+  mixte_o:"forêt mixte clairsemée",autre:"essence non reconnue"};
+// arbres hôtes : affinité 0–1 de chaque espèce (repères de cueilleurs, pas une calibration)
+//            chêne chêne-vert hêtre châtaig. feuillus  pins  sapin/ép. mélèze douglas conifères  mix-feuil. mix-conif.
+const HOST_K=["chene","chenevert","hetre","chataignier","feuillus","pin","sapin","meleze","douglas","coniferes","mixte_f","mixte_c"];
+const HOST={edulis:[1,.5,1,1,.9,.6,1,.4,.5,.8,.95,.9], pino:[.3,.2,.4,.5,.3,1,.8,.3,.4,.8,.6,.9],
+  aest:[1,.6,.9,1,.9,.2,.2,.1,.1,.2,.8,.5], aereus:[1,.9,.5,1,.8,.1,.1,.05,.05,.1,.7,.4],
+  girolle:[1,.5,1,.9,.9,.7,.9,.4,.6,.8,.95,.9], pdm:[.9,.5,1,.8,.9,.7,1,.5,.6,.85,.95,.95]};
+function hostAff(sp,cls){const t=HOST[sp],g=k=>t[HOST_K.indexOf(k)];
+  switch(cls){case"feuillu":return g("feuillus")*.7;case"feuillus_o":return g("feuillus")*.8;case"coniferes_o":return g("coniferes")*.8;
+    case"mixte_o":return(g("mixte_f")+g("mixte_c"))/2*.8;case"pin_alep":return g("pin")*.6;case"robinier":return .15;case"autre":return .5;
+    default:return HOST_K.includes(cls)?g(cls):0}}
+// zones écartées : haute montagne, sans forêt (villes, cultures, estives), bord de mer ou hors de France (altitude IGN absente)
+const ALT_MAX=2000;
+function excluded(h){if(h.alt!=null&&h.alt>ALT_MAX)return"au-dessus de "+ALT_MAX+" m";if(h.forest!=null&&h.forest<.05)return"sans forêt";
+  if(h.altN!=null&&h.altN<7)return"bord de mer ou hors de France";return null}
+// part de l'hexagone couverte par des arbres favorables à l'espèce (0–1) ; null pour les anciennes analyses sans essences
+function habitat(h,sp){if(!h.trees||!h.ns)return null;let s=0;for(const k in h.trees)s+=h.trees[k]*hostAff(sp,k);return s/h.ns}
 function samplePts(q,r,a){const [la,lo]=hexCenter(q,r,a),pts=[[la,lo]];hexCorners(q,r,a,.6).forEach(p=>pts.push(p));return pts}
 function hexWeather(h){ // moyenne pondérée (inverse distance²) des points de grille voisins, corrigée de l'altitude
   const ws=[];h.pts.forEach(k=>{const p=hexStore.pts[k];if(!p)return;const [la,lo]=k.split(",").map(Number);
@@ -1595,10 +1625,12 @@ async function analyseHex(bb,opt={}){
   const pWx=fetchGrid(keys,(d,n)=>{ex.wx=` · ${d}/${n} points`;paint()}).then(()=>{st.wx="✅";paint()}).catch(()=>{st.wx=keys.every(k=>hexStore.pts[k])?"✅":"❌";ex.wx=st.wx==="❌"?" · hors ligne ?":" · données en cache";paint()});
   // altitude : 7 points par hexagone
   const all=[];metas.forEach(m=>samplePts(m.q,m.r,a).forEach(p=>all.push(p)));
-  const pAlt=fetchAlts(all).then(z=>{metas.forEach((m,i)=>{const v=z.slice(i*7,i*7+7).filter(x=>x!=null);m.alt=v.length?v.reduce((a,b)=>a+b)/v.length:null;m.altRange=v.length?Math.max(...v)-Math.min(...v):null});st.alt=metas.some(m=>m.alt!=null)?"✅":"❌";paint()});
+  const pAlt=fetchAlts(all).then(z=>{metas.forEach((m,i)=>{const v=z.slice(i*7,i*7+7).filter(x=>x!=null);m.altN=v.length;m.alt=v.length?v.reduce((a,b)=>a+b)/v.length:null;m.altRange=v.length?Math.max(...v)-Math.min(...v):null});st.alt=metas.some(m=>m.alt!=null)?"✅":"❌";paint()});
   // forêt : 19 points par hexagone
   let fd=0;const pFor=(async()=>{for(const m of metas){const pts=samplePts(m.q,m.r,a);hexCorners(m.q,m.r,a,.3).forEach(p=>pts.push(p));hexCorners(m.q,m.r,a,.9).forEach(p=>pts.push(p));
-      const v=(await Promise.all(pts.map(p=>forestPixel(p[0],p[1])))).filter(x=>x!=null);m.forest=v.length?v.reduce((a,b)=>a+b)/v.length:null;
+      const v=(await Promise.all(pts.map(p=>forestPixel(p[0],p[1])))).filter(x=>x!=null);m.ns=v.length;m.trees={};
+      v.forEach(k=>{if(!NON_FOREST.has(k))m.trees[k]=(m.trees[k]||0)+1});
+      m.forest=v.length?Object.values(m.trees).reduce((a,b)=>a+b,0)/v.length:null;
       fd++;bar.style.width=(fd/metas.length*100)+"%";if(fd%10===0){ex.forest=` · ${fd}/${metas.length}`;paint()}}
     st.forest=metas.some(m=>m.forest!=null)?"✅":"⚠️";ex.forest=st.forest==="⚠️"?" · inconnue (tuiles indisponibles)":"";paint()})();
   await Promise.all([pWx,pAlt,pFor]);
@@ -1614,14 +1646,17 @@ const GRAD=[[0,[236,240,226]],[.2,[199,226,170]],[.4,[134,196,110]],[.6,[72,153,
 function gradColor(v){v=Math.max(0,Math.min(1,v));for(let i=1;i<GRAD.length;i++)if(v<=GRAD[i][0]){const [a,ca]=GRAD[i-1],[b,cb]=GRAD[i],t=(v-a)/(b-a);return"rgb("+ca.map((c,k)=>Math.round(c+(cb[k]-c)*t)).join(",")+")"}return"rgb(12,62,26)"}
 const GRAD_CSS="linear-gradient(90deg,"+GRAD.map(([p,c])=>`rgb(${c.join(",")}) ${p*100}%`).join(",")+")";
 let legendCtl=null,labLayer=null;
-function hexIndex(h,sp,mode){ // indice 0–1 : pousse météo × part de forêt
-  const sc=hexScore(h.id,sp,mode);if(!sc)return null;const f=h.forest==null?1:Math.min(1,h.forest/.5);return{v:sc.v*f,raw:sc.v,i:sc.i,m:sc.m}}
+// poids du milieu : part d'arbres favorables à l'espèce (pleine dès 50 %) ; anciennes analyses : part de forêt
+function habW(h,sp){const hab=habitat(h,sp);return hab!=null?Math.min(1,hab/.5):h.forest==null?1:Math.min(1,h.forest/.5)}
+function hexIndex(h,sp,mode){ // indice 0–1 : pousse météo × arbres favorables (la moyenne "all" est déjà pondérée espèce par espèce)
+  const sc=hexScore(h.id,sp,mode);if(!sc)return null;const ex=excluded(h);
+  return{v:ex?0:sc.v*(sp===ALL?1:habW(h,sp)),raw:sc.v,i:sc.i,m:sc.m,excl:ex}}
 const hexModelCache={};
-// "all" : moyenne jour par jour des indices des six espèces (même météo, même sol)
+// "all" : moyenne jour par jour des indices des six espèces, chacun pondéré par ses arbres hôtes
 const ALL="all",spName=sp=>sp===ALL?"Toutes espèces (moyenne)":SP[sp].n;
 function hexModel(id,sp){const k=id+"|"+sp;if(hexModelCache[k])return hexModelCache[k];
-  if(sp===ALL){const ms=Object.keys(SP).map(s=>hexModel(id,s));if(!ms[0])return null;
-    return hexModelCache[k]={...ms[0],E:ms[0].E.map((_,i)=>ms.reduce((a,m)=>a+m.E[i],0)/ms.length)}}
+  if(sp===ALL){const sps=Object.keys(SP),ms=sps.map(s=>hexModel(id,s));if(!ms[0])return null;const h=hexStore.hex[id],ws=sps.map(s=>habW(h,s));
+    return hexModelCache[k]={...ms[0],E:ms[0].E.map((_,i)=>ms.reduce((a,m,j)=>a+m.E[i]*ws[j],0)/ms.length)}}
   const h=hexStore.hex[id];if(!h)return null;const D=hexWeather(h);if(!D)return null;
   const m=compute(D,{sp:SP[sp],soil:SOIL.limon,expo:EXPO.plat,dT:0,alt:h.alt!=null?Math.round(h.alt):null,elev:null});return hexModelCache[k]=m}
 // période affichée : "now" aujourd'hui, "tom" demain, "fc" meilleur jour des 7 prochains
@@ -1638,11 +1673,11 @@ function drawHexes(){if(!hexLayer)return;hexLayer.clearLayers();if(labLayer)labL
   const sp=$("hSp").value,mode=hMode;let n=0,sum=0,best=null;
   $("hMode").querySelectorAll(".chip").forEach(b=>b.classList.toggle("on",b.dataset.m===mode));
   const list=Object.values(hexStore.hex).sort((x,y)=>y.size-x.size),cov=coveredIds();
-  list.forEach(h=>{const a=side(h.size),covered=cov.has(h.id),ix=hexIndex(h,sp,mode);const noForest=h.forest!=null&&h.forest<.05;
-    const fill=!ix?"#9b9a95":noForest?"#b8b6ae":gradColor(ix.v);
-    const p=L.polygon(hexCorners(h.q,h.r,a),{color:"#ffffff",weight:h.size<2?.5:.8,opacity:.8,fillColor:fill,fillOpacity:!ix?.15:noForest?.3:.72}).addTo(hexLayer);
+  list.forEach(h=>{const a=side(h.size),covered=cov.has(h.id),ix=hexIndex(h,sp,mode),out=!!excluded(h);
+    const fill=!ix?"#9b9a95":out?"#b8b6ae":gradColor(ix.v);
+    const p=L.polygon(hexCorners(h.q,h.r,a),{color:"#ffffff",weight:h.size<2?.5:.8,opacity:.8,fillColor:fill,fillOpacity:!ix?.15:out?.3:.72}).addTo(hexLayer);
     p.on("click",()=>hexPopup(h,p));hexPoly[h.id]=p;
-    if(covered)return;
+    if(covered||out)return;
     if(ix){n++;sum+=ix.v;if(!best||ix.v>best.v)best={v:ix.v,h}}
     if(ix&&labLayer&&map.getZoom()>=labZFor(h.size)){const [la,lo]=hexCenter(h.q,h.r,a);
       L.marker([la,lo],{interactive:false,icon:L.divIcon({className:"hlab",iconSize:[30,20],iconAnchor:[15,10],html:Math.round(ix.v*100)})}).addTo(labLayer)}});
@@ -1654,18 +1689,23 @@ function legend(sp,mode){
   if(!legendCtl){legendCtl=L.control({position:"topright"});legendCtl.onAdd=()=>{const d=L.DomUtil.create("div","grad-leg");d.id="gradLeg";return d};legendCtl.addTo(map)}
   const has=Object.keys(hexStore.hex).length>0;const d=document.getElementById("gradLeg");if(!d)return;
   d.style.display=has?"":"none";
-  d.innerHTML=`<b>Indice de pousse</b> · ${spName(sp)}<br><span style="color:var(--text2)">${MODE_LAB[mode]}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> sans forêt</div>`;
+  d.innerHTML=`<b>Indice de pousse</b> · ${spName(sp)}<br><span style="color:var(--text2)">${MODE_LAB[mode]}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> écarté : sans forêt, &gt; ${ALT_MAX} m ou bord de mer</div>`;
 }
 function hexPopup(h,p){const sp=$("hSp").value,sc=hexScore(h.id,sp,"fc"),now=hexScore(h.id,sp,"now"),m=sc&&sc.m,i=m?m.today:0;
   let r7=0;if(m)for(let d=Math.max(0,i-7);d<i;d++)r7+=m.rain[d];
-  const f=h.forest==null?"inconnue":Math.round(h.forest*100)+" %";
+  const f=h.forest==null?"inconnue":Math.round(h.forest*100)+" %",ex=excluded(h),hab=sp===ALL?null:habitat(h,sp);
+  // essences dominantes de l'hexagone (part des points échantillonnés)
+  const ess=h.trees?Object.entries(h.trees).sort((x,y)=>y[1]-x[1]).slice(0,3).map(([k,c])=>`${TREE_N[k]||k} ${Math.round(c/h.ns*100)} %`).join(", "):null;
   // en moyenne : espèce la mieux placée sur la semaine, pour le détail et la prévision
   const top=m&&sp===ALL?Object.keys(SP).map(k=>[k,hexScore(h.id,k,"fc").v]).sort((a,b)=>b[1]-a[1])[0]:null;
   const html=`<div style="font-size:13px;min-width:200px"><b>Hexagone de ${fmtKm2(h.size)}</b><br>
   Altitude moyenne : ${h.alt!=null?Math.round(h.alt)+" m":"?"}${h.altRange!=null?` (dénivelé ${Math.round(h.altRange)} m)`:""}<br>
   Forêt : ${f}${h.forest!=null&&h.forest<.1?" — peu propice":""}<br>
+  ${ess?`Essences : ${ess}<br>`:h.forest?`<span style="color:var(--muted)">Essences non analysées : relance l'analyse.</span><br>`:""}
+  ${hab!=null?`Arbres favorables à l'espèce : ${Math.round(hab*100)} % de l'hexagone<br>`:""}
+  ${ex?`<b style="color:var(--warn)">Écarté : ${ex}</b><br>`:""}
   ${m?`Pluie des 7 derniers jours : ${Math.round(r7)} mm<br>Sol aujourd'hui : ${m.ts[i].toFixed(1)} °C · humidité ${Math.round(m.H[i]*100)} %<br>
-  <b>${spName(sp)}</b><br>Indice de pousse : <b>${Math.round(hexIndex(h,sp,"now").v*100)}/100</b> aujourd'hui · <b>${Math.round(hexIndex(h,sp,"tom").v*100)}/100</b> demain · <b>${Math.round(hexIndex(h,sp,"fc").v*100)}/100</b> au mieux sur la semaine${lvl(sc.v)?" ("+m.dateOf(sc.i)+")":""}<br><span style="color:var(--muted)">météo seule : ${Math.round(sc.v*100)}/100, pondérée par la part de forêt</span><br>
+  <b>${spName(sp)}</b><br>Indice de pousse : <b>${Math.round(hexIndex(h,sp,"now").v*100)}/100</b> aujourd'hui · <b>${Math.round(hexIndex(h,sp,"tom").v*100)}/100</b> demain · <b>${Math.round(hexIndex(h,sp,"fc").v*100)}/100</b> au mieux sur la semaine${lvl(sc.v)?" ("+m.dateOf(sc.i)+")":""}<br>${sp===ALL?"":`<span style="color:var(--muted)">météo seule : ${Math.round(sc.v*100)}/100, pondérée par les arbres favorables</span><br>`}
   ${top?`Meilleure espèce cette semaine : <b>${SP[top[0]].n}</b> (${Math.round(hexIndex(h,top[0],"fc").v*100)}/100)<br>`:""}
   <button class="btn" style="margin-top:6px;padding:5px 10px" id="hexOpen">Prévision détaillée</button>`:"Pas de météo en cache pour cet hexagone."}
   ${finer(h.size)?` <button class="btn" style="margin-top:6px;padding:5px 10px" id="hexFine">Affiner en ${fmtKm2(finer(h.size))}</button>`:""}</div>`;
@@ -1704,17 +1744,17 @@ function bestHexes(){
   L.circleMarker([la0,lo0],{radius:6,color:"#fff",weight:2,fillColor:"#2a78d6",fillOpacity:1,interactive:false}).addTo(bestLayer);
   let unknown=0;const rows=[];
   for(const h of Object.values(hexStore.hex)){if(cov.has(h.id))continue;const g=kmTo(la0,lo0,h.lat,h.lon);if(g.d>R)continue;
-    const ix=hexIndex(h,sp,hMode);if(!ix)continue;if(h.forest==null){unknown++;continue}rows.push({h,ix,...g})}
+    const ix=hexIndex(h,sp,hMode);if(!ix)continue;if(h.forest==null||ix.excl){unknown++;continue}rows.push({h,ix,...g})}
   rows.sort((x,y)=>y.ix.v-x.ix.v);const top=rows.slice(0,10),pc=Math.round(coverage(la0,lo0,R)*100);
   $("bInfo").textContent=`${spName(sp)} · ${MODE_LAB[hMode]}`;
   $("bMsg").innerHTML=(rows.length?`${rows.length} hexagones analysés dans ce rayon`:"Aucun hexagone analysé dans ce rayon")+
-    ` · ${pc} % du disque couvert${pc<90?" — touche « Analyser ce rayon » pour le compléter":""}${unknown?` · ${unknown} sans donnée de forêt écartés`:""}.`;
+    ` · ${pc} % du disque couvert${pc<90?" — touche « Analyser ce rayon » pour le compléter":""}${unknown?` · ${unknown} écartés (sans forêt, haute montagne, bord de mer ou forêt inconnue)`:""}.`;
   $("bAna").classList.toggle("pri",pc<90);$("bGo").classList.toggle("pri",pc>=90);
   const box=$("bList");box.innerHTML="";
   top.forEach((o,k)=>{const {h,ix}=o,m=ix.m,fs=finer(h.size);
     L.marker([h.lat,h.lon],{icon:L.divIcon({className:"",iconSize:[22,22],iconAnchor:[11,11],html:`<div class="brank">${k+1}</div>`})}).on("click",()=>goHex(h)).addTo(bestLayer);
     const d=document.createElement("div");d.className="spot";
-    d.innerHTML=`<span class="dot" style="background:${gradColor(ix.v)}"></span><div><b>${k+1}. ${Math.round(ix.v*100)}/100${hMode==="fc"&&lvl(ix.raw)?` · ${m.dateOf(ix.i)}`:""}</b><small>${o.d<1?Math.round(o.d*1000)+" m":o.d.toFixed(1).replace(".",",")+" km"} ${compass(o.dx,o.dy)} · ${h.alt!=null?Math.round(h.alt)+" m":"altitude ?"} · forêt ${Math.round(h.forest*100)} % · ${fmtKm2(h.size)}</small></div>${fs?`<button class="btn" style="padding:6px 10px">Affiner</button>`:""}`;
+    d.innerHTML=`<span class="dot" style="background:${gradColor(ix.v)}"></span><div><b>${k+1}. ${Math.round(ix.v*100)}/100${hMode==="fc"&&lvl(ix.raw)?` · ${m.dateOf(ix.i)}`:""}</b><small>${o.d<1?Math.round(o.d*1000)+" m":o.d.toFixed(1).replace(".",",")+" km"} ${compass(o.dx,o.dy)} · ${h.alt!=null?Math.round(h.alt)+" m":"altitude ?"} · forêt ${Math.round(h.forest*100)} %${h.trees&&Object.keys(h.trees).length?" ("+TREE_N[Object.entries(h.trees).sort((x,y)=>y[1]-x[1])[0][0]]+")":""} · ${fmtKm2(h.size)}</small></div>${fs?`<button class="btn" style="padding:6px 10px">Affiner</button>`:""}`;
     d.onclick=()=>goHex(h);
     const b=d.querySelector("button");if(b)b.onclick=async e=>{e.stopPropagation();if(await refineHex(h))bestHexes()};
     box.appendChild(d)});
