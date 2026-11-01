@@ -750,6 +750,8 @@ th:first-child,td:first-child{text-align:left}
 .prog i{display:block;height:100%;width:0;background:var(--accent)}
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:3000;display:none;align-items:flex-end;justify-content:center}
 .sheet.on{display:flex}
+.rleg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--text2);margin:6px 2px 0}
+.rleg span{display:flex;align-items:center;gap:5px}.rleg i{display:inline-block;width:22px}
 .sheet .in{background:var(--surface);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:16px;max-height:88vh;overflow:auto}
 .leaflet-container{font:inherit}
 .grad-leg{background:var(--surface);color:var(--text);border-radius:10px;padding:6px 8px;font-size:11px;box-shadow:0 1px 5px rgba(0,0,0,.25);min-width:150px}
@@ -2049,7 +2051,49 @@ $("bHeat").onclick=heatMap;
 // Cellules d'environ 40 m dans l'hexagone : altitude, pente et versant (tuiles d'altitude IGN), essence (BD Forêt),
 // puis indice de chaque cellule pour l'espèce choisie (météo de l'hexagone corrigée de l'altitude et du versant de la cellule).
 let relMark=null;
-$("relClose").onclick=()=>$("relSheet").classList.remove("on");
+let relMap=null,relWatch=null,relMe=null,relMeBig=null;
+$("relClose").onclick=()=>{$("relSheet").classList.remove("on");if(relWatch!=null){navigator.geolocation.clearWatch(relWatch);relWatch=null}};
+// routes BD TOPO autour de l'hexagone (+ 600 m pour les accès) : nature et accès en voiture légère
+const PAVED=new Set(["Route à 1 chaussée","Route à 2 chaussées","Type autoroutier","Bretelle","Rond-point"]),TRACK=new Set(["Route empierrée","Chemin"]);
+const roadCat=p=>p.nature==="Sentier"||p.nature==="Escalier"||p.acces_vehicule_leger==="Physiquement impossible"?"foot":p.acces_vehicule_leger&&p.acces_vehicule_leger!=="Libre"?"restr":PAVED.has(p.nature)?"paved":TRACK.has(p.nature)?"track":"foot";
+const ROAD_ST={paved:{color:"#d7191c",weight:4},track:{color:"#f28c28",weight:3,dashArray:"7 5"},restr:{color:"#7a7a7a",weight:2,dashArray:"3 5"},foot:{color:"#6b4a2b",weight:1.5,dashArray:"1 5"}};
+// point le plus proche d'un segment (coordonnées locales en km)
+function nearOnLines(la0,lo0,lines,kx){let best=null;for(const ln of lines)for(let k=1;k<ln.length;k++){
+  const ax=(ln[k-1][1]-lo0)*kx,ay=(ln[k-1][0]-la0)*KY,bx=(ln[k][1]-lo0)*kx,by=(ln[k][0]-la0)*KY,dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;
+  const t=l2?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/l2)):0,px=ax+t*dx,py=ay+t*dy,d=Math.hypot(px,py);
+  if(!best||d<best.d)best={d,la:la0+py/KY,lo:lo0+px/kx}}return best}
+async function relRoads(h,cs,best,kx){
+  const m=.6,la1=Math.min(...cs.map(c=>c[0]))-m/KY,la2=Math.max(...cs.map(c=>c[0]))+m/KY,lo1=Math.min(...cs.map(c=>c[1]))-m/kx,lo2=Math.max(...cs.map(c=>c[1]))+m/kx;
+  let F;try{const r=await tfetch(`https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=BDTOPO_V3:troncon_de_route&COUNT=5000&OUTPUTFORMAT=application/json&PROPERTYNAME=nature,acces_vehicule_leger,geometrie&BBOX=${la1.toFixed(5)},${lo1.toFixed(5)},${la2.toFixed(5)},${lo2.toFixed(5)},urn:ogc:def:crs:EPSG::4326`,20000);
+    F=(await r.json()).features}catch(e){$("relRoads").textContent="Routes indisponibles (connexion ?) : le plan IGN reste affiché.";return}
+  if(!relMap)return;const lines={paved:[],track:[],restr:[],foot:[]};
+  for(const f of F){const g=f.geometry;if(!g)continue;const parts=g.type==="MultiLineString"?g.coordinates:[g.coordinates];
+    for(const pt of parts){const ll=pt.map(c=>[c[1],c[0]]);lines[roadCat(f.properties)].push(ll)}}
+  ["foot","restr","track","paved"].forEach(k=>{if(k==="paved")lines.paved.forEach(ll=>L.polyline(ll,{color:"#fff",weight:7,opacity:.9,interactive:false}).addTo(relMap));
+    lines[k].forEach(ll=>L.polyline(ll,{...ROAD_ST[k],interactive:false}).addTo(relMap))});
+  const km=k=>lines[k].reduce((s,ll)=>{for(let i=1;i<ll.length;i++)s+=Math.hypot((ll[i][0]-ll[i-1][0])*KY,(ll[i][1]-ll[i-1][1])*kx);return s},0);
+  $("relRoads").textContent=`Dans et autour de l'hexagone : ${km("paved").toFixed(1).replace(".",",")} km de routes goudronnées, ${km("track").toFixed(1).replace(".",",")} km de pistes et chemins ouverts aux voitures, ${km("foot").toFixed(1).replace(".",",")} km de sentiers (BD TOPO IGN ; état réel à vérifier sur place).`;
+  if(!best)return;const c=best.c,dm=d=>d<1?Math.round(d*1000)+" m":d.toFixed(1).replace(".",",")+" km";
+  const acc=[["paved","route goudronnée"],["track","piste ou chemin carrossable"]].map(([k,n])=>{const q=nearOnLines(c.la,c.lo,lines[k],kx);return q&&{k,n,...q}}).filter(Boolean);
+  acc.forEach(q=>{L.polyline([[q.la,q.lo],[c.la,c.lo]],{color:"#b0161e",weight:2,dashArray:"2 6",interactive:false}).addTo(relMap);
+    L.circleMarker([q.la,q.lo],{radius:5,color:"#fff",weight:2,fillColor:ROAD_ST[q.k].color,fillOpacity:1}).bindTooltip(`Se garer : ${q.n}`).addTo(relMap)});
+  $("relAccess").innerHTML=acc.length?"<b>Accès</b> : "+acc.map(q=>{const z=demAt(q.la,q.lo),dz=z!=null?Math.round(c.alt-z):null;
+    return `${q.n} à ${dm(q.d)} à vol d'oiseau${dz!=null&&Math.abs(dz)>=10?`, puis ${Math.abs(dz)} m de ${dz>0?"montée":"descente"} à pied`:""}`}).join(" · "):"<b>Accès</b> : aucune route carrossable à moins de 600 m de l'hexagone.";
+}
+// géolocalisation en direct sur la carte de l'hexagone et la grande carte, distance et direction jusqu'au meilleur endroit
+function relLocate(best){
+  if(!navigator.geolocation){$("relPos").textContent="Localisation non disponible sur cet appareil.";return}
+  if(relWatch!=null)navigator.geolocation.clearWatch(relWatch);$("relPos").textContent="Recherche de ta position…";
+  relWatch=navigator.geolocation.watchPosition(p=>{const ll=[p.coords.latitude,p.coords.longitude],st={radius:7,color:"#fff",weight:2,fillColor:"#2a78d6",fillOpacity:1};
+    if(relMe)relMe.setLatLng(ll);else if(relMap)relMe=L.circleMarker(ll,st).addTo(relMap);
+    if(relMeBig)relMeBig.setLatLng(ll);else relMeBig=L.circleMarker(ll,st).addTo(map);
+    let t=`Ta position : précision ${Math.round(p.coords.accuracy)} m`;
+    if(best){const g=kmTo(ll[0],ll[1],best.c.la,best.c.lo);t+=` · meilleur endroit à ${g.d<1?Math.round(g.d*1000)+" m":g.d.toFixed(1).replace(".",",")+" km"}, direction ${compass(g.dx,g.dy)}`;
+      if(relMap&&relMe)relMap.fitBounds(L.latLngBounds([ll,[best.c.la,best.c.lo]]).pad(.2),{maxZoom:16})}
+    $("relPos").textContent=t},
+    e=>{$("relPos").textContent=e.code===1?"Position refusée : autorise la localisation pour ce site dans Chrome.":"Position indisponible (GPS ?)."},
+    {enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+}
 async function openRelief(h){
   const body=$("relBody"),sp=$("hSp").value,sps=sp===ALL?Object.keys(SP):[sp];
   $("relTitle").textContent=`Relief et versants · ${fmtKm2(h.size)}`;$("relSub").textContent=`${spName(sp)} · ${MODE_LAB[hMode]}`;
@@ -2103,7 +2147,7 @@ async function openRelief(h){
   const SB=[[0,10,"0–10°"],[10,20,"10–20°"],[20,30,"20–30°"],[30,91,"> 30°"]],sl=SB.map(([s1,s2,n])=>[n,ok.filter(c=>c.slope>=s1&&c.slope<s2).length/ok.length]);
   // mini-carte : une cellule = un pixel, hors forêt en gris clair
   const cv=document.createElement("canvas");cv.width=NX;cv.height=NY;const g=cv.getContext("2d"),img=g.createImageData(NX,NY);
-  ok.forEach(c=>{const [r,gg,b]=c.forest?gradRGB(c.v):[205,203,196];img.data.set([r,gg,b,255],(c.j*NX+c.i)*4)});g.putImageData(img,0,0);
+  ok.forEach(c=>{if(!c.forest)return;const [r,gg,b]=gradRGB(c.v);img.data.set([r,gg,b,255],(c.j*NX+c.i)*4)});g.putImageData(img,0,0);
   // meilleur endroit : moyenne sur 3×3 cellules de forêt (au moins 5)
   const byIJ={};ok.forEach(c=>byIJ[c.i+","+c.j]=c);let best=null;
   ok.filter(c=>c.forest).forEach(c=>{let s=0,n=0;for(let b=-1;b<=1;b++)for(let a2=-1;a2<=1;a2++){const o=byIJ[(c.i+a2)+","+(c.j+b)];if(o&&o.forest){s+=o.v;n++}}
@@ -2115,11 +2159,25 @@ async function openRelief(h){
     ${rows.sort((x,y)=>y.idx-x.idx).map(r=>`<tr><td><b>${r.v}</b><br><small style="color:var(--muted)">${r.ess}</small></td><td>${fmt(r.part)} %</td><td>${Math.round(r.slope)}°</td><td>${Math.round(r.alt)} m</td><td>${fmt(r.forest)} %</td><td><span class="lvl" style="background:${gradColor(r.idx)};color:${r.idx>=.6?"#fff":"#1a1a1a"}">${fmt(r.idx)}</span></td></tr>`).join("")}</table>
     <div class="ttl" style="margin-top:12px">Pentes</div>
     ${sl.map(([n,v])=>`<div class="sub-i"><span class="nm">${n}</span><span class="bar"><i style="width:${fmt(v)}%"></i></span><span class="pc">${fmt(v)}%</span></div>`).join("")}
-    <div class="ttl" style="margin-top:12px">Carte de l'hexagone <small>nord en haut · gris = hors forêt</small></div>
-    <img src="${cv.toDataURL()}" style="width:100%;max-width:360px;display:block;margin:4px auto;border-radius:8px;border:1px solid var(--line)" alt="Indice par cellule dans l'hexagone">
-    ${best?`<p style="margin:8px 2px"><b>Meilleur endroit</b> : ${fmt(best.s)}/100, versant ${best.c.vers}, ${Math.round(best.c.alt)} m, pente ${Math.round(best.c.slope)}°, ${TREE_N[best.c.cls]||best.c.cls}.</p>
-    <button class="btn pri" id="relGo">Voir sur la carte</button>`:""}
+    <div class="ttl" style="margin-top:12px">Carte de l'hexagone <small>plan IGN · couleur = indice de la forêt</small></div>
+    <div id="relMap" style="height:320px;border-radius:10px;border:1px solid var(--line);margin-top:4px"></div>
+    <div class="rleg"><span><i style="background:#d7191c;height:4px"></i>route goudronnée</span><span><i style="border-top:3px dashed #f28c28"></i>piste ou chemin ouvert aux voitures</span><span><i style="border-top:2px dashed #7a7a7a"></i>accès réservé</span><span><i style="border-top:2px dotted #6b4a2b"></i>sentier (à pied)</span></div>
+    <p class="note" id="relRoads" style="margin:4px 2px">Routes (BD TOPO)…</p>
+    ${best?`<p style="margin:8px 2px"><b>Meilleur endroit</b> (repère rouge) : ${fmt(best.s)}/100, versant ${best.c.vers}, ${Math.round(best.c.alt)} m, pente ${Math.round(best.c.slope)}°, ${TREE_N[best.c.cls]||best.c.cls}.</p>
+    <p id="relAccess" style="margin:4px 2px"></p>`:""}
+    <div class="row" style="margin-top:6px"><button class="btn pri" id="relLoc">📍 Me localiser</button>${best?`<button class="btn" id="relGo">Voir sur la grande carte</button>`:""}</div>
+    <p id="relPos" class="note" style="margin:4px 2px"></p>
     <p class="note">Relief au pas de ${Math.round(cell*1000)} m (RGE Alti) ; la météo est celle de l'hexagone, corrigée de l'altitude et du versant de chaque cellule.</p>`;
+  // carte de l'hexagone : plan IGN, cellules en transparence, contour, meilleur endroit
+  if(relMap){relMap.remove();relMap=null}
+  relMap=L.map("relMap",{zoomControl:true,attributionControl:false});
+  new CachedLayer("",{lid:"plan",maxZoom:19,maxNativeZoom:19}).addTo(relMap);
+  const ob=[[la2-NY*cell/KY,lo1],[la2,lo1+NX*cell/kx]];L.imageOverlay(cv.toDataURL(),ob,{opacity:.55}).addTo(relMap);
+  L.polygon(cs,{color:"#7a4a22",weight:2,fill:false,dashArray:"6 4",interactive:false}).addTo(relMap);
+  if(best)L.circleMarker([best.c.la,best.c.lo],{radius:8,color:"#fff",weight:3,fillColor:"#b0161e",fillOpacity:1}).bindTooltip("Meilleur endroit").addTo(relMap);
+  relMap.fitBounds(L.latLngBounds(cs).pad(.05));setTimeout(()=>relMap.invalidateSize(),60);
+  relRoads(h,cs,best,kx);
+  $("relLoc").onclick=()=>relLocate(best);
   if(best)$("relGo").onclick=()=>{$("relSheet").classList.remove("on");$("map").scrollIntoView({behavior:"smooth",block:"center"});map.setView([best.c.la,best.c.lo],16);
     if(relMark)map.removeLayer(relMark);relMark=L.circleMarker([best.c.la,best.c.lo],{radius:9,color:"#fff",weight:3,fillColor:"#b0161e",fillOpacity:1}).addTo(map)};
   }catch(e){say("Calcul impossible : "+e.message)}
