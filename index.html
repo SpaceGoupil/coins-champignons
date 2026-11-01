@@ -1583,7 +1583,12 @@ let legendCtl=null,labLayer=null;
 function hexIndex(h,sp,mode){ // indice 0–1 : pousse météo × part de forêt
   const sc=hexScore(h.id,sp,mode);if(!sc)return null;const f=h.forest==null?1:Math.min(1,h.forest/.5);return{v:sc.v*f,raw:sc.v,i:sc.i,m:sc.m}}
 const hexModelCache={};
-function hexModel(id,sp){const k=id+"|"+sp;if(hexModelCache[k])return hexModelCache[k];const h=hexStore.hex[id];if(!h)return null;const D=hexWeather(h);if(!D)return null;
+// "all" : moyenne jour par jour des indices des six espèces (même météo, même sol)
+const ALL="all",spName=sp=>sp===ALL?"Toutes espèces (moyenne)":SP[sp].n;
+function hexModel(id,sp){const k=id+"|"+sp;if(hexModelCache[k])return hexModelCache[k];
+  if(sp===ALL){const ms=Object.keys(SP).map(s=>hexModel(id,s));if(!ms[0])return null;
+    return hexModelCache[k]={...ms[0],E:ms[0].E.map((_,i)=>ms.reduce((a,m)=>a+m.E[i],0)/ms.length)}}
+  const h=hexStore.hex[id];if(!h)return null;const D=hexWeather(h);if(!D)return null;
   const m=compute(D,{sp:SP[sp],soil:SOIL.limon,expo:EXPO.plat,dT:0,alt:h.alt!=null?Math.round(h.alt):null,elev:null});return hexModelCache[k]=m}
 // période affichée : "now" aujourd'hui, "tom" demain, "fc" meilleur jour des 7 prochains
 let hMode=LS.get("hMode","fc");if(!["now","tom","fc"].includes(hMode))hMode="fc";
@@ -1609,19 +1614,22 @@ function legend(sp,mode){
   if(!legendCtl){legendCtl=L.control({position:"topright"});legendCtl.onAdd=()=>{const d=L.DomUtil.create("div","grad-leg");d.id="gradLeg";return d};legendCtl.addTo(map)}
   const has=Object.values(hexStore.hex).some(h=>h.size===+$("hSize").value);const d=document.getElementById("gradLeg");if(!d)return;
   d.style.display=has?"":"none";
-  d.innerHTML=`<b>Indice de pousse</b> · ${SP[sp].n}<br><span style="color:var(--text2)">${MODE_LAB[mode]}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> sans forêt</div>`;
+  d.innerHTML=`<b>Indice de pousse</b> · ${spName(sp)}<br><span style="color:var(--text2)">${MODE_LAB[mode]}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> sans forêt</div>`;
 }
 function hexPopup(h,p){const sp=$("hSp").value,sc=hexScore(h.id,sp,"fc"),now=hexScore(h.id,sp,"now"),m=sc&&sc.m,i=m?m.today:0;
   let r7=0;if(m)for(let d=Math.max(0,i-7);d<i;d++)r7+=m.rain[d];
   const f=h.forest==null?"inconnue":Math.round(h.forest*100)+" %";
+  // en moyenne : espèce la mieux placée sur la semaine, pour le détail et la prévision
+  const top=m&&sp===ALL?Object.keys(SP).map(k=>[k,hexScore(h.id,k,"fc").v]).sort((a,b)=>b[1]-a[1])[0]:null;
   const html=`<div style="font-size:13px;min-width:200px"><b>Hexagone de ${h.size} km²</b><br>
   Altitude moyenne : ${h.alt!=null?Math.round(h.alt)+" m":"?"}${h.altRange!=null?` (dénivelé ${Math.round(h.altRange)} m)`:""}<br>
   Forêt : ${f}${h.forest!=null&&h.forest<.1?" — peu propice":""}<br>
   ${m?`Pluie des 7 derniers jours : ${Math.round(r7)} mm<br>Sol aujourd'hui : ${m.ts[i].toFixed(1)} °C · humidité ${Math.round(m.H[i]*100)} %<br>
-  <b>${SP[sp].n}</b><br>Indice de pousse : <b>${Math.round(hexIndex(h,sp,"now").v*100)}/100</b> aujourd'hui · <b>${Math.round(hexIndex(h,sp,"tom").v*100)}/100</b> demain · <b>${Math.round(hexIndex(h,sp,"fc").v*100)}/100</b> au mieux sur la semaine${lvl(sc.v)?" ("+m.dateOf(sc.i)+")":""}<br><span style="color:var(--muted)">météo seule : ${Math.round(sc.v*100)}/100, pondérée par la part de forêt</span><br>
+  <b>${spName(sp)}</b><br>Indice de pousse : <b>${Math.round(hexIndex(h,sp,"now").v*100)}/100</b> aujourd'hui · <b>${Math.round(hexIndex(h,sp,"tom").v*100)}/100</b> demain · <b>${Math.round(hexIndex(h,sp,"fc").v*100)}/100</b> au mieux sur la semaine${lvl(sc.v)?" ("+m.dateOf(sc.i)+")":""}<br><span style="color:var(--muted)">météo seule : ${Math.round(sc.v*100)}/100, pondérée par la part de forêt</span><br>
+  ${top?`Meilleure espèce cette semaine : <b>${SP[top[0]].n}</b> (${Math.round(hexIndex(h,top[0],"fc").v*100)}/100)<br>`:""}
   <button class="btn" style="margin-top:6px;padding:5px 10px" id="hexOpen">Prévision détaillée</button>`:"Pas de météo en cache pour cet hexagone."}</div>`;
   p.bindPopup(html).openPopup();
-  setTimeout(()=>{const b=document.getElementById("hexOpen");if(b)b.onclick=()=>{map.closePopup();src={kind:"hex",id:h.id};spSel=sp;$("sp").value=sp;sel=null;buildSrc();showView("v-fc")}},0);
+  setTimeout(()=>{const b=document.getElementById("hexOpen");if(b)b.onclick=()=>{map.closePopup();const s1=top?top[0]:sp;src={kind:"hex",id:h.id};spSel=s1;$("sp").value=s1;sel=null;buildSrc();showView("v-fc")}},0);
 }
 $("hexBtn").onclick=()=>analyseHex();
 $("hexClear").onclick=()=>{hexStore={hex:{},pts:hexStore.pts};saveHex();drawHexes();drawGrid();$("hexSteps").innerHTML=""};
@@ -1643,7 +1651,7 @@ $("ioApply").onclick=()=>{try{const j=JSON.parse($("ioBox").value);if(Array.isAr
 for(const k in PRESETS){const b=document.createElement("button");b.className="chip";b.textContent=PRESETS[k].n;b.dataset.k=k;b.onclick=()=>{preset=k;PRESETS[k].f();$("simMonth").value=PRESETS[k].m;render()};$("presets").appendChild(b)}
 ["Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].forEach((n,i)=>$("simMonth").add(new Option(n,i+5)));
 $("simMonth").value=Math.min(12,Math.max(5,new Date().getMonth()+1));
-fillSelect($("sp"),SP);fillSelect($("hSp"),SP);fillSelect($("fSp"),SP);fillSelect($("soil"),SOIL);fillSelect($("fSoil"),SOIL);fillSelect($("expo"),EXPO);fillSelect($("fExpo"),EXPO);
+fillSelect($("sp"),SP);fillSelect($("hSp"),SP);$("hSp").add(new Option(spName(ALL),ALL));fillSelect($("fSp"),SP);fillSelect($("soil"),SOIL);fillSelect($("fSoil"),SOIL);fillSelect($("expo"),EXPO);fillSelect($("fExpo"),EXPO);
 $("soil").value="limon";
 PRESETS.automne.f();
 buildSrc();renderList();stats();
