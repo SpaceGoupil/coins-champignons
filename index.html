@@ -1910,7 +1910,8 @@ function bestHexes(){
   $("bAna").classList.toggle("pri",pc<90);$("bGo").classList.toggle("pri",pc>=90);
   const box=$("bList");box.innerHTML="";
   top.forEach((o,k)=>{const {h,ix}=o,m=ix.m,fs=finer(h.size);
-    L.marker([h.lat,h.lon],{icon:L.divIcon({className:"",iconSize:[22,22],iconAnchor:[11,11],html:`<div class="brank">${k+1}</div>`})}).on("click",()=>goHex(h)).addTo(bestLayer);
+    // pastille au-dessus du centre : le centre affiche déjà la valeur de l'hexagone
+    L.marker([h.lat,h.lon],{icon:L.divIcon({className:"",iconSize:[22,22],iconAnchor:[11,33],html:`<div class="brank">${k+1}</div>`})}).on("click",()=>goHex(h)).addTo(bestLayer);
     const d=document.createElement("div");d.className="spot";
     d.innerHTML=`<span class="dot" style="background:${gradColor(ix.v)}"></span><div><b>${k+1}. ${Math.round(ix.v*100)}/100${hMode==="fc"&&lvl(ix.raw)?` · ${m.dateOf(ix.i)}`:""}</b><small>${o.d<1?Math.round(o.d*1000)+" m":o.d.toFixed(1).replace(".",",")+" km"} ${compass(o.dx,o.dy)} · ${h.alt!=null?Math.round(h.alt)+" m":"altitude ?"}${versant(h)?" · versant "+versant(h):""} · forêt ${Math.round(h.forest*100)} %${h.trees&&Object.keys(h.trees).length?" ("+TREE_N[Object.entries(h.trees).sort((x,y)=>y[1]-x[1])[0][0]]+")":""} · ${fmtKm2(h.size)}</small></div>${fs?`<button class="btn" style="padding:6px 10px">Affiner</button>`:""}`;
     d.onclick=()=>goHex(h);
