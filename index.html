@@ -1739,20 +1739,28 @@ function hexWeather(h){ // moyenne pondérée (inverse distance²) des points de
 let hexBusy=false;
 // opt.size : taille en km² (sinon celle choisie) ; opt.keep(lat,lon) : ne garder que certains hexagones
 async function analyseHex(bb,opt={}){
-  if(hexBusy)return false;const size=opt.size||+$("hSize").value,a=side(size);
-  if(!bb){bb=viewBB();const ar=(bb[2]-bb[0])*KX*(bb[3]-bb[1])*KY;forestZ=Math.max(forestZFor(size),ar>1500?12:ar>300?13:14)}else if(opt.size)forestZ=forestZFor(size);
+  if(hexBusy)return false;
+  if(!bb)bb=viewBB();const ar=(bb[2]-bb[0])*KX*(bb[3]-bb[1])*KY;
   // les grilles de tailles différentes ne s'emboîtent pas : une analyse remplace en entier chaque hexagone plus grand
   // qui touche la zone (ses petits hexagones débordent donc un peu de la zone), et laisse en place les plus fins
   const inZ=opt.keep||((la,lo)=>la>=bb[1]&&la<=bb[3]&&lo>=bb[0]&&lo<=bb[2]),mg=side(SIZES[SIZES.length-1])*2.2;
   const bbx=[bb[0]-mg/KX,bb[1]-mg/KY,bb[2]+mg/KX,bb[3]+mg/KY];
   // un petit hexagone est gardé s'il touche (centre ou un coin) un grand hexagone remplacé : il déborde un peu sur le
   // voisin plutôt que de laisser un trou ; le débordement ne se voit pas, le plus fin étant peint par-dessus
-  const cand=hexesIn(bbx,a).map(([q,r])=>{const p=hexCenter(q,r,a);
-    return{q,r,z:inZ(...p),c:hexAt(...p,s=>s>size),cs:hexCorners(q,r,a,.95).map(k=>hexAt(...k,s=>s>size)).filter(Boolean).map(h=>h.id),fine:!!hexAt(...p,s=>s<size)}}).filter(o=>!o.fine);
-  const replaced=new Set(cand.filter(o=>o.z&&o.c).map(o=>o.c.id));
-  const hs=cand.filter(o=>o.c?replaced.has(o.c.id)||o.cs.some(id=>replaced.has(id)):o.z).map(o=>[o.q,o.r]);
+  const plan=s=>{const a=side(s);if(ar/s>4000)return{hs:{length:Math.round(ar/s)}}; // estimation, sans énumérer
+    const cand=hexesIn(bbx,a).map(([q,r])=>{const p=hexCenter(q,r,a);
+      return{q,r,z:inZ(...p),c:hexAt(...p,t=>t>s),cs:hexCorners(q,r,a,.95).map(k=>hexAt(...k,t=>t>s)).filter(Boolean).map(h=>h.id),fine:!!hexAt(...p,t=>t<s)}}).filter(o=>!o.fine);
+    const replaced=new Set(cand.filter(o=>o.z&&o.c).map(o=>o.c.id));
+    return{replaced,hs:cand.filter(o=>o.c?replaced.has(o.c.id)||o.cs.some(id=>replaced.has(id)):o.z).map(o=>[o.q,o.r])}};
+  // trop d'hexagones à la taille demandée : on prend la taille la plus fine qui tient en une analyse (600 au plus) ;
+  // le détail viendra de l'affinage des meilleurs hexagones
+  const want=opt.size||+$("hSize").value;let size=want,P=plan(size),note="";
+  if(!opt.size)while(P.hs.length>600&&size<SIZES[SIZES.length-1]){size=SIZES[SIZES.indexOf(size)+1];P=plan(size)}
+  if(size!==want)note=` · taille ${fmtKm2(want)} trop fine pour cette surface (${Math.round(ar)} km²) : analyse en ${fmtKm2(size)}, affine ensuite les meilleurs hexagones`;
+  const a=side(size),{hs,replaced}=P;
+  forestZ=opt.size?forestZFor(size):Math.max(forestZFor(size),ar>1500?12:ar>300?13:14);
   if(!hs.length)return false;
-  if(hs.length>600){$("hexSteps").innerHTML=`<li><span>⚠️</span><span>${hs.length} hexagones : trop pour une analyse (600 max). Zoome ou choisis une taille plus grande.</span></li>`;return false}
+  if(hs.length>600){$("hexSteps").innerHTML=`<li><span>⚠️</span><span>${hs.length} hexagones même en ${fmtKm2(size)} : zone trop grande (${Math.round(ar)} km²), zoome davantage.</span></li>`;return false}
   hexBusy=true;$("hexBtn").disabled=true;const prog=$("hexProg"),bar=prog.firstElementChild;prog.style.display="";
   const st={alt:"⏳",forest:"⏳",soil:"⏳",wx:"⏳"},lab={alt:"Altitude moyenne",forest:"Part de forêt",soil:"Sol : pH et texture (SoilGrids)",wx:"Météo (grille 0,1°)"},ex={};
   const paint=()=>$("hexSteps").innerHTML=Object.keys(st).map(k=>`<li><span>${st[k]}</span><span>${lab[k]}${ex[k]||""}</span></li>`).join("");paint();
@@ -1761,6 +1769,7 @@ async function analyseHex(bb,opt={}){
   // (Couserans, octobre 2026 : 74 à 46 mm sur 8 km), une grille de 0,1° l'effaçait
   const gs=gridStep(+size),gr=120*gs; // pas en degrés, rayon de voisinage en km (12 km pour 0,1°)
   lab.wx=`Météo (grille ${String(gs).replace(".",",")}°)`;
+  if(note){st.info="ℹ️";lab.info=note.slice(3);paint()}
   const metas=hs.map(([q,r])=>{const [la,lo]=hexCenter(q,r,a),gla=Math.round(la/gs)*gs,glo=Math.round(lo/gs)*gs,pts=[];
     for(const dl of[-gs,0,gs])for(const dg of[-gs,0,gs]){const k=gKey(gla+dl,glo+dg);const [kl,kg]=k.split(",").map(Number);if(Math.hypot((kl-la)*KY,(kg-lo)*KX)<gr)pts.push(k)}
     return{id:`${size}:${q}:${r}`,q,r,lat:la,lon:lo,size:+size,pts}});
@@ -1771,11 +1780,13 @@ async function analyseHex(bb,opt={}){
   const pAlt=fetchAlts(all).then(z=>{metas.forEach((m,i)=>{const v=z.slice(i*7,i*7+7).filter(x=>x!=null);m.altN=v.length;m.alt=v.length?v.reduce((a,b)=>a+b)/v.length:null;m.altRange=v.length?Math.max(...v)-Math.min(...v):null;
     Object.assign(m,slopeAspect(samplePts(m.q,m.r,a),z.slice(i*7,i*7+7))||{slope:null,aspect:null})});st.alt=metas.some(m=>m.alt!=null)?"✅":"❌";paint()});
   // forêt : 19 points par hexagone
-  let fd=0;const pFor=(async()=>{for(const m of metas){const pts=samplePts(m.q,m.r,a);hexCorners(m.q,m.r,a,.3).forEach(p=>pts.push(p));hexCorners(m.q,m.r,a,.9).forEach(p=>pts.push(p));
+  // huit hexagones à la fois : les tuiles forêt se téléchargent en parallèle au lieu d'attendre hexagone par hexagone
+  let fd=0,nx=0;const pFor=(async()=>{await Promise.all(Array.from({length:8},async()=>{while(nx<metas.length){const m=metas[nx++];
+      const pts=samplePts(m.q,m.r,a);hexCorners(m.q,m.r,a,.3).forEach(p=>pts.push(p));hexCorners(m.q,m.r,a,.9).forEach(p=>pts.push(p));
       const v=(await Promise.all(pts.map(p=>forestPixel(p[0],p[1])))).filter(x=>x!=null);m.ns=v.length;m.trees={};
       v.forEach(k=>{if(!NON_FOREST.has(k))m.trees[k]=(m.trees[k]||0)+1});
       m.forest=v.length?Object.values(m.trees).reduce((a,b)=>a+b,0)/v.length:null;
-      fd++;bar.style.width=(fd/metas.length*100)+"%";if(fd%10===0){ex.forest=` · ${fd}/${metas.length}`;paint()}}
+      fd++;bar.style.width=(fd/metas.length*100)+"%";if(fd%10===0){ex.forest=` · ${fd}/${metas.length}`;paint()}}}));
     st.forest=metas.some(m=>m.forest!=null)?"✅":"⚠️";ex.forest=st.forest==="⚠️"?" · inconnue (tuiles indisponibles)":"";paint()})();
   // sol : une grille par propriété sur l'emprise des points, puis moyenne par hexagone
   const pad=.01,sbb=[Math.min(...all.map(p=>p[1]))-pad,Math.min(...all.map(p=>p[0]))-pad,Math.max(...all.map(p=>p[1]))+pad,Math.max(...all.map(p=>p[0]))+pad];
