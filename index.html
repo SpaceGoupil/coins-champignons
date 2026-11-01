@@ -814,7 +814,7 @@ th:first-child,td:first-child{text-align:left}
       <div class="row" style="margin-top:8px"><button class="btn pri" id="hexBtn">⬡ Analyser la zone affichée</button><button class="btn" id="hexClear">Effacer</button></div>
       <ul class="steps" id="hexSteps"></ul>
       <div class="prog" id="hexProg" style="display:none"><i></i></div>
-      <p class="note" style="margin-bottom:0">Pour chaque hexagone : altitude moyenne (7 points IGN), part de forêt et essences (BD Forêt, 19 points) pondérées selon les arbres hôtes de chaque espèce, météo moyennée entre les points voisins d'une grille de 0,1° et corrigée de l'altitude. Restent en gris et hors classement : les hexagones sans forêt (villes, cultures, estives), au-dessus de 2 000 m, et en bord de mer ou hors de France. Touche un hexagone pour le détail, ou pour l'<b>affiner</b> en hexagones plus petits : altitude et forêt plus précises (la météo reste celle de la grille de 0,1°). Les hexagones fins s'affichent par-dessus les grands.</p>
+      <p class="note" style="margin-bottom:0">Pour chaque hexagone : altitude moyenne, pente et versant (7 points IGN ; versant nord plus frais et humide, sud plus chaud et sec), part de forêt et essences (BD Forêt, 19 points) pondérées selon les arbres hôtes de chaque espèce, météo moyennée entre les points voisins d'une grille de 0,1° et corrigée de l'altitude. Restent en gris et hors classement : les hexagones sans forêt (villes, cultures, estives), au-dessus de 2 000 m, et en bord de mer ou hors de France. Touche un hexagone pour le détail, ou pour l'<b>affiner</b> en hexagones plus petits : altitude et forêt plus précises (la météo reste celle de la grille de 0,1°). Les hexagones fins s'affichent par-dessus les grands.</p>
     </div>
 
     <div class="card">
@@ -1593,6 +1593,20 @@ function excluded(h){if(h.alt!=null&&h.alt>ALT_MAX)return"au-dessus de "+ALT_MAX
 // part de l'hexagone couverte par des arbres favorables à l'espèce (0–1) ; null pour les anciennes analyses sans essences
 function habitat(h,sp){if(!h.trees||!h.ns)return null;let s=0;for(const k in h.trees)s+=h.trees[k]*hostAff(sp,k);return s/h.ns}
 function samplePts(q,r,a){const [la,lo]=hexCenter(q,r,a),pts=[[la,lo]];hexCorners(q,r,a,.6).forEach(p=>pts.push(p));return pts}
+// pente (°) et orientation du versant (azimut vers l'aval : 0 = nord, 90 = est), par un plan ajusté aux 7 altitudes
+function slopeAspect(pts,z){if(z.length!==pts.length||z.some(v=>v==null))return null;const [la0,lo0]=pts[0],kx=111.32*Math.cos(la0*Math.PI/180);
+  let n=0,sx=0,sy=0,sz=0,sxx=0,syy=0,sxy=0,sxz=0,syz=0;
+  pts.forEach(([la,lo],i)=>{const x=(lo-lo0)*kx,y=(la-la0)*KY,v=z[i];n++;sx+=x;sy+=y;sz+=v;sxx+=x*x;syy+=y*y;sxy+=x*y;sxz+=x*v;syz+=y*v});
+  // moindres carrés : z = a + b·x + c·y, x vers l'est et y vers le nord en km, b et c en m/km
+  const mx=sx/n,my=sy/n,mz=sz/n,Cxx=sxx/n-mx*mx,Cyy=syy/n-my*my,Cxy=sxy/n-mx*my,Cxz=sxz/n-mx*mz,Cyz=syz/n-my*mz,det=Cxx*Cyy-Cxy*Cxy;
+  if(!det)return null;const b=(Cxz*Cyy-Cyz*Cxy)/det,c=(Cyz*Cxx-Cxz*Cxy)/det;
+  return{slope:Math.round(Math.atan(Math.hypot(b,c)/1000)*180/Math.PI),aspect:Math.round((Math.atan2(-b,-c)*180/Math.PI+360)%360)}}
+// effet du versant, comme pour les coins (nord −1 °C et plus humide, sud +1 °C et plus sec, est/ouest ±0,3 °C),
+// proportionné à la pente : nul sur le plat, plein dès 15°
+function hexExpo(h){if(h.slope==null)return{dT:0,dH:1};const k=Math.min(1,h.slope/15),a=h.aspect*Math.PI/180,n=Math.cos(a),e=Math.sin(a);
+  return{dT:k*(-n-.3*e),dH:1+k*(.12*n+.03*e)}}
+const AZ8=["nord","nord-est","est","sud-est","sud","sud-ouest","ouest","nord-ouest"],azName=a=>AZ8[Math.round(a/45)%8];
+const versant=h=>h.slope==null?null:h.slope<4?"plat":azName(h.aspect);
 function hexWeather(h){ // moyenne pondérée (inverse distance²) des points de grille voisins, corrigée de l'altitude
   const ws=[];h.pts.forEach(k=>{const p=hexStore.pts[k];if(!p)return;const [la,lo]=k.split(",").map(Number);
     const d=Math.hypot((la-h.lat)*KY,(lo-h.lon)*KX)+1;ws.push([p,1/(d*d)])});
@@ -1625,7 +1639,8 @@ async function analyseHex(bb,opt={}){
   const pWx=fetchGrid(keys,(d,n)=>{ex.wx=` · ${d}/${n} points`;paint()}).then(()=>{st.wx="✅";paint()}).catch(()=>{st.wx=keys.every(k=>hexStore.pts[k])?"✅":"❌";ex.wx=st.wx==="❌"?" · hors ligne ?":" · données en cache";paint()});
   // altitude : 7 points par hexagone
   const all=[];metas.forEach(m=>samplePts(m.q,m.r,a).forEach(p=>all.push(p)));
-  const pAlt=fetchAlts(all).then(z=>{metas.forEach((m,i)=>{const v=z.slice(i*7,i*7+7).filter(x=>x!=null);m.altN=v.length;m.alt=v.length?v.reduce((a,b)=>a+b)/v.length:null;m.altRange=v.length?Math.max(...v)-Math.min(...v):null});st.alt=metas.some(m=>m.alt!=null)?"✅":"❌";paint()});
+  const pAlt=fetchAlts(all).then(z=>{metas.forEach((m,i)=>{const v=z.slice(i*7,i*7+7).filter(x=>x!=null);m.altN=v.length;m.alt=v.length?v.reduce((a,b)=>a+b)/v.length:null;m.altRange=v.length?Math.max(...v)-Math.min(...v):null;
+    Object.assign(m,slopeAspect(samplePts(m.q,m.r,a),z.slice(i*7,i*7+7))||{slope:null,aspect:null})});st.alt=metas.some(m=>m.alt!=null)?"✅":"❌";paint()});
   // forêt : 19 points par hexagone
   let fd=0;const pFor=(async()=>{for(const m of metas){const pts=samplePts(m.q,m.r,a);hexCorners(m.q,m.r,a,.3).forEach(p=>pts.push(p));hexCorners(m.q,m.r,a,.9).forEach(p=>pts.push(p));
       const v=(await Promise.all(pts.map(p=>forestPixel(p[0],p[1])))).filter(x=>x!=null);m.ns=v.length;m.trees={};
@@ -1658,7 +1673,8 @@ function hexModel(id,sp){const k=id+"|"+sp;if(hexModelCache[k])return hexModelCa
   if(sp===ALL){const sps=Object.keys(SP),ms=sps.map(s=>hexModel(id,s));if(!ms[0])return null;const h=hexStore.hex[id],ws=sps.map(s=>habW(h,s));
     return hexModelCache[k]={...ms[0],E:ms[0].E.map((_,i)=>ms.reduce((a,m,j)=>a+m.E[i]*ws[j],0)/ms.length)}}
   const h=hexStore.hex[id];if(!h)return null;const D=hexWeather(h);if(!D)return null;
-  const m=compute(D,{sp:SP[sp],soil:SOIL.limon,expo:EXPO.plat,dT:0,alt:h.alt!=null?Math.round(h.alt):null,elev:null});return hexModelCache[k]=m}
+  const ex=hexExpo(h);if(ex.dT){const t=v=>v==null?null:v+ex.dT;D.tmax=D.tmax.map(t);D.tmin=D.tmin.map(t);D.tsol=D.tsol.map(t)}
+  const m=compute(D,{sp:SP[sp],soil:SOIL.limon,expo:{dT:ex.dT,dH:ex.dH},dT:ex.dT,alt:h.alt!=null?Math.round(h.alt):null,elev:null});return hexModelCache[k]=m}
 // période affichée : "now" aujourd'hui, "tom" demain, "fc" meilleur jour des 7 prochains
 let hMode=LS.get("hMode","fc");if(!["now","tom","fc"].includes(hMode))hMode="fc";
 const MODE_LAB={now:"aujourd'hui",tom:"demain",fc:"meilleur jour de la semaine"};
@@ -1700,6 +1716,7 @@ function hexPopup(h,p){const sp=$("hSp").value,sc=hexScore(h.id,sp,"fc"),now=hex
   const top=m&&sp===ALL?Object.keys(SP).map(k=>[k,hexScore(h.id,k,"fc").v]).sort((a,b)=>b[1]-a[1])[0]:null;
   const html=`<div style="font-size:13px;min-width:200px"><b>Hexagone de ${fmtKm2(h.size)}</b><br>
   Altitude moyenne : ${h.alt!=null?Math.round(h.alt)+" m":"?"}${h.altRange!=null?` (dénivelé ${Math.round(h.altRange)} m)`:""}<br>
+  ${h.slope!=null?`Versant : <b>${versant(h)}</b> · pente ${h.slope}°${Math.abs(hexExpo(h).dT)>=.1?` (${hexExpo(h).dT>0?"+":"−"}${Math.abs(hexExpo(h).dT).toFixed(1).replace(".",",")} °C)`:""}<br>`:""}
   Forêt : ${f}${h.forest!=null&&h.forest<.1?" — peu propice":""}<br>
   ${ess?`Essences : ${ess}<br>`:h.forest?`<span style="color:var(--muted)">Essences non analysées : relance l'analyse.</span><br>`:""}
   ${hab!=null?`Arbres favorables à l'espèce : ${Math.round(hab*100)} % de l'hexagone<br>`:""}
@@ -1754,7 +1771,7 @@ function bestHexes(){
   top.forEach((o,k)=>{const {h,ix}=o,m=ix.m,fs=finer(h.size);
     L.marker([h.lat,h.lon],{icon:L.divIcon({className:"",iconSize:[22,22],iconAnchor:[11,11],html:`<div class="brank">${k+1}</div>`})}).on("click",()=>goHex(h)).addTo(bestLayer);
     const d=document.createElement("div");d.className="spot";
-    d.innerHTML=`<span class="dot" style="background:${gradColor(ix.v)}"></span><div><b>${k+1}. ${Math.round(ix.v*100)}/100${hMode==="fc"&&lvl(ix.raw)?` · ${m.dateOf(ix.i)}`:""}</b><small>${o.d<1?Math.round(o.d*1000)+" m":o.d.toFixed(1).replace(".",",")+" km"} ${compass(o.dx,o.dy)} · ${h.alt!=null?Math.round(h.alt)+" m":"altitude ?"} · forêt ${Math.round(h.forest*100)} %${h.trees&&Object.keys(h.trees).length?" ("+TREE_N[Object.entries(h.trees).sort((x,y)=>y[1]-x[1])[0][0]]+")":""} · ${fmtKm2(h.size)}</small></div>${fs?`<button class="btn" style="padding:6px 10px">Affiner</button>`:""}`;
+    d.innerHTML=`<span class="dot" style="background:${gradColor(ix.v)}"></span><div><b>${k+1}. ${Math.round(ix.v*100)}/100${hMode==="fc"&&lvl(ix.raw)?` · ${m.dateOf(ix.i)}`:""}</b><small>${o.d<1?Math.round(o.d*1000)+" m":o.d.toFixed(1).replace(".",",")+" km"} ${compass(o.dx,o.dy)} · ${h.alt!=null?Math.round(h.alt)+" m":"altitude ?"}${versant(h)?" · versant "+versant(h):""} · forêt ${Math.round(h.forest*100)} %${h.trees&&Object.keys(h.trees).length?" ("+TREE_N[Object.entries(h.trees).sort((x,y)=>y[1]-x[1])[0][0]]+")":""} · ${fmtKm2(h.size)}</small></div>${fs?`<button class="btn" style="padding:6px 10px">Affiner</button>`:""}`;
     d.onclick=()=>goHex(h);
     const b=d.querySelector("button");if(b)b.onclick=async e=>{e.stopPropagation();if(await refineHex(h))bestHexes()};
     box.appendChild(d)});
