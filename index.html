@@ -820,7 +820,7 @@ th:first-child,td:first-child{text-align:left}
     <div class="card">
       <div class="ttl">Meilleurs hexagones autour d'un point <small id="bInfo"></small></div>
       <div class="row">
-        <label>Autour de<select id="bCenter"><option value="gps">Ma position</option><option value="map">Centre de la carte</option></select></label>
+        <label>Autour de<select id="bCenter"><option value="place" id="bPlaceOpt" disabled>Lieu recherché (aucun)</option><option value="gps">Ma position</option><option value="map">Centre de la carte</option></select></label>
         <label>Rayon<select id="bRad"><option value="2">2 km</option><option value="5">5 km</option><option value="10" selected>10 km</option><option value="20">20 km</option><option value="30">30 km</option></select></label>
       </div>
       <div class="row" style="margin-top:8px"><button class="btn pri" id="bGo">Chercher</button><button class="btn" id="bAna">Analyser ce rayon</button></div>
@@ -1512,6 +1512,7 @@ $("qForm").addEventListener("submit",async e=>{e.preventDefault();clearTimeout(q
 });
 async function prepareZone(it){
   if(!netOK){$("qMsg").innerHTML=`<span style="color:var(--warn)">${noNetMsg()}</span>`;return}
+  setPlace(it);
     const half=(+$("zSize").value)/2,dLat=half/KY,dLon=half/(111.32*Math.cos(it.lat*Math.PI/180));
   const bb=it.bbox||[it.lon-dLon,it.lat-dLat,it.lon+dLon,it.lat+dLat];
   const area=(bb[2]-bb[0])*111.32*Math.cos(it.lat*Math.PI/180)*(bb[3]-bb[1])*KY; // km²
@@ -1538,6 +1539,8 @@ async function prepareZone(it){
   // l'analyse n'attend pas la fin des tuiles : elle va chercher elle-même les tuiles forêt qui lui manquent
   await Promise.all([pMap,analyseHex(bb)]);
   $("qMsg").textContent=`✅ ${s.name} : zone prête${wxCache[s.id]?"":" (sans météo : connexion ?)"}. Les hexagones sont sur la carte.`;
+  // classement des meilleurs hexagones autour du lieu cherché, prêt sous la carte
+  if($("bCenter").value==="place"){bestCenter=[it.lat,it.lon];bestHexes()}
 }
 function speciesRows(source,onPick){
   let h='<table class="sptab"><tr><th>Espèce</th><th>Aujourd\'hui</th><th>7 prochains jours</th></tr>';
@@ -1848,7 +1851,12 @@ async function refineHex(h){const fs=finer(h.size);if(!fs)return;const a=side(h.
 let bestLayer=null,bestCenter=null;
 const kmTo=(la0,lo0,la,lo)=>{const dy=(la-la0)*KY,dx=(lo-lo0)*111.32*Math.cos(la0*Math.PI/180);return{d:Math.hypot(dx,dy),dx,dy}};
 const compass=(dx,dy)=>["N","NE","E","SE","S","SO","O","NO"][Math.round(((Math.atan2(dx,dy)*180/Math.PI)+360)%360/45)%8];
+// dernier lieu tapé dans la recherche : centre par défaut du classement
+let lastPlace=LS.get("place",null);
+function showPlace(){const o=$("bPlaceOpt");o.disabled=!lastPlace;o.textContent=lastPlace?`Lieu recherché : ${lastPlace.name}`:"Lieu recherché (aucun)"}
+function setPlace(it){lastPlace={lat:it.lat,lon:it.lon,name:it.name.split(",")[0]};LS.set("place",lastPlace);showPlace();$("bCenter").value="place"}
 function getCenter(){
+  if($("bCenter").value==="place")return lastPlace?Promise.resolve([lastPlace.lat,lastPlace.lon]):Promise.reject("Fais d'abord une recherche de lieu en haut de la page.");
   if($("bCenter").value==="map"){const c=map.getCenter();return Promise.resolve([c.lat,c.lng])}
   return new Promise((res,rej)=>{if(!navigator.geolocation)return rej("Localisation non disponible ici.");
     navigator.geolocation.getCurrentPosition(p=>res([p.coords.latitude,p.coords.longitude]),()=>rej("Position refusée ou indisponible : choisis « Centre de la carte »."),{enableHighAccuracy:true,timeout:15000,maximumAge:60000})});
@@ -1900,7 +1908,8 @@ $("bAna").onclick=async()=>{
   const ok=await analyseHex(bb,{size:s,keep:(la,lo)=>kmTo(la0,lo0,la,lo).d<=R+side(s)});
   if(ok===false&&!hexBusy)$("bMsg").textContent="Analyse impossible.";
   bestHexes()};
-{const b=LS.get("best",null);if(b){$("bCenter").value=b.c;$("bRad").value=b.r}}
+showPlace();
+{const b=LS.get("best",null);if(b){$("bCenter").value=b.c==="place"&&!lastPlace?"map":b.c;$("bRad").value=b.r}else if(lastPlace)$("bCenter").value="place";else $("bCenter").value="map"}
 $("bRad").onchange=()=>{if(bestCenter)bestHexes()};
 $("hexBtn").onclick=()=>analyseHex();
 $("hexClear").onclick=()=>{hexStore={hex:{},pts:hexStore.pts};saveHex();drawHexes();drawGrid();$("hexSteps").innerHTML="";if(bestLayer)bestLayer.clearLayers();$("bList").innerHTML=""};
