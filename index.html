@@ -1235,6 +1235,7 @@ function renderList(){
       if(a==="eye")s.hidden=!s.hidden;else spots.forEach(z=>{if(z.zone)z.hidden=z.id!==s.id});
       saveSpots();showZones()});
     d.onclick=()=>openForecast(s.id);el.appendChild(d)});
+  if(typeof zoneOptions==="function"&&$("bPlaceOpt"))zoneOptions();
   if(spots.some(s=>s.hidden)){const a=document.createElement("button");a.className="btn";a.style.marginTop="8px";a.textContent="Tout afficher";
     a.onclick=()=>{spots.forEach(s=>delete s.hidden);saveSpots();showZones()};el.appendChild(a)}
 }
@@ -1892,7 +1893,12 @@ const compass=(dx,dy)=>["N","NE","E","SE","S","SO","O","NO"][Math.round(((Math.a
 let lastPlace=LS.get("place",null);
 function showPlace(){const o=$("bPlaceOpt");o.disabled=!lastPlace;o.textContent=lastPlace?`Lieu recherché : ${lastPlace.name}`:"Lieu recherché (aucun)"}
 function setPlace(it){lastPlace={lat:it.lat,lon:it.lon,name:it.name.split(",")[0]};LS.set("place",lastPlace);showPlace();$("bCenter").value="place"}
+// zones déjà cherchées (« Mes coins ») proposées comme centre, après le dernier lieu recherché
+function zoneOptions(){const sel=$("bCenter"),cur=sel.value;[...sel.options].filter(o=>o.value.startsWith("zone:")).forEach(o=>o.remove());
+  const after=$("bPlaceOpt");[...spots].filter(s=>s.zone).reverse().forEach(s=>after.after(new Option(`Zone : ${s.name}`,"zone:"+s.id)));
+  sel.value=[...sel.options].some(o=>o.value===cur)?cur:"place"}
 function getCenter(){
+  const v=$("bCenter").value;if(v.startsWith("zone:")){const z=spots.find(s=>"zone:"+s.id===v);if(z)return Promise.resolve([z.lat,z.lon]);return Promise.reject("Cette zone n'existe plus.")}
   if($("bCenter").value==="place")return lastPlace?Promise.resolve([lastPlace.lat,lastPlace.lon]):Promise.reject("Fais d'abord une recherche de lieu en haut de la page.");
   if($("bCenter").value==="map"){const c=map.getCenter();return Promise.resolve([c.lat,c.lng])}
   return new Promise((res,rej)=>{if(!navigator.geolocation)return rej("Localisation non disponible ici.");
@@ -2040,8 +2046,11 @@ $("bAna").onclick=async()=>{
   const ok=await analyseHex(bb,{size:s,keep:(la,lo)=>kmTo(la0,lo0,la,lo).d<=R+side(s)});
   if(ok===false&&!hexBusy)$("bMsg").textContent="Analyse impossible.";
   bestHexes()};
-showPlace();
+showPlace();zoneOptions();
 {const b=LS.get("best",null);if(b){$("bCenter").value=b.c==="place"&&!lastPlace?"map":b.c;$("bRad").value=b.r}else if(lastPlace)$("bCenter").value="place";else $("bCenter").value="map"}
+if(!$("bCenter").value)$("bCenter").value=lastPlace?"place":"map";
+// changer de centre relance le classement (sauf « Ma position », qui demande d'abord l'autorisation du GPS)
+$("bCenter").onchange=()=>{if($("bCenter").value!=="gps")$("bGo").onclick()};
 $("bRad").onchange=()=>{if(bestCenter)bestHexes()};
 {const v=LS.get("bAuto",true);$("bAuto").checked=v;$("bAuto").onchange=()=>{LS.set("bAuto",$("bAuto").checked);if($("bAuto").checked&&bestCenter)bestHexes()}}
 $("hexBtn").onclick=()=>analyseHex();
