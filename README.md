@@ -24,7 +24,7 @@ puis ouvrir http://localhost:8765/.
 |---|---|---|
 | Recherche | `data.geopf.fr/geocodage/completion` et `/search`, puis Open-Meteo en secours | CORS ouvert ; formats conformes au code |
 | Altitude | `data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json`, ressource **`ign_rge_alti_wld`** | `ign_rgealti_world` n'existe pas (400). 200 points par requête au plus (au-delà : 414) ; `-99999` hors couverture |
-| Météo | `api.open-meteo.com/v1/forecast` | 40 jours, variables de sol présentes sur les jours passés ; multi-points = tableau ; 50 points ≈ 1,6 Mo |
+| Météo | `historical-forecast-api.open-meteo.com` (secours : `api.open-meteo.com/v1/forecast`, 32 jours) | 92 jours passés + 7 à venir en une requête, mêmes valeurs que la prévision pour les jours récents et futurs. L'API de prévision ne remonte qu'à ~50 jours (`past_days=92` renvoie des `null` au-delà). Sol 3–9 et 9–27 cm ; `temporal_resolution=hourly_6` : 50 points ≈ 140 Ko compressés |
 | Tuiles | WMTS `data.geopf.fr/wmts`, `TILEMATRIXSET=PM` | Plan et photos : zooms 0 à 19 ; BD Forêt V2 : zooms **6 à 16** (17 → 404). L'IGN renvoie parfois un 400 « Layer unknown » passager, mis en cache par le navigateur : nouvelle tentative avec `cache: "reload"` |
 | Forêt | `LANDCOVER.FORESTINVENTORY.V2` | Fond transparent, mais lande, formation herbacée et « sans couvert arboré » sont opaques : elles sont exclues par couleur |
 | Sols | WCS SoilGrids `maps.isric.org` (pH, argile, sable, 5–15 cm, 250 m) | CORS ouvert ; GeoTIFF 16 bits, tuiles 256, deflate + prédicteur horizontal, lu sans bibliothèque. L'API REST ponctuelle répondait 503 |

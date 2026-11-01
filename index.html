@@ -940,6 +940,7 @@ th:first-child,td:first-child{text-align:left}
         <li><b>Délai de sortie</b> : il dépend de l'espèce et s'allonge quand le sol est frais. La girolle et le pied de mouton, qui poussent lentement, restent plus longtemps en place.</li>
         <li><b>Humidité maintenue</b> : réserve d'eau du sol. Elle vient d'Open-Meteo si la météo est réelle, sinon d'un bilan pluie − évaporation − drainage selon le type de sol.</li>
         <li><b>Bilan hydrique du mois</b> : pluie moins évaporation sur les 30 derniers jours.</li>
+        <li><b>Mémoire de l'été</b> : bilan hydrique des deux mois précédents (J-90 à J-31). Une fin d'été sèche affaiblit la poussée d'automne.</li>
         <li><b>Température</b> : moyenne de l'air sur 5 jours, en cloche autour de l'optimum de l'espèce (13,2 °C pour le cèpe de Bordeaux).</li>
       </ul>
       <div class="ttl" style="margin-top:12px">Indices ajoutés (absents de Cépio)</div>
@@ -958,6 +959,7 @@ th:first-child,td:first-child{text-align:left}
       <table class="sptab" style="font-size:13px"><tr><th>Variable</th><th>Poids</th><th>Appui</th></tr>
         <tr><td>Bilan hydrique du mois</td><td>1</td><td>Meilleur prédicteur annuel du cèpe : pluie − évaporation de septembre-octobre, R² = 0,66 (Martínez-Peña 2003, pin sylvestre, Soria). La pluie agit avec un mois de décalage, l'humidité du sol le mois même (Karavani et al. 2018, Agric. For. Meteorol.). Les pics de récolte suivent la pluie de fin d'été et d'automne (Espagne, 2017).</td></tr>
         <tr><td>Humidité du sol</td><td>1</td><td>Karavani et al. 2018.</td></tr>
+        <tr><td>Mémoire de l'été (J-90 à J-31)</td><td>0,5</td><td>La pluie de fin d'été et du début d'automne pèse le plus sur les records de récolte (Espagne, 2017) ; la température du sol d'août entre dans l'équation de Martínez-Peña 2003.</td></tr>
         <tr><td>Température de l'air (5 jours)</td><td>0,8</td><td>Optimum à 13,2 °C, aucun cèpe au-dessus de 17,5 °C par temps sec ; la température contraint plus que la pluie récente (Brejon Lamartinière &amp; Hoffman 2025, hêtraie, Allemagne, 10 ans, 1 905 cèpes, prépublication).</td></tr>
         <tr><td>Pluie des 7 derniers jours</td><td>0,6</td><td>Effet positif et linéaire mais faible à court terme (même étude) ; pluie de la semaine précédente pour la girolle (Botany 2011, Canada).</td></tr>
         <tr><td>Arbres hôtes</td><td>1</td><td>Champignons mycorhiziens : sans arbre hôte, pas de fructification.</td></tr>
@@ -968,7 +970,7 @@ th:first-child,td:first-child{text-align:left}
       </table>
       <p class="note">Ces études portent surtout sur le cèpe de Bordeaux, en pinède espagnole ou en hêtraie allemande. Pour les autres espèces, les optimums de température et les préférences de sol restent des estimations. Les poids traduisent l'ordre d'importance trouvé dans ces travaux, pas un ajustement statistique sur des cueillettes : c'est un outil pour comprendre et explorer, pas une garantie.</p>
       <div class="ttl" style="margin-top:12px">Données</div>
-      <p class="note">Météo : Open-Meteo (CC BY 4.0), 32 jours passés et 7 jours de prévision, avec température et humidité du sol modélisées. Cartes, altitude et BD Forêt : Géoplateforme IGN, licence ouverte Etalab 2.0. Sols : SoilGrids (ISRIC, CC BY 4.0). Tout est gardé sur ton téléphone. Rien n'est envoyé ailleurs, sauf les coordonnées demandées aux services météo et d'altitude.</p>
+      <p class="note">Météo : Open-Meteo (CC BY 4.0), 92 jours passés (32 affichés) et 7 jours de prévision, avec température et humidité du sol modélisées. Cartes, altitude et BD Forêt : Géoplateforme IGN, licence ouverte Etalab 2.0. Sols : SoilGrids (ISRIC, CC BY 4.0). Tout est gardé sur ton téléphone. Rien n'est envoyé ailleurs, sauf les coordonnées demandées aux services météo et d'altitude.</p>
       <div class="row"><button class="btn" id="exportBtn">Copier mes coins (sauvegarde)</button><button class="btn" id="importBtn">Coller une sauvegarde</button></div>
       <textarea id="ioBox" style="display:none;width:100%;height:90px;margin-top:8px;font:12px monospace;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:8px"></textarea>
       <button class="btn" id="ioApply" style="display:none;margin-top:6px">Importer</button>
@@ -1158,16 +1160,21 @@ async function stats(){const s=await tStats();$("tileStat").textContent=`${s.n.t
 
 // ================= MÉTÉO RÉELLE =================
 function isoDay(d){const z=new Date(d.getTime()-d.getTimezoneOffset()*60000);return z.toISOString().slice(0,10)}
+// 92 jours passés + 7 à venir en une requête : l'historique des prévisions d'Open-Meteo donne les mêmes valeurs que la
+// prévision pour les jours récents et à venir, alors que l'API de prévision ne remonte qu'à une cinquantaine de jours
+// (celle-ci reste le secours, sur 32 jours). Sol aussi à 9–27 cm ; pas de 6 h pour alléger la réponse (≈ 6 fois moins).
+const WX_VARS="daily=temperature_2m_max,temperature_2m_min,precipitation_sum&hourly=soil_temperature_6cm,soil_moisture_3_to_9cm,soil_moisture_9_to_27cm,relative_humidity_2m&temporal_resolution=hourly_6&timezone=Europe%2FParis";
+async function fetchMeteo(lat,lon){ // lat, lon : listes « a,b,c » → une série journalière par point
+  const day=k=>{const d=new Date();d.setDate(d.getDate()+k);return isoDay(d)};let j=null;
+  try{const r=await tfetch(`https://historical-forecast-api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&${WX_VARS}&start_date=${day(-92)}&end_date=${day(7)}`,30000);if(r.ok)j=await r.json()}catch(e){}
+  if(!j||j.error){const r=await tfetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&${WX_VARS}&past_days=32&forecast_days=8`,30000);if(!r.ok)throw new Error("météo");j=await r.json()}
+  return(Array.isArray(j)?j:[j]).map(w=>{const N=w.daily.time.length,h=w.hourly,per=Math.round(h.time.length/N),
+    avg=a=>Array.from({length:N},(_,d)=>{let s=0,c=0;for(let k=d*per;k<d*per+per&&k<a.length;k++)if(a[k]!=null){s+=a[k];c++}return c?+(s/c).toFixed(2):null});
+    return{t:Date.now(),elev:w.elevation,dates:w.daily.time,tmax:w.daily.temperature_2m_max,tmin:w.daily.temperature_2m_min,rain:w.daily.precipitation_sum.map(v=>v||0),
+      tsol:avg(h.soil_temperature_6cm),sm:avg(h.soil_moisture_3_to_9cm),sm2:avg(h.soil_moisture_9_to_27cm),rh:avg(h.relative_humidity_2m)}});
+}
 async function fetchWx(s){
-  const u=`https://api.open-meteo.com/v1/forecast?latitude=${s.lat.toFixed(4)}&longitude=${s.lon.toFixed(4)}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&hourly=soil_temperature_6cm,soil_moisture_3_to_9cm,relative_humidity_2m&past_days=32&forecast_days=8&timezone=auto`;
-  const r=await fetch(u);if(!r.ok)throw new Error("météo");const j=await r.json();
-  const n=j.daily.time.length,avg=(a,i)=>{let s=0,c=0;for(let h=i*24;h<i*24+24&&h<a.length;h++)if(a[h]!=null){s+=a[h];c++}return c?s/c:null};
-  wxCache[s.id]={t:Date.now(),elev:j.elevation,dates:j.daily.time,
-    tmax:j.daily.temperature_2m_max,tmin:j.daily.temperature_2m_min,rain:j.daily.precipitation_sum.map(v=>v||0),
-    tsol:Array.from({length:n},(_,i)=>avg(j.hourly.soil_temperature_6cm,i)),
-    sm:Array.from({length:n},(_,i)=>avg(j.hourly.soil_moisture_3_to_9cm,i)),
-    rh:Array.from({length:n},(_,i)=>avg(j.hourly.relative_humidity_2m,i))};
-  saveWx();
+  [wxCache[s.id]]=await fetchMeteo(s.lat.toFixed(4),s.lon.toFixed(4));saveWx();
 }
 async function fetchAlt(lat,lon){
   const [z]=await fetchAlts([[lat,lon]]);return z!=null?Math.round(z):null;
@@ -1245,7 +1252,7 @@ function modelFor(source,spOverride){
     const s=spots.find(x=>x.id===source.id),w=wxCache[source.id];if(!s||!w)return null;
     const dT=(s.alt!=null&&w.elev!=null?-(s.alt-w.elev)*.0065:0)+EXPO[s.expo].dT;
     D={dates:w.dates,rain:w.rain,tmax:w.tmax.map(v=>v+dT),tmin:w.tmin.map(v=>v+dT),
-       tsol:w.tsol.map(v=>v==null?null:v+dT),sm:w.sm,rh:w.rh,real:true};
+       tsol:w.tsol.map(v=>v==null?null:v+dT),sm:w.sm,sm2:w.sm2,rh:w.rh,real:true};
     cfg={sp:SP[spOverride||s.sp],soil:SOIL[s.soil],expo:EXPO[s.expo],dT,elev:w.elev,alt:s.alt};
   }else{
     D={dates:datesSim(),rain:sim.rain,tmax:sim.tmax,tmin:sim.tmin,real:false,today:32};
@@ -1260,6 +1267,8 @@ const WEIGHTS={
   water:1,   // bilan hydrique (pluie − ETP) de septembre-octobre : meilleur prédicteur annuel du cèpe, R² = 0,66 (Martínez-Peña 2003, pin sylvestre, Soria) ;
              // l'effet de la pluie arrive avec un mois de décalage (Karavani et al. 2018)
   hum:1,     // humidité du sol du mois en cours (Karavani et al. 2018)
+  summer:.5, // bilan hydrique des deux mois précédents : la pluie de fin d'été pèse le plus sur les records de récolte
+             // (Espagne, 2017) ; la température du sol d'août entre dans l'équation de Martínez-Peña 2003
   temp:.8,   // optimum à 13,2 °C sur 5 jours pour le cèpe, contrainte plus forte que la pluie récente (Brejon Lamartinière & Hoffman 2025)
   trig:.6,   // pluie des jours précédents : effet positif mais faible à court terme (Brejon Lamartinière & Hoffman 2025) ;
              // pluie de la semaine précédente pour la girolle (Botany 2011, pinèdes de pin gris au Canada)
@@ -1280,7 +1289,9 @@ function compute(D,cfg){
     const et=Math.max(0,.07*tmax[i])*(.4+.6*w/soil.cap);
     w=Math.min(soil.cap,Math.max(0,w+rain[i]*.9-et-soil.dr*Math.max(0,w-.55*soil.cap)));
     let h=w/soil.cap;
-    if(D.sm&&D.sm[i]!=null)h=Math.min(1,Math.max(0,(D.sm[i]-.08)/.3));
+    // humidité modélisée par Open-Meteo : moyenne de la surface (3–9 cm) et de la couche où vit le mycélium (9–27 cm)
+    const nsm=v=>Math.min(1,Math.max(0,(v-.08)/.3));
+    if(D.sm&&D.sm[i]!=null){h=nsm(D.sm[i]);if(D.sm2&&D.sm2[i]!=null)h=(h+nsm(D.sm2[i]))/2}
     H.push(Math.min(1,h*expo.dH));
   }
   // humidité de l'air
@@ -1304,6 +1315,10 @@ function compute(D,cfg){
   // bilan hydrique des 30 derniers jours : pluie − évapotranspiration (≈ 0,1 mm/j par °C au-dessus de −5 °C)
   const pet=tm.map(v=>Math.max(0,.1*(v+5))),wb=[];
   for(let d=0;d<N;d++){let s=0;for(let j=Math.max(0,d-29);j<=d;j++)s+=rain[j]-pet[j];wb.push(s)}
+  // mémoire de l'été : bilan hydrique des deux mois précédents (J-90 à J-31), ramené à 60 jours ; une sécheresse
+  // de fin d'été affaiblit la poussée d'automne sans l'empêcher (plancher 0,3). Neutre sans au moins 45 jours d'historique.
+  const summer=rain.map((_,d)=>{let s=0,n=0;for(let j=Math.max(0,d-89);j<=d-30;j++){s+=rain[j]-pet[j];n++}
+    return n<45?1:.3+.7*Math.min(1,Math.max(0,(s*60/n+60)/120))});
   // température de l'air moyenne des 5 derniers jours
   const t5=tm.map((_,d)=>{let s=0,c=0;for(let j=Math.max(0,d-4);j<=d;j++){s+=tm[j];c++}return s/c});
   const pw=(f,w)=>Math.pow(Math.max(0,Math.min(1,f)),w),W=WEIGHTS;
@@ -1329,8 +1344,8 @@ function compute(D,cfg){
       const frost=(tmin[d]<sp.frostT||(d&&tmin[d-1]<sp.frostT))?.15:1;
       const mon=+D.dates[d].slice(5,7);const season=sp.season[mon]||.1;
       // produit pondéré : un facteur de poids 1 peut tout bloquer, un poids faible ne fait que moduler
-      const sc=shape*pw(trig[t].v,W.trig)*pw(water,W.water)*pw(hum,W.hum)*pw(temp,W.temp)*pw(reb,W.reb)*pw(frost,W.frost)*pw(dry,W.dry)*pw(season,W.season);
-      if(sc>best){best=sc;bd={t,lag,k,hum,temp,water,wb:wb[d],reb,frost,dry,season,minH,tt,v,tr:trig[t]}}
+      const sc=shape*pw(trig[t].v,W.trig)*pw(water,W.water)*pw(hum,W.hum)*pw(temp,W.temp)*pw(reb,W.reb)*pw(frost,W.frost)*pw(dry,W.dry)*pw(season,W.season)*pw(summer[d],W.summer);
+      if(sc>best){best=sc;bd={t,lag,k,hum,temp,water,wb:wb[d],summer:summer[d],reb,frost,dry,season,minH,tt,v,tr:trig[t]}}
     }
     E.push(best);Ed.push(bd);
   }
@@ -1348,8 +1363,12 @@ function compute(D,cfg){
       const sc=dry>=5&&dry<=8?.8:dry<5?.1+dry*.06:.15;
       if(sc>best){best=sc;info={stage:dry>=5&&dry<=8?4:3,c,r,dry}}}
     C.push(best);Cd.push(info)}
-  const dateOf=i=>{const d=new Date(D.dates[i]+"T12:00");return d.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})};
-  return{N,today:Math.min(today,N-1),D,cfg,ts,H,vpd,E,Ed,C,Cd,trig,sp,dateOf,rain,tmax,tmin};
+  // le calcul a profité de tout l'historique ; on n'en rend que les 40 derniers jours (32 passés, aujourd'hui, 7 à venir)
+  // pour garder des graphiques lisibles. Les indices de jour sont décalés, dateOf les replace dans la série complète.
+  const off=Math.max(0,N-40),dateOf=i=>{const d=new Date(D.dates[i+off]+"T12:00");return d.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})};
+  const sl=a=>a.slice(off),mv=(o,ks)=>{if(!o||!off)return o;const c={...o};ks.forEach(k=>{if(c[k]!=null)c[k]-=off});return c};
+  return{N:N-off,today:Math.min(today,N-1)-off,D,cfg,ts:sl(ts),H:sl(H),vpd:sl(vpd),E:sl(E),Ed:sl(Ed).map(o=>mv(o,["t"])),
+    C:sl(C),Cd:sl(Cd).map(o=>mv(o,["c","r"])),trig:sl(trig),sp,dateOf,rain:sl(rain),tmax:sl(tmax),tmin:sl(tmin)};
 }
 
 // ================= RENDU PRÉVISION =================
@@ -1392,7 +1411,7 @@ const ok=b=>b?"✅":"❌";
 function subs(){
   const d=M.Ed[sel];const box=$("subs");
   if(!d){box.innerHTML=`<p class="note">Aucun déclenchement (pluie et choc) dans le mois précédent ne mène à une sortie ce jour-là.</p>`;return}
-  const items=[["Déclenchement (pluie × choc)",d.tr.rs*(M.sp.w*d.tr.sh+(1-M.sp.w))],["Réserve du mycélium",d.tr.pre],["Bilan hydrique du mois",d.water],["Humidité maintenue",d.hum],["Température de l'air (5 j)",d.temp],["Air sec (VPD) ★",d.dry],["Saison ★",d.season],["Redoux ★",d.reb],["Gel ★",d.frost],["Période réfractaire ★",d.refr?.6:1]];
+  const items=[["Déclenchement (pluie × choc)",d.tr.rs*(M.sp.w*d.tr.sh+(1-M.sp.w))],["Réserve du mycélium",d.tr.pre],["Bilan hydrique du mois",d.water],["Mémoire de l'été (J-90 à J-31)",d.summer],["Humidité maintenue",d.hum],["Température de l'air (5 j)",d.temp],["Air sec (VPD) ★",d.dry],["Saison ★",d.season],["Redoux ★",d.reb],["Gel ★",d.frost],["Période réfractaire ★",d.refr?.6:1]];
   box.innerHTML=items.map(([n,v])=>`<div class="sub-i"><span class="nm">${n}</span><span class="bar"><i style="width:${Math.round(v*100)}%;background:${v<.5?"var(--tmax)":"var(--l2)"}"></i></span><span class="pc">${Math.round(v*100)}%</span></div>`).join("")+`<p class="note" style="margin:6px 0 0">★ indices absents de Cépio. L'altitude et l'exposition corrigent directement les températures et l'humidité.</p>`;
 }
 function explain(){
@@ -1565,14 +1584,14 @@ for(const h of Object.values(hexStore.hex))if(hexAt(h.lat,h.lon,s=>s<h.size))del
 const saveHex=()=>LS.set("hexes",hexStore);
 const gKey=(la,lo)=>`${la.toFixed(1)},${lo.toFixed(1)}`;
 async function fetchGrid(keys,onProg){
-  const todo=keys.filter(k=>!hexStore.pts[k]||Date.now()-hexStore.pts[k].t>6*36e5);
+  // à refaire : trop ancien (6 h), ou ancien format sans la couche de sol profonde (séries de 40 jours)
+  const todo=keys.filter(k=>{const p=hexStore.pts[k];return!p||!p.sm2||Date.now()-p.t>6*36e5});
   for(let i=0;i<todo.length;i+=50){const part=todo.slice(i,i+50),la=part.map(k=>k.split(",")[0]).join(","),lo=part.map(k=>k.split(",")[1]).join(",");
-    const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&hourly=soil_temperature_6cm,soil_moisture_3_to_9cm,relative_humidity_2m&past_days=32&forecast_days=8&timezone=Europe%2FParis`);
-    if(!r.ok)throw new Error("météo");let j=await r.json();if(!Array.isArray(j))j=[j];
-    j.forEach((w,n)=>{const N=w.daily.time.length,avg=(a,d)=>{let s=0,c=0;for(let h=d*24;h<d*24+24&&h<a.length;h++)if(a[h]!=null){s+=a[h];c++}return c?+(s/c).toFixed(2):null};
-      hexStore.pts[part[n]]={t:Date.now(),elev:w.elevation,dates:w.daily.time,tmax:w.daily.temperature_2m_max,tmin:w.daily.temperature_2m_min,rain:w.daily.precipitation_sum.map(v=>v||0),
-        tsol:Array.from({length:N},(_,d)=>avg(w.hourly.soil_temperature_6cm,d)),sm:Array.from({length:N},(_,d)=>avg(w.hourly.soil_moisture_3_to_9cm,d)),rh:Array.from({length:N},(_,d)=>avg(w.hourly.relative_humidity_2m,d))}});
+    (await fetchMeteo(la,lo)).forEach((w,n)=>{hexStore.pts[part[n]]=w});
     onProg(Math.min(todo.length,i+50),todo.length)}
+  // les points de grille qu'aucun hexagone n'utilise plus ne gardent pas de place dans le stockage
+  const used=new Set(Object.values(hexStore.hex).flatMap(h=>h.pts).concat(keys));
+  for(const k in hexStore.pts)if(!used.has(k))delete hexStore.pts[k];
 }
 async function fetchAlts(pts){ // pts: [[lat,lon]...] → altitudes
   // IGN : ressource ign_rge_alti_wld, 200 points par requête au plus (au-delà, l'URL devient trop longue) ; -99999 hors couverture
@@ -1670,9 +1689,11 @@ const versant=h=>h.slope==null?null:h.slope<4?"plat":azName(h.aspect);
 function hexWeather(h){ // moyenne pondérée (inverse distance²) des points de grille voisins, corrigée de l'altitude
   const ws=[];h.pts.forEach(k=>{const p=hexStore.pts[k];if(!p)return;const [la,lo]=k.split(",").map(Number);
     const d=Math.hypot((la-h.lat)*KY,(lo-h.lon)*KX)+1;ws.push([p,1/(d*d)])});
-  if(!ws.length)return null;const N=ws[0][0].dates.length,sw=ws.reduce((a,b)=>a+b[1],0);
-  const mix=(f,corr)=>Array.from({length:N},(_,i)=>{let s=0,w=0;ws.forEach(([p,wt])=>{const v=p[f][i];if(v!=null){s+=(v+(corr?-(h.alt!=null&&p.elev!=null?(h.alt-p.elev)*.0065:0):0))*wt;w+=wt}});return w?s/w:null});
-  return{dates:ws[0][0].dates,tmax:mix("tmax",1),tmin:mix("tmin",1),rain:mix("rain"),tsol:mix("tsol",1),sm:mix("sm"),rh:mix("rh"),real:true};
+  if(!ws.length)return null;
+  // on ne mélange que des séries aux mêmes dates (les plus longues : 100 jours, ou 40 si le service historique a échoué)
+  ws.sort((x,y)=>y[0].dates.length-x[0].dates.length);const ref=ws[0][0].dates,same=ws.filter(([p])=>p.dates.length===ref.length&&p.dates[0]===ref[0]);
+  const N=ref.length,mix=(f,corr)=>Array.from({length:N},(_,i)=>{let s=0,w=0;same.forEach(([p,wt])=>{const v=p[f]&&p[f][i];if(v!=null){s+=(v+(corr?-(h.alt!=null&&p.elev!=null?(h.alt-p.elev)*.0065:0):0))*wt;w+=wt}});return w?s/w:null});
+  return{dates:ref,tmax:mix("tmax",1),tmin:mix("tmin",1),rain:mix("rain"),tsol:mix("tsol",1),sm:mix("sm"),sm2:mix("sm2"),rh:mix("rh"),real:true};
 }
 let hexBusy=false;
 // opt.size : taille en km² (sinon celle choisie) ; opt.keep(lat,lon) : ne garder que certains hexagones
