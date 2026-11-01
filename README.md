@@ -27,5 +27,9 @@ puis ouvrir http://localhost:8765/.
 | Météo | `api.open-meteo.com/v1/forecast` | 40 jours, variables de sol présentes sur les jours passés ; multi-points = tableau ; 50 points ≈ 1,6 Mo |
 | Tuiles | WMTS `data.geopf.fr/wmts`, `TILEMATRIXSET=PM` | Plan et photos : zooms 0 à 19 ; BD Forêt V2 : zooms **6 à 16** (17 → 404). L'IGN renvoie parfois un 400 « Layer unknown » passager, mis en cache par le navigateur : nouvelle tentative avec `cache: "reload"` |
 | Forêt | `LANDCOVER.FORESTINVENTORY.V2` | Fond transparent, mais lande, formation herbacée et « sans couvert arboré » sont opaques : elles sont exclues par couleur |
+| Sols | WCS SoilGrids `maps.isric.org` (pH, argile, sable, 5–15 cm, 250 m) | CORS ouvert ; GeoTIFF 16 bits, tuiles 256, deflate + prédicteur horizontal, lu sans bibliothèque. L'API REST ponctuelle répondait 503 |
+| Essences | WFS `LANDCOVER.FORESTINVENTORY.V2:formation_vegetale` | Sert seulement à vérifier la table couleur → formation des tuiles ; filtre « point dans le polygone » en Lambert-93 (`INTERSECTS(geom,POINT(x y))`) |
 
-Licences : IGN, licence ouverte Etalab 2.0 ; Open-Meteo, CC BY 4.0.
+Le poids de chaque variable et les études qui l'appuient sont détaillés dans l'onglet Méthode de l'app et dans la constante `WEIGHTS` d'`index.html`.
+
+Licences : IGN, licence ouverte Etalab 2.0 ; Open-Meteo, CC BY 4.0 ; SoilGrids (ISRIC), CC BY 4.0.

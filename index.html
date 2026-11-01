@@ -933,13 +933,14 @@ th:first-child,td:first-child{text-align:left}
     <div class="card" style="font-size:14px;color:var(--text2)">
       <div class="ttl">Les deux modèles</div>
       <p><b>Règle Cépio</b> (exemple publié sur cepio.fr) : moyenne journalière sous 12 °C pendant 3 jours, puis plus de 15 mm de pluie dans les 5 jours, puis 5 à 8 jours sans pluie → 80 % de probabilité de fructification. Les niveaux intermédiaires sont une interprétation, car Cépio ne publie pas ses seuils.</p>
-      <p><b>Modèle enrichi</b> : l'indice est le produit de sous-indices compris entre 0 et 1.</p>
+      <p><b>Modèle enrichi</b> : l'indice est le produit de sous-indices compris entre 0 et 1, chacun élevé à un <b>poids</b> qui traduit sa valeur prédictive dans les études (tableau plus bas) : un poids de 1 peut annuler l'indice, un poids de 0,3 ne fait que le moduler.</p>
       <ul>
-        <li><b>Déclenchement</b> : pluie sur 3 jours rapportée au besoin de l'espèce, combinée à un choc thermique (chute du sol ≥ 4 °C ou 3 jours froids). Le choc compte beaucoup pour les cèpes de Bordeaux et des pins, peu pour les autres espèces.</li>
+        <li><b>Déclenchement</b> : pluie sur 7 jours rapportée au besoin de l'espèce, combinée à un choc thermique (chute du sol ≥ 4 °C ou 3 jours froids). Le choc compte beaucoup pour les cèpes de Bordeaux et des pins, peu pour les autres espèces.</li>
         <li><b>Réserve du mycélium</b> : chaleur accumulée dans les semaines précédant le déclenchement.</li>
         <li><b>Délai de sortie</b> : il dépend de l'espèce et s'allonge quand le sol est frais. La girolle et le pied de mouton, qui poussent lentement, restent plus longtemps en place.</li>
         <li><b>Humidité maintenue</b> : réserve d'eau du sol. Elle vient d'Open-Meteo si la météo est réelle, sinon d'un bilan pluie − évaporation − drainage selon le type de sol.</li>
-        <li><b>Température du sol</b> : écart à la plage de l'espèce. Elle vient d'Open-Meteo (6 cm) ou est estimée à partir de l'air.</li>
+        <li><b>Bilan hydrique du mois</b> : pluie moins évaporation sur les 30 derniers jours.</li>
+        <li><b>Température</b> : moyenne de l'air sur 5 jours, en cloche autour de l'optimum de l'espèce (13,2 °C pour le cèpe de Bordeaux).</li>
       </ul>
       <div class="ttl" style="margin-top:12px">Indices ajoutés (absents de Cépio)</div>
       <ul>
@@ -947,15 +948,27 @@ th:first-child,td:first-child{text-align:left}
         <li><b>Saison (phénologie)</b> : chaque espèce a sa fenêtre de fructification (cèpe d'été de juin à septembre, pied de mouton jusqu'en décembre…).</li>
         <li><b>Altitude</b> : correction de −0,65 °C par 100 m entre l'altitude de ton coin et celle de la maille météo.</li>
         <li><b>Exposition</b> : un versant nord est plus frais et plus humide, un versant sud plus chaud et plus sec.</li>
-        <li><b>Carte en dégradé</b> : l'indice de chaque hexagone (0–100) est l'indice météo de l'espèce multiplié par la part de forêt (pleine valeur dès 50 % de forêt).</li>
+        <li><b>Carte en dégradé</b> : l'indice de chaque hexagone (0–100) est l'indice météo de l'espèce multiplié par la part d'arbres hôtes de l'espèce (pleine valeur dès 50 %), le pH et la pente. Altitude, versant et texture du sol corrigent la météo.</li>
         <li><b>Période réfractaire</b> : après une grosse poussée, le mycélium a besoin de 2 à 3 semaines pour en produire une autre aussi forte.</li>
         <li><b>Gel</b> : il détruit les carpophores. Le pied de mouton supporte de petites gelées.</li>
         <li><b>Redoux</b> : une remontée au-dessus de la plage de l'espèce juste après le choc casse la pousse.</li>
       </ul>
       <p class="note">La lune n'est pas prise en compte : aucune étude sérieuse ne montre d'effet. L'habitat compte aussi (arbres hôtes, sol acide ou calcaire, coupes récentes) : c'est le choix de tes coins qui le prend en compte.</p>
-      <p class="note">Les paramètres viennent de repères de cueilleurs et de la littérature amateur, pas d'une calibration scientifique. C'est un outil pour comprendre et explorer, pas une garantie.</p>
+      <div class="ttl" style="margin-top:12px">Poids des variables et études</div>
+      <table class="sptab" style="font-size:13px"><tr><th>Variable</th><th>Poids</th><th>Appui</th></tr>
+        <tr><td>Bilan hydrique du mois</td><td>1</td><td>Meilleur prédicteur annuel du cèpe : pluie − évaporation de septembre-octobre, R² = 0,66 (Martínez-Peña 2003, pin sylvestre, Soria). La pluie agit avec un mois de décalage, l'humidité du sol le mois même (Karavani et al. 2018, Agric. For. Meteorol.). Les pics de récolte suivent la pluie de fin d'été et d'automne (Espagne, 2017).</td></tr>
+        <tr><td>Humidité du sol</td><td>1</td><td>Karavani et al. 2018.</td></tr>
+        <tr><td>Température de l'air (5 jours)</td><td>0,8</td><td>Optimum à 13,2 °C, aucun cèpe au-dessus de 17,5 °C par temps sec ; la température contraint plus que la pluie récente (Brejon Lamartinière &amp; Hoffman 2025, hêtraie, Allemagne, 10 ans, 1 905 cèpes, prépublication).</td></tr>
+        <tr><td>Pluie des 7 derniers jours</td><td>0,6</td><td>Effet positif et linéaire mais faible à court terme (même étude) ; pluie de la semaine précédente pour la girolle (Botany 2011, Canada).</td></tr>
+        <tr><td>Arbres hôtes</td><td>1</td><td>Champignons mycorhiziens : sans arbre hôte, pas de fructification.</td></tr>
+        <tr><td>pH du sol</td><td>0,4</td><td>Cèpe et girolle sur sols acides (pH ≈ 4,2 ; Bohus 1973) ; pH et rapport C/N expliquent la richesse en champignons mycorhiziens (pin sylvestre, Espagne). Donnée SoilGrids lissée à 250 m.</td></tr>
+        <tr><td>Pente</td><td>0,3</td><td>La production baisse avec la pente ; elle augmente avec l'altitude et l'exposition nord (Bonet et al. 2008, Pyrénées centrales).</td></tr>
+        <tr><td>Air sec, redoux</td><td>0,5</td><td>Repères de cueilleurs, sans étude chiffrée.</td></tr>
+        <tr><td>Gel, saison</td><td>1</td><td>Contraintes physiques et phénologiques.</td></tr>
+      </table>
+      <p class="note">Ces études portent surtout sur le cèpe de Bordeaux, en pinède espagnole ou en hêtraie allemande. Pour les autres espèces, les optimums de température et les préférences de sol restent des estimations. Les poids traduisent l'ordre d'importance trouvé dans ces travaux, pas un ajustement statistique sur des cueillettes : c'est un outil pour comprendre et explorer, pas une garantie.</p>
       <div class="ttl" style="margin-top:12px">Données</div>
-      <p class="note">Météo : Open-Meteo (CC BY 4.0), 32 jours passés et 7 jours de prévision, avec température et humidité du sol modélisées. Cartes et altitude : Géoplateforme IGN, licence ouverte Etalab 2.0. Tout est gardé sur ton téléphone. Rien n'est envoyé ailleurs, sauf les coordonnées demandées aux services météo et d'altitude.</p>
+      <p class="note">Météo : Open-Meteo (CC BY 4.0), 32 jours passés et 7 jours de prévision, avec température et humidité du sol modélisées. Cartes, altitude et BD Forêt : Géoplateforme IGN, licence ouverte Etalab 2.0. Sols : SoilGrids (ISRIC, CC BY 4.0). Tout est gardé sur ton téléphone. Rien n'est envoyé ailleurs, sauf les coordonnées demandées aux services météo et d'altitude.</p>
       <div class="row"><button class="btn" id="exportBtn">Copier mes coins (sauvegarde)</button><button class="btn" id="importBtn">Coller une sauvegarde</button></div>
       <textarea id="ioBox" style="display:none;width:100%;height:90px;margin-top:8px;font:12px monospace;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:8px"></textarea>
       <button class="btn" id="ioApply" style="display:none;margin-top:6px">Importer</button>
@@ -1000,18 +1013,20 @@ th:first-child,td:first-child{text-align:left}
 "use strict";
 const $=id=>document.getElementById(id);
 // ================= ESPÈCES / SOLS =================
+// topt : température de l'air (moyenne sur 5 jours) la plus favorable. Mesurée pour le cèpe de Bordeaux (13,2 °C,
+// Brejon Lamartinière & Hoffman 2025) ; pour les autres, estimée en décalant de la même façon leur plage de température du sol.
 const SP={
-  edulis:{n:"Cèpe de Bordeaux",ts:[12,18],lag:12,need:30,w:.75,hot:true,frostT:0,win:6,humMin:.12,
+  edulis:{n:"Cèpe de Bordeaux",topt:13.2,ts:[12,18],lag:12,need:30,w:.75,hot:true,frostT:0,win:6,humMin:.12,
     season:{6:.3,7:.5,8:.7,9:1,10:1,11:.6,12:.2}},
-  pino:{n:"Cèpe des pins",ts:[8,15],lag:13,need:30,w:.75,hot:true,frostT:-1,win:6,humMin:.12,
+  pino:{n:"Cèpe des pins",topt:9.7,ts:[8,15],lag:13,need:30,w:.75,hot:true,frostT:-1,win:6,humMin:.12,
     season:{8:.4,9:.8,10:1,11:1,12:.4}},
-  aest:{n:"Cèpe d'été",ts:[15,22],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
+  aest:{n:"Cèpe d'été",topt:16.7,ts:[15,22],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
     season:{5:.4,6:.9,7:1,8:1,9:.8,10:.4}},
-  aereus:{n:"Cèpe bronzé (tête de nègre)",ts:[16,23],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
+  aereus:{n:"Cèpe bronzé (tête de nègre)",topt:17.7,ts:[16,23],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
     season:{6:.6,7:1,8:1,9:.8,10:.4}},
-  girolle:{n:"Girolle",ts:[12,22],lag:10,need:25,w:.2,hot:false,frostT:-1,win:12,humMin:.22,
+  girolle:{n:"Girolle",topt:15.2,ts:[12,22],lag:10,need:25,w:.2,hot:false,frostT:-1,win:12,humMin:.22,
     season:{6:.7,7:1,8:1,9:1,10:.8,11:.4}},
-  pdm:{n:"Pied de mouton",ts:[6,15],lag:12,need:25,w:.4,hot:false,frostT:-3,win:14,humMin:.15,
+  pdm:{n:"Pied de mouton",topt:8.7,ts:[6,15],lag:12,need:25,w:.4,hot:false,frostT:-3,win:14,humMin:.15,
     season:{8:.4,9:.8,10:1,11:1,12:.7,1:.3}}
 };
 const SOIL={sable:{n:"Sableux / drainant",cap:45,dr:.25},limon:{n:"Limoneux / humifère",cap:85,dr:.12},argile:{n:"Argileux / lourd",cap:125,dr:.06}};
@@ -1239,6 +1254,20 @@ function modelFor(source,spOverride){
   }
   return compute(D,cfg);
 }
+// ---- poids de chaque variable, selon sa valeur prédictive dans les études (voir onglet Méthode) ----
+// Un facteur f (0–1) entre comme f^poids : poids 1 = peut annuler l'indice, poids 0,3 = ne fait que le moduler.
+const WEIGHTS={
+  water:1,   // bilan hydrique (pluie − ETP) de septembre-octobre : meilleur prédicteur annuel du cèpe, R² = 0,66 (Martínez-Peña 2003, pin sylvestre, Soria) ;
+             // l'effet de la pluie arrive avec un mois de décalage (Karavani et al. 2018)
+  hum:1,     // humidité du sol du mois en cours (Karavani et al. 2018)
+  temp:.8,   // optimum à 13,2 °C sur 5 jours pour le cèpe, contrainte plus forte que la pluie récente (Brejon Lamartinière & Hoffman 2025)
+  trig:.6,   // pluie des jours précédents : effet positif mais faible à court terme (Brejon Lamartinière & Hoffman 2025) ;
+             // pluie de la semaine précédente pour la girolle (Botany 2011, pinèdes de pin gris au Canada)
+  dry:.5,reb:.5, // air sec, redoux : repères de cueilleurs, sans étude chiffrée
+  frost:1,season:1, // contraintes physiques et phénologiques
+  ph:.4,     // sols acides préférés par le cèpe et la girolle (pH ≈ 4,2) ; donnée SoilGrids lissée à 250 m
+  slope:.3   // la production baisse quand la pente augmente (Bonet et al. 2008, Pyrénées centrales)
+};
 function compute(D,cfg){
   const {sp,soil,expo}=cfg,N=D.dates.length,rain=D.rain,tmax=D.tmax,tmin=D.tmin;
   const todayIso=isoDay(new Date());let today=D.today!=null?D.today:D.dates.indexOf(todayIso);if(today<0)today=todayIso>D.dates[N-1]?N:0;
@@ -1261,7 +1290,8 @@ function compute(D,cfg){
   // déclenchements
   const trig=[];
   for(let t=0;t<N;t++){
-    let r3=0;for(let k=Math.max(0,t-2);k<=t;k++)r3+=rain[k];
+    // pluie des 7 derniers jours (5 jours pour le cèpe en hêtraie, une semaine pour la girolle : voir WEIGHTS)
+    let r3=0;for(let k=Math.max(0,t-6);k<=t;k++)r3+=rain[k];
     const rs=Math.min(1,r3/(sp.need*(soil.cap<60?1.1:1)));
     const before=ts[Math.max(0,t-5)];let mn=ts[t];for(let k=t;k<=Math.min(N-1,t+3);k++)mn=Math.min(mn,ts[k]);
     const shock=Math.min(1,Math.max(0,before-mn)/4);
@@ -1271,6 +1301,12 @@ function compute(D,cfg){
     const pre=hn?Math.min(1,Math.max(.4,(hs/hn-10)/10)):.7;
     trig.push({v:rs*(sp.w*sh+(1-sp.w))*pre,rs,sh,pre,r3});
   }
+  // bilan hydrique des 30 derniers jours : pluie − évapotranspiration (≈ 0,1 mm/j par °C au-dessus de −5 °C)
+  const pet=tm.map(v=>Math.max(0,.1*(v+5))),wb=[];
+  for(let d=0;d<N;d++){let s=0;for(let j=Math.max(0,d-29);j<=d;j++)s+=rain[j]-pet[j];wb.push(s)}
+  // température de l'air moyenne des 5 derniers jours
+  const t5=tm.map((_,d)=>{let s=0,c=0;for(let j=Math.max(0,d-4);j<=d;j++){s+=tm[j];c++}return s/c});
+  const pw=(f,w)=>Math.pow(Math.max(0,Math.min(1,f)),w),W=WEIGHTS;
   const E=[],Ed=[];
   for(let d=0;d<N;d++){
     let best=0,bd=null;
@@ -1283,16 +1319,18 @@ function compute(D,cfg){
       if(!shape)continue;
       let minH=1;for(let j=t;j<=d;j++)minH=Math.min(minH,H[j]);
       const hum=Math.min(1,Math.max(0,(minH-sp.humMin)/.2));
-      let tt=0,tc=0;for(let j=Math.min(d,t+3);j<=d;j++){tt+=ts[j];tc++}tt/=tc;
-      const [a,b]=sp.ts;const temp=tt<a?Math.max(0,1-(a-tt)/4):tt>b?Math.max(0,1-(tt-b)/3):1;
+      // température : courbe en cloche autour de l'optimum de l'espèce (air, moyenne sur 5 jours)
+      const tt=t5[d],temp=Math.exp(-(((tt-sp.topt)/3.5)**2)/2);
+      const water=Math.min(1,Math.max(0,(wb[d]+30)/90)); // −30 mm → 0, +60 mm → 1
       let mx=-99;for(let j=t+1;j<=Math.min(N-1,t+7);j++)mx=Math.max(mx,ts[j]);
       const reb=sp.hot&&mx>sp.ts[1]+3?.4:1;
       let v=0,vn=0;for(let j=Math.max(0,d-3);j<=d;j++){v+=vpd[j];vn++}v/=vn;
       const dry=Math.min(1,Math.max(.3,1-(v-.6)/1.4));
       const frost=(tmin[d]<sp.frostT||(d&&tmin[d-1]<sp.frostT))?.15:1;
       const mon=+D.dates[d].slice(5,7);const season=sp.season[mon]||.1;
-      const sc=trig[t].v*shape*hum*temp*reb*frost*dry*season;
-      if(sc>best){best=sc;bd={t,lag,k,hum,temp,reb,frost,dry,season,minH,tt,v,tr:trig[t]}}
+      // produit pondéré : un facteur de poids 1 peut tout bloquer, un poids faible ne fait que moduler
+      const sc=shape*pw(trig[t].v,W.trig)*pw(water,W.water)*pw(hum,W.hum)*pw(temp,W.temp)*pw(reb,W.reb)*pw(frost,W.frost)*pw(dry,W.dry)*pw(season,W.season);
+      if(sc>best){best=sc;bd={t,lag,k,hum,temp,water,wb:wb[d],reb,frost,dry,season,minH,tt,v,tr:trig[t]}}
     }
     E.push(best);Ed.push(bd);
   }
@@ -1354,13 +1392,13 @@ const ok=b=>b?"✅":"❌";
 function subs(){
   const d=M.Ed[sel];const box=$("subs");
   if(!d){box.innerHTML=`<p class="note">Aucun déclenchement (pluie et choc) dans le mois précédent ne mène à une sortie ce jour-là.</p>`;return}
-  const items=[["Déclenchement (pluie × choc)",d.tr.rs*(M.sp.w*d.tr.sh+(1-M.sp.w))],["Réserve du mycélium",d.tr.pre],["Humidité maintenue",d.hum],["Température du sol",d.temp],["Air sec (VPD) ★",d.dry],["Saison ★",d.season],["Redoux ★",d.reb],["Gel ★",d.frost],["Période réfractaire ★",d.refr?.6:1]];
+  const items=[["Déclenchement (pluie × choc)",d.tr.rs*(M.sp.w*d.tr.sh+(1-M.sp.w))],["Réserve du mycélium",d.tr.pre],["Bilan hydrique du mois",d.water],["Humidité maintenue",d.hum],["Température de l'air (5 j)",d.temp],["Air sec (VPD) ★",d.dry],["Saison ★",d.season],["Redoux ★",d.reb],["Gel ★",d.frost],["Période réfractaire ★",d.refr?.6:1]];
   box.innerHTML=items.map(([n,v])=>`<div class="sub-i"><span class="nm">${n}</span><span class="bar"><i style="width:${Math.round(v*100)}%;background:${v<.5?"var(--tmax)":"var(--l2)"}"></i></span><span class="pc">${Math.round(v*100)}%</span></div>`).join("")+`<p class="note" style="margin:6px 0 0">★ indices absents de Cépio. L'altitude et l'exposition corrigent directement les températures et l'humidité.</p>`;
 }
 function explain(){
   const i=sel,d=M.Ed[i],c=M.Cd[i],sp=M.sp;let h="";
   if(M.cfg.alt!=null&&M.cfg.elev!=null)h+=`<li><span>⛰️</span><span>Altitude du coin ${M.cfg.alt} m, maille météo ${Math.round(M.cfg.elev)} m → ${M.cfg.dT>=0?"+":""}${M.cfg.dT.toFixed(1)} °C appliqués (exposition comprise)</span></li>`;
-  h+=`<li><span>📍</span><span>Sol ≈ <b>${M.ts[i].toFixed(1)} °C</b>, humidité ≈ <b>${Math.round(M.H[i]*100)} %</b> (${M.D.real?"Open-Meteo":"estimée"}). Plage idéale : ${sp.ts[0]}–${sp.ts[1]} °C.</span></li>`;
+  h+=`<li><span>📍</span><span>Sol ≈ <b>${M.ts[i].toFixed(1)} °C</b>, humidité ≈ <b>${Math.round(M.H[i]*100)} %</b> (${M.D.real?"Open-Meteo":"estimée"}). Air sur 5 jours ≈ <b>${d?d.tt.toFixed(1):"?"} °C</b> (optimum ${String(sp.topt).replace(".",",")} °C).${d?` Bilan pluie − évaporation sur 30 jours : <b>${d.wb>0?"+":""}${Math.round(d.wb)} mm</b>.`:""}</span></li>`;
   h+=`<li><span>🔶</span><span><b>Règle Cépio</b> ${pill(M.C[i])} — `;
   if(c.stage===4)h+=`froid jusqu'au ${M.dateOf(c.c)}, plus de 15 mm le ${M.dateOf(c.r)}, puis ${c.dry} jours secs : règle remplie (80 %).`;
   else if(c.stage===3)h+=`froid et pluie OK (${M.dateOf(c.r)}), ${c.dry} jour(s) sec(s) : ${c.dry<5?"il en faut 5 à 8":"fenêtre dépassée"}.`;
@@ -1368,7 +1406,7 @@ function explain(){
   else if(c.stage===1)h+=`3 jours froids (${M.dateOf(c.c)}), mais pas plus de 15 mm de pluie dans les 5 jours suivants.`;
   else h+="pas d'épisode de 3 jours sous 12 °C avant ce jour.";
   h+=`</span></li><li><span>🟢</span><span><b>Modèle enrichi</b> ${pill(M.E[i])}</span></li>`;
-  if(d){h+=`<li><span>${ok(d.tr.rs>=.8)}</span><span>Pluie déclenchante : ${Math.round(d.tr.r3)} mm sur 3 jours jusqu'au ${M.dateOf(d.t)} (besoin ≈ ${sp.need} mm)</span></li>`;
+  if(d){h+=`<li><span>${ok(d.tr.rs>=.8)}</span><span>Pluie déclenchante : ${Math.round(d.tr.r3)} mm sur 7 jours jusqu'au ${M.dateOf(d.t)} (besoin ≈ ${sp.need} mm)</span></li>`;
     h+=`<li><span>⏱️</span><span>Délai de sortie ≈ ${d.lag} jours → ${d.k<0?`pic dans ${-d.k} j`:d.k===0?"premier jour de sortie":`${d.k} j après le début de la sortie`}</span></li>`;
     h+=`<li><span>${ok(d.dry>=.7)}</span><span>Air : déficit de vapeur ${d.v.toFixed(2)} kPa ${d.v>1.2?"(air sec, les jeunes champignons sèchent)":"(correct)"}</span></li>`}
   $("why").innerHTML=h;
@@ -1549,6 +1587,28 @@ async function fetchAlts(pts){ // pts: [[lat,lon]...] → altitudes
   await Promise.all(Array.from({length:Math.min(4,parts.length)},worker));
   return res.flat();
 }
+// ---- sols : SoilGrids (ISRIC, CC BY 4.0), grille de 250 m, couche 5–15 cm ----
+// GeoTIFF renvoyé par le WCS : entiers 16 bits, tuiles de 256, compression deflate, prédicteur horizontal
+async function soilGrid(prop,bb){
+  const C="http://www.opengis.net/def/crs/EPSG/0/4326";
+  const r=await tfetch(`https://maps.isric.org/mapserv?map=/map/${prop}.map&SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCoverage&COVERAGEID=${prop}_5-15cm_mean&FORMAT=image/tiff&SUBSET=long(${bb[0].toFixed(4)},${bb[2].toFixed(4)})&SUBSET=lat(${bb[1].toFixed(4)},${bb[3].toFixed(4)})&SUBSETTINGCRS=${C}&OUTPUTCRS=${C}`,30000);
+  if(!r.ok)throw new Error("sol "+r.status);const buf=await r.arrayBuffer(),dv=new DataView(buf);if(dv.getUint16(0)!==0x4949)throw new Error("tiff");
+  const T={},ifd=dv.getUint32(4,true),n=dv.getUint16(ifd,true),SZ={1:1,2:1,3:2,4:4,12:8};
+  for(let i=0;i<n;i++){const e=ifd+2+i*12,tag=dv.getUint16(e,true),ty=dv.getUint16(e+2,true),c=dv.getUint32(e+4,true),s=(SZ[ty]||1)*c,o=s<=4?e+8:dv.getUint32(e+8,true),v=[];
+    for(let k=0;k<c&&ty!==2;k++)v.push(ty===3?dv.getUint16(o+2*k,true):ty===4?dv.getUint32(o+4*k,true):ty===12?dv.getFloat64(o+8*k,true):dv.getUint8(o+k));T[tag]=v}
+  const W=T[256][0],H=T[257][0],tw=(T[322]||[W])[0],th=(T[323]||T[278]||[H])[0],offs=T[324]||T[273],cnts=T[325]||T[279],pred=(T[317]||[1])[0];
+  const [dx,dy]=T[33550],x0=T[33922][3],y0=T[33922][4],grid=new Int16Array(W*H).fill(-32768),across=Math.ceil(W/tw);
+  for(let t=0;t<offs.length;t++){
+    const ds=new Blob([new Uint8Array(buf,offs[t],cnts[t])]).stream().pipeThrough(new DecompressionStream("deflate"));
+    const raw=new Int16Array(await new Response(ds).arrayBuffer()),tx=(t%across)*tw,ty=Math.floor(t/across)*th;
+    for(let y=0;y<th;y++){let acc=0;for(let x=0;x<tw;x++){let v=raw[y*tw+x];if(pred===2){acc=(acc+v)<<16>>16;v=acc}
+      const X=tx+x,Y=ty+y;if(X<W&&Y<H)grid[Y*W+X]=v}}}
+  return{get(la,lo){const X=Math.floor((lo-x0)/dx),Y=Math.floor((y0-la)/dy);if(X<0||Y<0||X>=W||Y>=H)return null;const v=grid[Y*W+X];return v>0?v:null}};
+}
+// pH, argile et sable (%) d'un hexagone : moyenne sur ses 7 points d'échantillonnage
+function soilOf(grids,pts){const out={};for(const [k,div] of [["phh2o",10],["clay",10],["sand",10]]){
+  const v=pts.map(([la,lo])=>grids[k]&&grids[k].get(la,lo)).filter(x=>x!=null);out[k]=v.length?+(v.reduce((a,b)=>a+b)/v.length/div).toFixed(1):null}
+  return out.phh2o==null&&out.clay==null?null:{ph:out.phh2o,clay:out.clay,sand:out.sand}}
 const tileImg={};let forestZ=14;
 // classe BD Forêt du point : clé de TREES, "autre" (forêt d'essence non reconnue), "none" (rien), null (tuile indisponible)
 async function forestPixel(lat,lon){
@@ -1629,7 +1689,7 @@ async function analyseHex(bb,opt={}){
   if(!hs.length)return false;
   if(hs.length>600){$("hexSteps").innerHTML=`<li><span>⚠️</span><span>${hs.length} hexagones : trop pour une analyse (600 max). Zoome ou choisis une taille plus grande.</span></li>`;return false}
   hexBusy=true;$("hexBtn").disabled=true;const prog=$("hexProg"),bar=prog.firstElementChild;prog.style.display="";
-  const st={alt:"⏳",forest:"⏳",wx:"⏳"},lab={alt:"Altitude moyenne",forest:"Part de forêt",wx:"Météo (grille 0,1°)"},ex={};
+  const st={alt:"⏳",forest:"⏳",soil:"⏳",wx:"⏳"},lab={alt:"Altitude moyenne",forest:"Part de forêt",soil:"Sol : pH et texture (SoilGrids)",wx:"Météo (grille 0,1°)"},ex={};
   const paint=()=>$("hexSteps").innerHTML=Object.keys(st).map(k=>`<li><span>${st[k]}</span><span>${lab[k]}${ex[k]||""}</span></li>`).join("");paint();
   // points de grille météo voisins
   const metas=hs.map(([q,r])=>{const [la,lo]=hexCenter(q,r,a),gla=Math.round(la*10)/10,glo=Math.round(lo*10)/10,pts=[];
@@ -1648,7 +1708,11 @@ async function analyseHex(bb,opt={}){
       m.forest=v.length?Object.values(m.trees).reduce((a,b)=>a+b,0)/v.length:null;
       fd++;bar.style.width=(fd/metas.length*100)+"%";if(fd%10===0){ex.forest=` · ${fd}/${metas.length}`;paint()}}
     st.forest=metas.some(m=>m.forest!=null)?"✅":"⚠️";ex.forest=st.forest==="⚠️"?" · inconnue (tuiles indisponibles)":"";paint()})();
-  await Promise.all([pWx,pAlt,pFor]);
+  // sol : une grille par propriété sur l'emprise des points, puis moyenne par hexagone
+  const pad=.01,sbb=[Math.min(...all.map(p=>p[1]))-pad,Math.min(...all.map(p=>p[0]))-pad,Math.max(...all.map(p=>p[1]))+pad,Math.max(...all.map(p=>p[0]))+pad];
+  const pSoil=(async()=>{const g={};await Promise.all(["phh2o","clay","sand"].map(async p=>{try{g[p]=await soilGrid(p,sbb)}catch(e){}}));
+    metas.forEach(m=>m.soil=soilOf(g,samplePts(m.q,m.r,a)));st.soil=metas.some(m=>m.soil)?"✅":"⚠️";if(st.soil==="⚠️")ex.soil=" · service indisponible";paint()})();
+  await Promise.all([pWx,pAlt,pFor,pSoil]);
   replaced.forEach(id=>delete hexStore.hex[id]);
   metas.forEach(m=>{hexStore.hex[m.id]=m});
   // limite la taille du stockage : garde les 3000 hexagones les plus récents
@@ -1661,8 +1725,18 @@ const GRAD=[[0,[236,240,226]],[.2,[199,226,170]],[.4,[134,196,110]],[.6,[72,153,
 function gradColor(v){v=Math.max(0,Math.min(1,v));for(let i=1;i<GRAD.length;i++)if(v<=GRAD[i][0]){const [a,ca]=GRAD[i-1],[b,cb]=GRAD[i],t=(v-a)/(b-a);return"rgb("+ca.map((c,k)=>Math.round(c+(cb[k]-c)*t)).join(",")+")"}return"rgb(12,62,26)"}
 const GRAD_CSS="linear-gradient(90deg,"+GRAD.map(([p,c])=>`rgb(${c.join(",")}) ${p*100}%`).join(",")+")";
 let legendCtl=null,labLayer=null;
-// poids du milieu : part d'arbres favorables à l'espèce (pleine dès 50 %) ; anciennes analyses : part de forêt
-function habW(h,sp){const hab=habitat(h,sp);return hab!=null?Math.min(1,hab/.5):h.forest==null?1:Math.min(1,h.forest/.5)}
+// ---- facteurs du lieu ----
+// texture SoilGrids → classe de sol du modèle (réserve en eau, drainage)
+function soilClassOf(h){const s=h.soil;if(!s||s.sand==null||s.clay==null)return SOIL.limon;return s.sand>65?SOIL.sable:s.clay>35?SOIL.argile:SOIL.limon}
+// pH : favorable jusqu'à a, puis baisse linéaire jusqu'à m à pH b. Cèpes et girolle des sols acides (pH ≈ 4,2 sous cèpe ;
+// girolle « acidophile à subacidophile », Bohus 1973) ; cèpe d'été, cèpe bronzé et pied de mouton supportent des sols moins acides
+const PH={edulis:[5.5,7.5,.5],pino:[5.5,7.5,.5],girolle:[5.5,7.5,.5],aest:[6.5,8,.6],aereus:[6.5,8,.6],pdm:[7,8,.8]};
+function phF(h,sp){const s=h.soil;if(!s||s.ph==null)return 1;const [a,b,m]=PH[sp];return s.ph<=a?1:s.ph>=b?m:1-(1-m)*(s.ph-a)/(b-a)}
+// pente : sans effet jusqu'à 10°, puis la production baisse (Bonet et al. 2008), jusqu'à 0,6 à 35°
+const slopeF=h=>h.slope==null||h.slope<=10?1:Math.max(.6,1-.4*(h.slope-10)/25);
+const siteW=(h,sp)=>Math.pow(phF(h,sp),WEIGHTS.ph)*Math.pow(slopeF(h),WEIGHTS.slope);
+// poids du milieu : part d'arbres favorables à l'espèce (pleine dès 50 %), pH et pente ; anciennes analyses : part de forêt
+function habW(h,sp){const hab=habitat(h,sp);return(hab!=null?Math.min(1,hab/.5):h.forest==null?1:Math.min(1,h.forest/.5))*siteW(h,sp)}
 function hexIndex(h,sp,mode){ // indice 0–1 : pousse météo × arbres favorables (la moyenne "all" est déjà pondérée espèce par espèce)
   const sc=hexScore(h.id,sp,mode);if(!sc)return null;const ex=excluded(h);
   return{v:ex?0:sc.v*(sp===ALL?1:habW(h,sp)),raw:sc.v,i:sc.i,m:sc.m,excl:ex}}
@@ -1674,7 +1748,7 @@ function hexModel(id,sp){const k=id+"|"+sp;if(hexModelCache[k])return hexModelCa
     return hexModelCache[k]={...ms[0],E:ms[0].E.map((_,i)=>ms.reduce((a,m,j)=>a+m.E[i]*ws[j],0)/ms.length)}}
   const h=hexStore.hex[id];if(!h)return null;const D=hexWeather(h);if(!D)return null;
   const ex=hexExpo(h);if(ex.dT){const t=v=>v==null?null:v+ex.dT;D.tmax=D.tmax.map(t);D.tmin=D.tmin.map(t);D.tsol=D.tsol.map(t)}
-  const m=compute(D,{sp:SP[sp],soil:SOIL.limon,expo:{dT:ex.dT,dH:ex.dH},dT:ex.dT,alt:h.alt!=null?Math.round(h.alt):null,elev:null});return hexModelCache[k]=m}
+  const m=compute(D,{sp:SP[sp],soil:soilClassOf(h),expo:{dT:ex.dT,dH:ex.dH},dT:ex.dT,alt:h.alt!=null?Math.round(h.alt):null,elev:null});return hexModelCache[k]=m}
 // période affichée : "now" aujourd'hui, "tom" demain, "fc" meilleur jour des 7 prochains
 let hMode=LS.get("hMode","fc");if(!["now","tom","fc"].includes(hMode))hMode="fc";
 const MODE_LAB={now:"aujourd'hui",tom:"demain",fc:"meilleur jour de la semaine"};
@@ -1718,6 +1792,7 @@ function hexPopup(h,p){const sp=$("hSp").value,sc=hexScore(h.id,sp,"fc"),now=hex
   Altitude moyenne : ${h.alt!=null?Math.round(h.alt)+" m":"?"}${h.altRange!=null?` (dénivelé ${Math.round(h.altRange)} m)`:""}<br>
   ${h.slope!=null?`Versant : <b>${versant(h)}</b> · pente ${h.slope}°${Math.abs(hexExpo(h).dT)>=.1?` (${hexExpo(h).dT>0?"+":"−"}${Math.abs(hexExpo(h).dT).toFixed(1).replace(".",",")} °C)`:""}<br>`:""}
   Forêt : ${f}${h.forest!=null&&h.forest<.1?" — peu propice":""}<br>
+  ${h.soil?`Sol : pH ${String(h.soil.ph).replace(".",",")} · argile ${Math.round(h.soil.clay)} % · sable ${Math.round(h.soil.sand)} % (${soilClassOf(h).n.split(" ")[0].toLowerCase()})<br>`:""}
   ${ess?`Essences : ${ess}<br>`:h.forest?`<span style="color:var(--muted)">Essences non analysées : relance l'analyse.</span><br>`:""}
   ${hab!=null?`Arbres favorables à l'espèce : ${Math.round(hab*100)} % de l'hexagone<br>`:""}
   ${ex?`<b style="color:var(--warn)">Écarté : ${ex}</b><br>`:""}
