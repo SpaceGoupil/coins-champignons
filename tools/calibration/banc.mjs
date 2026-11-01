@@ -1,9 +1,6 @@
 // Fait tourner compute() de l'app (extrait tel quel d'index.html) le jour de chaque observation et 45 jours plus tôt.
-import fs from "fs";import vm from "vm";
-const html=fs.readFileSync(process.argv[2],"utf8"),grab=re=>{const m=html.match(re);if(!m)throw new Error("introuvable : "+re);return m[0]};
-const code=[grab(/function isoDay\(d\)\{[^\n]*\}/),grab(/const SP=\{\n[\s\S]*?\n\};/),grab(/const SOIL=\{[^\n]*\};/),grab(/const EXPO=\{[^\n]*\};/),
-  grab(/const WEIGHTS=\{[\s\S]*?\n\};/),grab(/function compute\(D,cfg\)\{[\s\S]*?\n\}\n/)].join("\n")+"\n;({SP,SOIL,EXPO,compute})";
-const {SP,SOIL,EXPO,compute}=vm.runInNewContext(code,{Math,Date,Array,Object,Set,JSON,Number,String});
+import fs from "fs";import {loadModel} from "./lib.mjs";
+const {SP,SOIL,EXPO,compute}=loadModel(process.argv[2]);
 const R=JSON.parse(fs.readFileSync("data/calibwx.json"));
 // série tronquée au jour t (inclus), modèle calculé « comme si on était ce jour-là »
 const at=(w,t)=>{const D={};for(const k of ["dates","tmax","tmin","rain","tsol","sm","sm2","rh"])D[k]=w[k].slice(0,t+1);D.real=true;D.today=t;return D};

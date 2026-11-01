@@ -1322,8 +1322,13 @@ const WEIGHTS={
   ph:.4,     // sols acides préférés par le cèpe et la girolle (pH ≈ 4,2) ; donnée SoilGrids lissée à 250 m
   slope:.3   // la production baisse quand la pente augmente (Bonet et al. 2008, Pyrénées centrales)
 };
+// constantes de structure du modèle (communes, modifiables par espèce via sp.mp) :
+// rw = fenêtre de la pluie déclenchante (jours), choc = baisse de température du sol (°C) donnant un choc plein,
+// pet = évapotranspiration de sous-bois (mm/j par °C au-dessus de −5 °C), lagT = allongement du délai (jours par °C sous 16 °C)
+const MODEL={rw:7,choc:4,pet:.05,lagT:.5};
 function compute(D,cfg){
   const {sp,soil,expo}=cfg,N=D.dates.length,rain=D.rain,tmax=D.tmax,tmin=D.tmin;
+  const MP=Object.assign({},MODEL,sp.mp||{}),W=Object.assign({},WEIGHTS,sp.wt||{}); // réglages propres à l'espèce
   const todayIso=isoDay(new Date());let today=D.today!=null?D.today:D.dates.indexOf(todayIso);if(today<0)today=todayIso>D.dates[N-1]?N:0;
   const tm=tmin.map((v,i)=>(v+tmax[i])/2);
   // sol : température et humidité
@@ -1347,10 +1352,10 @@ function compute(D,cfg){
   const trig=[];
   for(let t=0;t<N;t++){
     // pluie des 7 derniers jours (5 jours pour le cèpe en hêtraie, une semaine pour la girolle : voir WEIGHTS)
-    let r3=0;for(let k=Math.max(0,t-6);k<=t;k++)r3+=rain[k];
+    let r3=0;for(let k=Math.max(0,t-MP.rw+1);k<=t;k++)r3+=rain[k];
     const rs=Math.min(1,r3/(sp.need*(soil.cap<60?1.1:1)));
     const before=ts[Math.max(0,t-5)];let mn=ts[t];for(let k=t;k<=Math.min(N-1,t+3);k++)mn=Math.min(mn,ts[k]);
-    const shock=Math.min(1,Math.max(0,before-mn)/4);
+    const shock=Math.min(1,Math.max(0,before-mn)/MP.choc);
     let cold=0;for(let k=Math.max(0,t-4);k<=Math.min(N-1,t+3);k++)if(tm[k]<12)cold++;
     const sh=Math.max(shock,Math.min(1,cold/3));
     let hs=0,hn=0;for(let k=Math.max(0,t-30);k<=t-8;k++){hs+=tmax[k];hn++}
@@ -1359,7 +1364,7 @@ function compute(D,cfg){
   }
   // bilan hydrique des 30 derniers jours : pluie − évapotranspiration réelle d'un sous-bois (≈ 0,05 mm/j par °C au-dessus
   // de −5 °C, soit ~0,9 mm/j à 13 °C ; l'ancienne valeur, double, rendait négatif un octobre à 58 mm)
-  const pet=tm.map(v=>Math.max(0,.05*(v+5))),wb=[];
+  const pet=tm.map(v=>Math.max(0,MP.pet*(v+5))),wb=[];
   for(let d=0;d<N;d++){let s=0;for(let j=Math.max(0,d-29);j<=d;j++)s+=rain[j]-pet[j];wb.push(s)}
   // mémoire de l'été : bilan hydrique des deux mois précédents (J-90 à J-31), ramené à 60 jours ; une sécheresse
   // de fin d'été affaiblit la poussée d'automne sans l'empêcher (plancher 0,5). Neutre sans au moins 45 jours d'historique.
@@ -1368,17 +1373,17 @@ function compute(D,cfg){
   // saison lissée jour par jour : interpolation entre les milieux de mois (plus de saut au 1er du mois)
   const seasonOf=iso=>{const dt=new Date(iso+"T12:00"),m=dt.getMonth()+1,f=(dt.getDate()-15)/30,m2=f<0?(m+10)%12+1:m%12+1,
     a=sp.season[m]||.1,b=sp.season[m2]||.1;return a+(b-a)*Math.abs(f)};
-  const wW=D.sm&&D.sm.some(v=>v!=null)?WEIGHTS.waterWithSoil:WEIGHTS.water;
+  const wW=D.sm&&D.sm.some(v=>v!=null)?W.waterWithSoil:W.water;
   // température de l'air moyenne des 5 derniers jours
   const t5=tm.map((_,d)=>{let s=0,c=0;for(let j=Math.max(0,d-4);j<=d;j++){s+=tm[j];c++}return s/c});
-  const pw=(f,w)=>Math.pow(Math.max(0,Math.min(1,f)),w),W=WEIGHTS;
+  const pw=(f,w)=>Math.pow(Math.max(0,Math.min(1,f)),w);
   const E=[],Ed=[];
   for(let d=0;d<N;d++){
     let best=0,bd=null;
     for(let t=Math.max(0,d-30);t<=d;t++){
       if(trig[t].v<.08)continue;
       let m=0,c=0;for(let k=t;k<=Math.min(d,t+7);k++){m+=ts[k];c++}m/=c;
-      const lag=Math.round(Math.max(sp.lag-3,Math.min(sp.lag+5,sp.lag+(16-m)*.5)));
+      const lag=Math.round(Math.max(sp.lag-3,Math.min(sp.lag+5,sp.lag+(16-m)*MP.lagT)));
       const k=d-(t+lag);
       const shape=k<-2?0:k<0?.45:k<=sp.win?1-k*(.55/sp.win):0;
       if(!shape)continue;
