@@ -814,7 +814,7 @@ th:first-child,td:first-child{text-align:left}
       <div class="row" style="margin-top:8px"><button class="btn pri" id="hexBtn">⬡ Analyser la zone affichée</button><button class="btn" id="hexClear">Effacer</button></div>
       <ul class="steps" id="hexSteps"></ul>
       <div class="prog" id="hexProg" style="display:none"><i></i></div>
-      <p class="note" style="margin-bottom:0">Pour chaque hexagone : altitude moyenne, pente et versant (7 points IGN ; versant nord plus frais et humide, sud plus chaud et sec), part de forêt et essences (BD Forêt, 19 points) pondérées selon les arbres hôtes de chaque espèce, météo moyennée entre les points voisins d'une grille de 0,1° et corrigée de l'altitude. Restent en gris et hors classement : les hexagones sans forêt (villes, cultures, estives), au-dessus de 2 000 m, et en bord de mer ou hors de France. Touche un hexagone pour le détail, ou pour l'<b>affiner</b> en hexagones plus petits : altitude et forêt plus précises (la météo reste celle de la grille de 0,1°). Les hexagones fins s'affichent par-dessus les grands.</p>
+      <p class="note" style="margin-bottom:0">Pour chaque hexagone : altitude moyenne, pente et versant (7 points IGN ; versant nord plus frais et humide, sud plus chaud et sec), part de forêt et essences (BD Forêt, 19 points) pondérées selon les arbres hôtes de chaque espèce, météo Météo-France (AROME, via Open-Meteo) moyennée entre les points voisins d'une grille de 0,1° à 0,025° selon la taille des hexagones, corrigée de l'altitude. Restent en gris et hors classement : les hexagones sans forêt (villes, cultures, estives), au-dessus de 2 000 m, et en bord de mer ou hors de France. Touche un hexagone pour le détail, ou pour l'<b>affiner</b> en hexagones plus petits : altitude et forêt plus précises (la météo reste celle de la grille de 0,1°). Les hexagones fins s'affichent par-dessus les grands.</p>
     </div>
 
     <div class="card">
@@ -960,13 +960,13 @@ th:first-child,td:first-child{text-align:left}
         <tr><td>Bilan hydrique du mois</td><td>1</td><td>Meilleur prédicteur annuel du cèpe : pluie − évaporation de septembre-octobre, R² = 0,66 (Martínez-Peña 2003, pin sylvestre, Soria). La pluie agit avec un mois de décalage, l'humidité du sol le mois même (Karavani et al. 2018, Agric. For. Meteorol.). Les pics de récolte suivent la pluie de fin d'été et d'automne (Espagne, 2017).</td></tr>
         <tr><td>Humidité du sol</td><td>1</td><td>Karavani et al. 2018.</td></tr>
         <tr><td>Mémoire de l'été (J-90 à J-31)</td><td>0,5</td><td>La pluie de fin d'été et du début d'automne pèse le plus sur les records de récolte (Espagne, 2017) ; la température du sol d'août entre dans l'équation de Martínez-Peña 2003.</td></tr>
-        <tr><td>Température de l'air (5 jours)</td><td>0,8</td><td>Optimum à 13,2 °C, aucun cèpe au-dessus de 17,5 °C par temps sec ; la température contraint plus que la pluie récente (Brejon Lamartinière &amp; Hoffman 2025, hêtraie, Allemagne, 10 ans, 1 905 cèpes, prépublication).</td></tr>
+        <tr><td>Température de l'air (5 jours)</td><td>0,8</td><td>Optimum à 13,2 °C, aucun cèpe au-dessus de 17,5 °C par temps sec ; la température contraint plus que la pluie récente (Brejon Lamartinière &amp; Hoffman 2025, hêtraie, Allemagne, 10 ans, 1 905 cèpes, prépublication). Pour les autres espèces : température médiane des 5 jours précédant 160 observations GBIF chacune (Europe tempérée, 2018-2025), méthode qui redonne 13,3 °C pour le cèpe de Bordeaux : cèpe des pins 12,4 °C, pied de mouton 12,3 °C, girolle 15,3 °C, cèpe bronzé 16,8 °C, cèpe d'été 17,7 °C.</td></tr>
         <tr><td>Pluie des 7 derniers jours</td><td>0,6</td><td>Effet positif et linéaire mais faible à court terme (même étude) ; pluie de la semaine précédente pour la girolle (Botany 2011, Canada).</td></tr>
         <tr><td>Arbres hôtes</td><td>1</td><td>Champignons mycorhiziens : sans arbre hôte, pas de fructification.</td></tr>
         <tr><td>pH du sol</td><td>0,4</td><td>Cèpe et girolle sur sols acides (pH ≈ 4,2 ; Bohus 1973) ; pH et rapport C/N expliquent la richesse en champignons mycorhiziens (pin sylvestre, Espagne). Donnée SoilGrids lissée à 250 m.</td></tr>
         <tr><td>Pente</td><td>0,3</td><td>La production baisse avec la pente ; elle augmente avec l'altitude et l'exposition nord (Bonet et al. 2008, Pyrénées centrales).</td></tr>
         <tr><td>Air sec, redoux</td><td>0,5</td><td>Repères de cueilleurs, sans étude chiffrée.</td></tr>
-        <tr><td>Gel, saison</td><td>1</td><td>Contraintes physiques et phénologiques.</td></tr>
+        <tr><td>Gel, saison</td><td>1</td><td>Contraintes physiques et phénologiques. Saisons : moitié repères de cueilleurs, moitié répartition par mois des observations GBIF.</td></tr>
       </table>
       <p class="note">Ces études portent surtout sur le cèpe de Bordeaux, en pinède espagnole ou en hêtraie allemande. Pour les autres espèces, les optimums de température et les préférences de sol restent des estimations. Les poids traduisent l'ordre d'importance trouvé dans ces travaux, pas un ajustement statistique sur des cueillettes : c'est un outil pour comprendre et explorer, pas une garantie.</p>
       <div class="ttl" style="margin-top:12px">Données</div>
@@ -1015,21 +1015,24 @@ th:first-child,td:first-child{text-align:left}
 "use strict";
 const $=id=>document.getElementById(id);
 // ================= ESPÈCES / SOLS =================
-// topt : température de l'air (moyenne sur 5 jours) la plus favorable. Mesurée pour le cèpe de Bordeaux (13,2 °C,
-// Brejon Lamartinière & Hoffman 2025) ; pour les autres, estimée en décalant de la même façon leur plage de température du sol.
+// topt, tsd : température de l'air (moyenne sur 5 jours) la plus favorable et largeur de la cloche. Cèpe de Bordeaux :
+// 13,2 °C (Brejon Lamartinière & Hoffman 2025). Autres espèces : médiane et écart type de la température des 5 jours
+// précédant 160 observations GBIF par espèce (Europe tempérée, 2018-2025, précision ≤ 1 km, météo ERA5) ; la même
+// méthode redonne 13,3 °C pour le cèpe de Bordeaux. season : moitié repères de cueilleurs, moitié part des observations
+// GBIF par mois (lissée sur ±1 mois), rapportée au mois le plus fréquent.
 const SP={
-  edulis:{n:"Cèpe de Bordeaux",topt:13.2,ts:[12,18],lag:12,need:30,w:.75,hot:true,frostT:0,win:6,humMin:.12,
-    season:{6:.3,7:.5,8:.7,9:1,10:1,11:.6,12:.2}},
-  pino:{n:"Cèpe des pins",topt:9.7,ts:[8,15],lag:13,need:30,w:.75,hot:true,frostT:-1,win:6,humMin:.12,
-    season:{8:.4,9:.8,10:1,11:1,12:.4}},
-  aest:{n:"Cèpe d'été",topt:16.7,ts:[15,22],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
-    season:{5:.4,6:.9,7:1,8:1,9:.8,10:.4}},
-  aereus:{n:"Cèpe bronzé (tête de nègre)",topt:17.7,ts:[16,23],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
-    season:{6:.6,7:1,8:1,9:.8,10:.4}},
-  girolle:{n:"Girolle",topt:15.2,ts:[12,22],lag:10,need:25,w:.2,hot:false,frostT:-1,win:12,humMin:.22,
-    season:{6:.7,7:1,8:1,9:1,10:.8,11:.4}},
-  pdm:{n:"Pied de mouton",topt:8.7,ts:[6,15],lag:12,need:25,w:.4,hot:false,frostT:-3,win:14,humMin:.15,
-    season:{8:.4,9:.8,10:1,11:1,12:.7,1:.3}}
+  edulis:{n:"Cèpe de Bordeaux",topt:13.2,tsd:3.3,ts:[12,18],lag:12,need:30,w:.75,hot:true,frostT:0,win:6,humMin:.12,
+    season:{6:.21,7:.47,8:.71,9:1,10:.71,11:.33,12:.1}},
+  pino:{n:"Cèpe des pins",topt:12.4,tsd:3.7,ts:[8,15],lag:13,need:30,w:.75,hot:true,frostT:-1,win:6,humMin:.12,
+    season:{6:.13,7:.17,8:.47,9:.88,10:1,11:.69,12:.23}},
+  aest:{n:"Cèpe d'été",topt:17.7,tsd:3.4,ts:[15,22],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
+    season:{5:.31,6:.7,7:.8,8:1,9:.66,10:.34}},
+  aereus:{n:"Cèpe bronzé (tête de nègre)",topt:16.8,tsd:3.2,ts:[16,23],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
+    season:{6:.46,7:.75,8:.9,9:1,10:.87,11:.37}},
+  girolle:{n:"Girolle",topt:15.3,tsd:3.8,ts:[12,22],lag:10,need:25,w:.2,hot:false,frostT:-1,win:12,humMin:.22,
+    season:{5:.12,6:.68,7:1,8:.79,9:.68,10:.52,11:.24}},
+  pdm:{n:"Pied de mouton",topt:12.3,tsd:4.4,ts:[6,15],lag:12,need:25,w:.4,hot:false,frostT:-3,win:14,humMin:.15,
+    season:{1:.24,8:.48,9:.93,10:1,11:.87,12:.5}}
 };
 const SOIL={sable:{n:"Sableux / drainant",cap:45,dr:.25},limon:{n:"Limoneux / humifère",cap:85,dr:.12},argile:{n:"Argileux / lourd",cap:125,dr:.06}};
 const EXPO={plat:{n:"Plat / indifférent",dT:0,dH:1},nord:{n:"Versant nord",dT:-1,dH:1.12},sud:{n:"Versant sud",dT:1,dH:.88},est:{n:"Versant est",dT:-.3,dH:1.03},ouest:{n:"Versant ouest",dT:.3,dH:.97}};
@@ -1335,7 +1338,7 @@ function compute(D,cfg){
       let minH=1;for(let j=t;j<=d;j++)minH=Math.min(minH,H[j]);
       const hum=Math.min(1,Math.max(0,(minH-sp.humMin)/.2));
       // température : courbe en cloche autour de l'optimum de l'espèce (air, moyenne sur 5 jours)
-      const tt=t5[d],temp=Math.exp(-(((tt-sp.topt)/3.5)**2)/2);
+      const tt=t5[d],temp=Math.exp(-(((tt-sp.topt)/(sp.tsd||3.5))**2)/2);
       const water=Math.min(1,Math.max(0,(wb[d]+30)/90)); // −30 mm → 0, +60 mm → 1
       let mx=-99;for(let j=t+1;j<=Math.min(N-1,t+7);j++)mx=Math.max(mx,ts[j]);
       const reb=sp.hot&&mx>sp.ts[1]+3?.4:1;
@@ -1582,7 +1585,8 @@ function hexAt(la,lo,ok=()=>true){for(const s of SIZES)if(ok(s)){const [q,r]=ll2
 // anciennes données : un grand hexagone dont le centre est déjà couvert par un plus fin est remplacé par celui-ci
 for(const h of Object.values(hexStore.hex))if(hexAt(h.lat,h.lon,s=>s<h.size))delete hexStore.hex[h.id];
 const saveHex=()=>LS.set("hexes",hexStore);
-const gKey=(la,lo)=>`${la.toFixed(1)},${lo.toFixed(1)}`;
+const gKey=(la,lo)=>`${la.toFixed(3)},${lo.toFixed(3)}`;
+const gridStep=s=>s>=5?.1:s>=1?.05:.025; // pas de la grille météo (°) selon la taille d'hexagone (km²)
 async function fetchGrid(keys,onProg){
   // à refaire : trop ancien (6 h), ou ancien format sans la couche de sol profonde (séries de 40 jours)
   const todo=keys.filter(k=>{const p=hexStore.pts[k];return!p||!p.sm2||Date.now()-p.t>6*36e5});
@@ -1713,8 +1717,12 @@ async function analyseHex(bb,opt={}){
   const st={alt:"⏳",forest:"⏳",soil:"⏳",wx:"⏳"},lab={alt:"Altitude moyenne",forest:"Part de forêt",soil:"Sol : pH et texture (SoilGrids)",wx:"Météo (grille 0,1°)"},ex={};
   const paint=()=>$("hexSteps").innerHTML=Object.keys(st).map(k=>`<li><span>${st[k]}</span><span>${lab[k]}${ex[k]||""}</span></li>`).join("");paint();
   // points de grille météo voisins
-  const metas=hs.map(([q,r])=>{const [la,lo]=hexCenter(q,r,a),gla=Math.round(la*10)/10,glo=Math.round(lo*10)/10,pts=[];
-    for(const dl of[-.1,0,.1])for(const dg of[-.1,0,.1]){const k=gKey(gla+dl,glo+dg);const [kl,kg]=k.split(",").map(Number);if(Math.hypot((kl-la)*KY,(kg-lo)*KX)<12)pts.push(k)}
+  // grille météo resserrée pour les petits hexagones : la pluie AROME varie fortement d'une vallée à l'autre
+  // (Couserans, octobre 2026 : 74 à 46 mm sur 8 km), une grille de 0,1° l'effaçait
+  const gs=gridStep(+size),gr=120*gs; // pas en degrés, rayon de voisinage en km (12 km pour 0,1°)
+  lab.wx=`Météo (grille ${String(gs).replace(".",",")}°)`;
+  const metas=hs.map(([q,r])=>{const [la,lo]=hexCenter(q,r,a),gla=Math.round(la/gs)*gs,glo=Math.round(lo/gs)*gs,pts=[];
+    for(const dl of[-gs,0,gs])for(const dg of[-gs,0,gs]){const k=gKey(gla+dl,glo+dg);const [kl,kg]=k.split(",").map(Number);if(Math.hypot((kl-la)*KY,(kg-lo)*KX)<gr)pts.push(k)}
     return{id:`${size}:${q}:${r}`,q,r,lat:la,lon:lo,size:+size,pts}});
   const keys=[...new Set(metas.flatMap(m=>m.pts))];
   const pWx=fetchGrid(keys,(d,n)=>{ex.wx=` · ${d}/${n} points`;paint()}).then(()=>{st.wx="✅";paint()}).catch(()=>{st.wx=keys.every(k=>hexStore.pts[k])?"✅":"❌";ex.wx=st.wx==="❌"?" · hors ligne ?":" · données en cache";paint()});
