@@ -953,11 +953,12 @@ th:first-child,td:first-child{text-align:left}
         <li><b>Altitude</b> : correction de −0,65 °C par 100 m entre l'altitude de ton coin et celle de la maille météo.</li>
         <li><b>Exposition</b> : un versant nord est plus frais et plus humide, un versant sud plus chaud et plus sec.</li>
         <li><b>Carte en dégradé</b> : l'indice de chaque hexagone (0–100) est l'indice météo de l'espèce multiplié par la part d'arbres hôtes de l'espèce (pleine valeur dès 50 %), le pH et la pente. Altitude, versant et texture du sol corrigent la météo.</li>
-        <li><b>Période réfractaire</b> : après une grosse poussée, le mycélium a besoin de 2 à 3 semaines pour en produire une autre aussi forte.</li>
         <li><b>Gel</b> : il détruit les carpophores. Le pied de mouton supporte de petites gelées.</li>
         <li><b>Redoux</b> : une remontée au-dessus de la plage de l'espèce juste après le choc casse la pousse.</li>
       </ul>
       <p class="note">La lune n'est pas prise en compte : aucune étude sérieuse ne montre d'effet. L'habitat compte aussi (arbres hôtes, sol acide ou calcaire, coupes récentes) : c'est le choix de tes coins qui le prend en compte.</p>
+      <div class="ttl" style="margin-top:12px">Calibration sur des récoltes réelles</div>
+      <p>Le modèle a été calculé aux dates et lieux de 50 observations GBIF par espèce (Europe tempérée, 2018-2025, météo ERA5), et au même endroit 45 jours plus tôt. L'échelle est réglée pour qu'un jour de récolte réel typique vaille <b>55/100</b>. Capacité à distinguer le jour de récolte du jour témoin (0,5 = hasard, 1 = parfait) : cèpe de Bordeaux 0,86, cèpe d'été 0,86, cèpe bronzé 0,84, cèpe des pins 0,72, girolle 0,67, pied de mouton 0,58. Pour la girolle et le pied de mouton, à la saison longue, l'indice reste peu fiable. La « période réfractaire » des repères de cueilleurs a été retirée : l'indice prédit mieux sans elle pour les six espèces.</p>
       <div class="ttl" style="margin-top:12px">Poids des variables et études</div>
       <table class="sptab" style="font-size:13px"><tr><th>Variable</th><th>Poids</th><th>Appui</th></tr>
         <tr><td>Bilan hydrique du mois</td><td>1</td><td>Meilleur prédicteur annuel du cèpe : pluie − évaporation de septembre-octobre, R² = 0,66 (Martínez-Peña 2003, pin sylvestre, Soria). La pluie agit avec un mois de décalage, l'humidité du sol le mois même (Karavani et al. 2018, Agric. For. Meteorol.). Les pics de récolte suivent la pluie de fin d'été et d'automne (Espagne, 2017).</td></tr>
@@ -1023,18 +1024,19 @@ const $=id=>document.getElementById(id);
 // précédant 160 observations GBIF par espèce (Europe tempérée, 2018-2025, précision ≤ 1 km, météo ERA5) ; la même
 // méthode redonne 13,3 °C pour le cèpe de Bordeaux. season : moitié repères de cueilleurs, moitié part des observations
 // GBIF par mois (lissée sur ±1 mois), rapportée au mois le plus fréquent.
+// k : échelle de l'indice, fixée pour qu'un jour d'observation réelle (médiane) vaille ≈ 0,55.
 const SP={
-  edulis:{n:"Cèpe de Bordeaux",topt:13.2,tsd:3.3,ts:[12,18],lag:12,need:30,w:.75,hot:true,frostT:0,win:6,humMin:.12,
+  edulis:{n:"Cèpe de Bordeaux",topt:13.2,tsd:3.3,k:0.619,ts:[12,18],lag:12,need:30,w:.75,hot:true,frostT:0,win:6,humMin:.12,
     season:{6:.21,7:.47,8:.71,9:1,10:.71,11:.33,12:.1}},
-  pino:{n:"Cèpe des pins",topt:12.4,tsd:3.7,ts:[8,15],lag:13,need:30,w:.75,hot:true,frostT:-1,win:6,humMin:.12,
+  pino:{n:"Cèpe des pins",topt:12.4,tsd:3.7,k:0.308,ts:[8,15],lag:13,need:30,w:.75,hot:true,frostT:-1,win:6,humMin:.12,
     season:{6:.13,7:.17,8:.47,9:.88,10:1,11:.69,12:.23}},
-  aest:{n:"Cèpe d'été",topt:17.7,tsd:3.4,ts:[15,22],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
+  aest:{n:"Cèpe d'été",topt:17.7,tsd:3.4,k:0.642,ts:[15,22],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
     season:{5:.31,6:.7,7:.8,8:1,9:.66,10:.34}},
-  aereus:{n:"Cèpe bronzé (tête de nègre)",topt:16.8,tsd:3.2,ts:[16,23],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
+  aereus:{n:"Cèpe bronzé (tête de nègre)",topt:16.8,tsd:3.2,k:0.581,ts:[16,23],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
     season:{6:.46,7:.75,8:.9,9:1,10:.87,11:.37}},
-  girolle:{n:"Girolle",topt:15.3,tsd:3.8,ts:[12,22],lag:10,need:25,w:.2,hot:false,frostT:-1,win:12,humMin:.22,
+  girolle:{n:"Girolle",topt:15.3,tsd:3.8,k:0.67,ts:[12,22],lag:10,need:25,w:.2,hot:false,frostT:-1,win:12,humMin:.22,
     season:{5:.12,6:.68,7:1,8:.79,9:.68,10:.52,11:.24}},
-  pdm:{n:"Pied de mouton",topt:12.3,tsd:4.4,ts:[6,15],lag:12,need:25,w:.4,hot:false,frostT:-3,win:14,humMin:.15,
+  pdm:{n:"Pied de mouton",topt:12.3,tsd:4.4,k:0.469,ts:[6,15],lag:12,need:25,w:.4,hot:false,frostT:-3,win:14,humMin:.15,
     season:{1:.24,8:.48,9:.93,10:1,11:.87,12:.5}}
 };
 const SOIL={sable:{n:"Sableux / drainant",cap:45,dr:.25},limon:{n:"Limoneux / humifère",cap:85,dr:.12},argile:{n:"Argileux / lourd",cap:125,dr:.06}};
@@ -1379,9 +1381,10 @@ function compute(D,cfg){
     }
     E.push(best);Ed.push(bd);
   }
-  // période réfractaire
-  for(let d=0;d<N;d++){if(!Ed[d])continue;
-    for(let d0=Math.max(0,d-20);d0<=d-8;d0++)if(E[d0]>=.55&&Ed[d0]&&Ed[d0].t!==Ed[d].t){E[d]*=.6;Ed[d].refr=true;break}}
+  // échelle calibrée : un jour où l'espèce a réellement été trouvée (médiane de 50 observations GBIF) vaut ≈ 0,55
+  // (voir docs/calibration-gbif.md) ; sans cela un vrai jour de récolte ne dépassait pas 0,35 à 0,40
+  for(let d=0;d<N;d++)E[d]=1-Math.exp(-E[d]/(sp.k||.45));
+  // (plus de période réfractaire : sur 300 observations GBIF, l'indice prédit mieux sans elle pour les six espèces)
   // règle Cépio
   const C=[],Cd=[];
   for(let d=0;d<N;d++){let best=.03,info={stage:0};
@@ -1441,7 +1444,7 @@ const ok=b=>b?"✅":"❌";
 function subs(){
   const d=M.Ed[sel];const box=$("subs");
   if(!d){box.innerHTML=`<p class="note">Aucun déclenchement (pluie et choc) dans le mois précédent ne mène à une sortie ce jour-là.</p>`;return}
-  const items=[["Déclenchement (pluie × choc)",d.tr.rs*(M.sp.w*d.tr.sh+(1-M.sp.w))],["Réserve du mycélium",d.tr.pre],["Bilan hydrique du mois",d.water],["Mémoire de l'été (J-90 à J-31)",d.summer],["Humidité maintenue",d.hum],["Température de l'air (5 j)",d.temp],["Air sec (VPD) ★",d.dry],["Saison ★",d.season],["Redoux ★",d.reb],["Gel ★",d.frost],["Période réfractaire ★",d.refr?.6:1]];
+  const items=[["Déclenchement (pluie × choc)",d.tr.rs*(M.sp.w*d.tr.sh+(1-M.sp.w))],["Réserve du mycélium",d.tr.pre],["Bilan hydrique du mois",d.water],["Mémoire de l'été (J-90 à J-31)",d.summer],["Humidité maintenue",d.hum],["Température de l'air (5 j)",d.temp],["Air sec (VPD) ★",d.dry],["Saison ★",d.season],["Redoux ★",d.reb],["Gel ★",d.frost]];
   box.innerHTML=items.map(([n,v])=>`<div class="sub-i"><span class="nm">${n}</span><span class="bar"><i style="width:${Math.round(v*100)}%;background:${v<.5?"var(--tmax)":"var(--l2)"}"></i></span><span class="pc">${Math.round(v*100)}%</span></div>`).join("")+`<p class="note" style="margin:6px 0 0">★ indices absents de Cépio. L'altitude et l'exposition corrigent directement les températures et l'humidité.</p>`;
 }
 function explain(){

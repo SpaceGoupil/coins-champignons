@@ -1,6 +1,6 @@
 // Met en cache l'app elle-même. Les tuiles et la météo ne passent pas par ici :
 // elles sont déjà stockées par la page (IndexedDB et localStorage).
-const CACHE = "coins-v15";
+const CACHE = "coins-v16";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
