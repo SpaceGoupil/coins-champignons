@@ -755,6 +755,7 @@ th:first-child,td:first-child{text-align:left}
 .grad-leg{background:var(--surface);color:var(--text);border-radius:10px;padding:6px 8px;font-size:11px;box-shadow:0 1px 5px rgba(0,0,0,.25);min-width:150px}
 .grad-leg .gb{height:10px;border-radius:5px;margin:4px 0 2px}
 .grad-leg .gt{display:flex;justify-content:space-between;color:var(--text2)}
+.brank{width:22px;height:22px;border-radius:50%;background:#7a4a22;color:#fff;border:2px solid #fff;font:700 11px/18px system-ui,sans-serif;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.4)}
 .hlab{font-size:11px;font-weight:700;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.7);text-align:center;line-height:20px}
 .search{position:relative}
 .search input{padding-left:36px}
@@ -805,7 +806,7 @@ th:first-child,td:first-child{text-align:left}
       <div class="ttl">Hexagones <small id="hexInfo">grille fixe sur la France</small></div>
       <div class="row">
         <label>Espèce affichée<select id="hSp"></select></label>
-        <label>Taille<select id="hSize"><option value="2">2 km²</option><option value="5" selected>5 km²</option><option value="10">10 km²</option></select></label>
+        <label>Taille pour l'analyse<select id="hSize"><option value="0.5">0,5 km²</option><option value="1">1 km²</option><option value="2">2 km²</option><option value="5" selected>5 km²</option><option value="10">10 km²</option></select></label>
       </div>
       <div style="margin-top:8px;font-size:12px;color:var(--text2)">Indice pour
         <div class="chips" id="hMode" style="margin-top:4px"><button class="chip" data-m="now">Aujourd'hui</button><button class="chip" data-m="tom">Demain</button><button class="chip" data-m="fc">Sur la semaine</button></div>
@@ -813,7 +814,18 @@ th:first-child,td:first-child{text-align:left}
       <div class="row" style="margin-top:8px"><button class="btn pri" id="hexBtn">⬡ Analyser la zone affichée</button><button class="btn" id="hexClear">Effacer</button></div>
       <ul class="steps" id="hexSteps"></ul>
       <div class="prog" id="hexProg" style="display:none"><i></i></div>
-      <p class="note" style="margin-bottom:0">Pour chaque hexagone : altitude moyenne (7 points IGN), part de forêt (BD Forêt), météo moyennée entre les points voisins d'une grille de 0,1° et corrigée de l'altitude. Les hexagones sans forêt restent gris. Touche un hexagone pour le détail.</p>
+      <p class="note" style="margin-bottom:0">Pour chaque hexagone : altitude moyenne (7 points IGN), part de forêt (BD Forêt), météo moyennée entre les points voisins d'une grille de 0,1° et corrigée de l'altitude. Les hexagones sans forêt restent gris. Touche un hexagone pour le détail, ou pour l'<b>affiner</b> en hexagones plus petits : altitude et forêt plus précises (la météo reste celle de la grille de 0,1°). Les hexagones fins s'affichent par-dessus les grands.</p>
+    </div>
+
+    <div class="card">
+      <div class="ttl">Meilleurs hexagones autour d'un point <small id="bInfo"></small></div>
+      <div class="row">
+        <label>Autour de<select id="bCenter"><option value="gps">Ma position</option><option value="map">Centre de la carte</option></select></label>
+        <label>Rayon<select id="bRad"><option value="2">2 km</option><option value="5">5 km</option><option value="10" selected>10 km</option><option value="20">20 km</option><option value="30">30 km</option></select></label>
+      </div>
+      <div class="row" style="margin-top:8px"><button class="btn pri" id="bGo">Chercher</button><button class="btn" id="bAna">Analyser ce rayon</button></div>
+      <p class="note" id="bMsg" style="margin:6px 2px 0">Classement selon l'espèce et la période choisies ci-dessus.</p>
+      <div id="bList"></div>
     </div>
 
     <div class="card">
@@ -1062,6 +1074,9 @@ function initMap(){
   forestLayer=new CachedLayer("",{lid:"forest",minZoom:6,maxZoom:19,maxNativeZoom:16,opacity:.45});
   map.on("moveend",()=>{LS.set("view",{c:[map.getCenter().lat,map.getCenter().lng],z:map.getZoom()});estimate();drawGrid()});
   map.on("zoomend",()=>drawHexes());
+  // sur téléphone la légende recouvre la fiche d'un hexagone : on la masque le temps de la lecture
+  map.on("popupopen",()=>{const d=document.getElementById("gradLeg");if(d)d.style.visibility="hidden"});
+  map.on("popupclose",()=>{const d=document.getElementById("gradLeg");if(d)d.style.visibility=""});
   map.on("click",e=>{if(addMode){addMode=false;$("addSpotBtn").classList.remove("on");openSheet(null,e.latlng)}});
   const lc=$("layerChips");
   [["plan","Plan IGN"],["ortho","Photos aériennes"],["forest","＋ Forêts"]].forEach(([k,n])=>{
@@ -1483,7 +1498,11 @@ function renderZoneResult(s){
 
 // ================= HEXAGONES =================
 const KX=111.32*Math.cos(46.5*Math.PI/180),KY=111.13; // km par degré (projection locale centrée sur la France)
-const hexA=()=>Math.sqrt(2*(+$("hSize").value)/(3*Math.sqrt(3))); // côté en km
+const SIZES=[0.5,1,2,5,10]; // km², du plus fin au plus grand
+const side=s=>Math.sqrt(2*s/(3*Math.sqrt(3))); // côté en km d'un hexagone de s km²
+const hexA=()=>side(+$("hSize").value);
+// zoom des tuiles forêt échantillonnées et zoom d'affichage des valeurs, selon la taille
+const forestZFor=s=>s<=1?15:s<=2?14:s<=5?13:12, labZFor=s=>s<=.5?15:s<=1?14:s<=2?13:12;
 function ll2hex(lat,lon,a){const X=lon*KX,Y=lat*KY;let q=(Math.sqrt(3)/3*X-Y/3)/a,r=(2/3*Y)/a;
   let x=q,z=r,y=-x-z,rx=Math.round(x),ry=Math.round(y),rz=Math.round(z);const dx=Math.abs(rx-x),dy=Math.abs(ry-y),dz=Math.abs(rz-z);
   if(dx>dy&&dx>dz)rx=-ry-rz;else if(dy>dz)ry=-rx-rz;else rz=-rx-ry;return[rx,rz]}
@@ -1494,8 +1513,9 @@ function hexesIn(bb,a){const out=[];const [q0,r0]=ll2hex(bb[1],bb[0],a),[q1,r1]=
   for(let r=rmin;r<=rmax;r++)for(let q=qmin;q<=qmax;q++){const [la,lo]=hexCenter(q,r,a);if(la>=bb[1]&&la<=bb[3]&&lo>=bb[0]&&lo<=bb[2])out.push([q,r])}return out}
 function viewBB(){const b=map.getBounds();return[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()]}
 function drawGrid(){if(!gridLayer)return;gridLayer.clearLayers();const a=hexA();
-  if(map.getZoom()<11){if(!Object.values(hexStore.hex).some(h=>h.size===+$("hSize").value))$("hexInfo").textContent="zoome pour voir la grille";return}
-  const hs=hexesIn(viewBB(),a);$("hexInfo").textContent=`${hs.length} hexagones visibles · ${$("hSize").value} km² chacun`;
+  const none=!Object.keys(hexStore.hex).length;
+  if(map.getZoom()<11){if(none)$("hexInfo").textContent="zoome pour voir la grille";return}
+  const hs=hexesIn(viewBB(),a);if(none)$("hexInfo").textContent=`${hs.length} hexagones visibles · ${$("hSize").value} km² chacun`;
   if(hs.length>2500)return;
   hs.forEach(([q,r])=>{if(hexStore.hex[`${$("hSize").value}:${q}:${r}`])return;L.polygon(hexCorners(q,r,a),{color:"#7a4a22",weight:.6,opacity:.45,fill:false,interactive:false}).addTo(gridLayer)})}
 
@@ -1547,10 +1567,13 @@ function hexWeather(h){ // moyenne pondérée (inverse distance²) des points de
   return{dates:ws[0][0].dates,tmax:mix("tmax",1),tmin:mix("tmin",1),rain:mix("rain"),tsol:mix("tsol",1),sm:mix("sm"),rh:mix("rh"),real:true};
 }
 let hexBusy=false;
-async function analyseHex(bb){
-  if(hexBusy)return;if(!bb){bb=viewBB();const ar=(bb[2]-bb[0])*KX*(bb[3]-bb[1])*KY;forestZ=ar>1500?12:ar>300?13:14}const a=hexA(),size=$("hSize").value,hs=hexesIn(bb,a);
-  if(!hs.length)return;
-  if(hs.length>600){$("hexSteps").innerHTML=`<li><span>⚠️</span><span>${hs.length} hexagones : trop pour une analyse (600 max). Zoome ou choisis 10 km².</span></li>`;return}
+// opt.size : taille en km² (sinon celle choisie) ; opt.keep(lat,lon) : ne garder que certains hexagones
+async function analyseHex(bb,opt={}){
+  if(hexBusy)return false;const size=opt.size||+$("hSize").value,a=side(size);
+  if(!bb){bb=viewBB();const ar=(bb[2]-bb[0])*KX*(bb[3]-bb[1])*KY;forestZ=Math.max(forestZFor(size),ar>1500?12:ar>300?13:14)}else if(opt.size)forestZ=forestZFor(size);
+  const hs=hexesIn(bb,a).filter(([q,r])=>!opt.keep||opt.keep(...hexCenter(q,r,a)));
+  if(!hs.length)return false;
+  if(hs.length>600){$("hexSteps").innerHTML=`<li><span>⚠️</span><span>${hs.length} hexagones : trop pour une analyse (600 max). Zoome ou choisis une taille plus grande.</span></li>`;return false}
   hexBusy=true;$("hexBtn").disabled=true;const prog=$("hexProg"),bar=prog.firstElementChild;prog.style.display="";
   const st={alt:"⏳",forest:"⏳",wx:"⏳"},lab={alt:"Altitude moyenne",forest:"Part de forêt",wx:"Météo (grille 0,1°)"},ex={};
   const paint=()=>$("hexSteps").innerHTML=Object.keys(st).map(k=>`<li><span>${st[k]}</span><span>${lab[k]}${ex[k]||""}</span></li>`).join("");paint();
@@ -1573,7 +1596,7 @@ async function analyseHex(bb){
   // limite la taille du stockage : garde les 3000 hexagones les plus récents
   const ids=Object.keys(hexStore.hex);if(ids.length>3000)ids.slice(0,ids.length-3000).forEach(k=>delete hexStore.hex[k]);
   saveHex();prog.style.display="none";hexBusy=false;$("hexBtn").disabled=false;
-  drawGrid();drawHexes();
+  drawGrid();drawHexes();return true;
 }
 // dégradé séquentiel (une teinte, clair → foncé) pour l'indice de pousse 0–100
 const GRAD=[[0,[236,240,226]],[.2,[199,226,170]],[.4,[134,196,110]],[.6,[72,153,72]],[.8,[33,107,45]],[1,[12,62,26]]];
@@ -1595,16 +1618,22 @@ let hMode=LS.get("hMode","fc");if(!["now","tom","fc"].includes(hMode))hMode="fc"
 const MODE_LAB={now:"aujourd'hui",tom:"demain",fc:"meilleur jour de la semaine"};
 function hexScore(id,sp,mode){const m=hexModel(id,sp);if(!m)return null;if(mode==="now")return{v:m.E[m.today],i:m.today,m};
   if(mode==="tom"){const i=Math.min(m.N-1,m.today+1);return{v:m.E[i],i,m}}let b=m.today;for(let i=m.today;i<m.N;i++)if(m.E[i]>m.E[b])b=i;return{v:m.E[b],i:b,m}}
-function drawHexes(){if(!hexLayer)return;hexLayer.clearLayers();if(labLayer)labLayer.clearLayers();for(const k in hexModelCache)delete hexModelCache[k];
-  const sp=$("hSp").value,mode=hMode,size=+$("hSize").value,a=hexA();let n=0,sum=0,best=null;
+// hexagones recouverts par des hexagones plus fins (affinage) : estompés, ni valeur ni classement
+function coveredIds(){const cov=new Set();
+  for(const h of Object.values(hexStore.hex))for(const s of SIZES)if(s>h.size){const [q,r]=ll2hex(h.lat,h.lon,side(s));cov.add(`${s}:${q}:${r}`)}
+  return cov}
+const hexPoly={}; // polygone affiché par identifiant d'hexagone
+function drawHexes(){if(!hexLayer)return;hexLayer.clearLayers();if(labLayer)labLayer.clearLayers();for(const k in hexModelCache)delete hexModelCache[k];for(const k in hexPoly)delete hexPoly[k];
+  const sp=$("hSp").value,mode=hMode;let n=0,sum=0,best=null;
   $("hMode").querySelectorAll(".chip").forEach(b=>b.classList.toggle("on",b.dataset.m===mode));
-  const list=Object.values(hexStore.hex).filter(h=>h.size===size);
-  list.forEach(h=>{const ix=hexIndex(h,sp,mode);const noForest=h.forest!=null&&h.forest<.05;
+  const list=Object.values(hexStore.hex).sort((x,y)=>y.size-x.size),cov=coveredIds();
+  list.forEach(h=>{const a=side(h.size),covered=cov.has(h.id),ix=hexIndex(h,sp,mode);const noForest=h.forest!=null&&h.forest<.05;
     const fill=!ix?"#9b9a95":noForest?"#b8b6ae":gradColor(ix.v);
-    const p=L.polygon(hexCorners(h.q,h.r,a),{color:"#ffffff",weight:.8,opacity:.8,fillColor:fill,fillOpacity:!ix?.15:noForest?.3:.72}).addTo(hexLayer);
-    p.on("click",()=>hexPopup(h,p));
+    const p=L.polygon(hexCorners(h.q,h.r,a),{color:"#ffffff",weight:h.size<2?.5:.8,opacity:.8,fillColor:fill,fillOpacity:covered?.12:!ix?.15:noForest?.3:.72}).addTo(hexLayer);
+    p.on("click",()=>hexPopup(h,p));hexPoly[h.id]=p;
+    if(covered)return;
     if(ix){n++;sum+=ix.v;if(!best||ix.v>best.v)best={v:ix.v,h}}
-    if(ix&&labLayer&&map.getZoom()>=13){const [la,lo]=hexCenter(h.q,h.r,a);
+    if(ix&&labLayer&&map.getZoom()>=labZFor(h.size)){const [la,lo]=hexCenter(h.q,h.r,a);
       L.marker([la,lo],{interactive:false,icon:L.divIcon({className:"hlab",iconSize:[30,20],iconAnchor:[15,10],html:Math.round(ix.v*100)})}).addTo(labLayer)}});
   if(list.length){
     $("hexInfo").textContent=n?`${n} hexagones · moyenne ${Math.round(sum/n*100)} · max ${Math.round(best.v*100)}`:"pas de météo en cache";}
@@ -1612,7 +1641,7 @@ function drawHexes(){if(!hexLayer)return;hexLayer.clearLayers();if(labLayer)labL
 }
 function legend(sp,mode){
   if(!legendCtl){legendCtl=L.control({position:"topright"});legendCtl.onAdd=()=>{const d=L.DomUtil.create("div","grad-leg");d.id="gradLeg";return d};legendCtl.addTo(map)}
-  const has=Object.values(hexStore.hex).some(h=>h.size===+$("hSize").value);const d=document.getElementById("gradLeg");if(!d)return;
+  const has=Object.keys(hexStore.hex).length>0;const d=document.getElementById("gradLeg");if(!d)return;
   d.style.display=has?"":"none";
   d.innerHTML=`<b>Indice de pousse</b> · ${spName(sp)}<br><span style="color:var(--text2)">${MODE_LAB[mode]}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> sans forêt</div>`;
 }
@@ -1621,18 +1650,88 @@ function hexPopup(h,p){const sp=$("hSp").value,sc=hexScore(h.id,sp,"fc"),now=hex
   const f=h.forest==null?"inconnue":Math.round(h.forest*100)+" %";
   // en moyenne : espèce la mieux placée sur la semaine, pour le détail et la prévision
   const top=m&&sp===ALL?Object.keys(SP).map(k=>[k,hexScore(h.id,k,"fc").v]).sort((a,b)=>b[1]-a[1])[0]:null;
-  const html=`<div style="font-size:13px;min-width:200px"><b>Hexagone de ${h.size} km²</b><br>
+  const html=`<div style="font-size:13px;min-width:200px"><b>Hexagone de ${fmtKm2(h.size)}</b><br>
   Altitude moyenne : ${h.alt!=null?Math.round(h.alt)+" m":"?"}${h.altRange!=null?` (dénivelé ${Math.round(h.altRange)} m)`:""}<br>
   Forêt : ${f}${h.forest!=null&&h.forest<.1?" — peu propice":""}<br>
   ${m?`Pluie des 7 derniers jours : ${Math.round(r7)} mm<br>Sol aujourd'hui : ${m.ts[i].toFixed(1)} °C · humidité ${Math.round(m.H[i]*100)} %<br>
   <b>${spName(sp)}</b><br>Indice de pousse : <b>${Math.round(hexIndex(h,sp,"now").v*100)}/100</b> aujourd'hui · <b>${Math.round(hexIndex(h,sp,"tom").v*100)}/100</b> demain · <b>${Math.round(hexIndex(h,sp,"fc").v*100)}/100</b> au mieux sur la semaine${lvl(sc.v)?" ("+m.dateOf(sc.i)+")":""}<br><span style="color:var(--muted)">météo seule : ${Math.round(sc.v*100)}/100, pondérée par la part de forêt</span><br>
   ${top?`Meilleure espèce cette semaine : <b>${SP[top[0]].n}</b> (${Math.round(hexIndex(h,top[0],"fc").v*100)}/100)<br>`:""}
-  <button class="btn" style="margin-top:6px;padding:5px 10px" id="hexOpen">Prévision détaillée</button>`:"Pas de météo en cache pour cet hexagone."}</div>`;
+  <button class="btn" style="margin-top:6px;padding:5px 10px" id="hexOpen">Prévision détaillée</button>`:"Pas de météo en cache pour cet hexagone."}
+  ${finer(h.size)?` <button class="btn" style="margin-top:6px;padding:5px 10px" id="hexFine">Affiner en ${fmtKm2(finer(h.size))}</button>`:""}</div>`;
   p.bindPopup(html).openPopup();
-  setTimeout(()=>{const b=document.getElementById("hexOpen");if(b)b.onclick=()=>{map.closePopup();const s1=top?top[0]:sp;src={kind:"hex",id:h.id};spSel=s1;$("sp").value=s1;sel=null;buildSrc();showView("v-fc")}},0);
+  setTimeout(()=>{const f=document.getElementById("hexFine");if(f)f.onclick=()=>{map.closePopup();refineHex(h)};
+    const b=document.getElementById("hexOpen");if(b)b.onclick=()=>{map.closePopup();const s1=top?top[0]:sp;src={kind:"hex",id:h.id};spSel=s1;$("sp").value=s1;sel=null;buildSrc();showView("v-fc")}},0);
 }
+// affinage : réanalyse la seule surface d'un hexagone en hexagones plus petits (≈ 10 à 20 par hexagone)
+const finer=s=>s>=5?1:s>=1?.5:null, fmtKm2=s=>String(s).replace(".",",")+" km²";
+async function refineHex(h){const fs=finer(h.size);if(!fs)return;const a=side(h.size);
+  if(hexBusy){$("mapHint").textContent="Une analyse est déjà en cours, patiente un instant.";return}
+  const cs=hexCorners(h.q,h.r,a),bb=[Math.min(...cs.map(c=>c[1])),Math.min(...cs.map(c=>c[0])),Math.max(...cs.map(c=>c[1])),Math.max(...cs.map(c=>c[0]))];
+  map.fitBounds([[bb[1],bb[0]],[bb[3],bb[2]]]);$("mapHint").textContent=`Affinage en ${fmtKm2(fs)}…`;
+  const ok=await analyseHex(bb,{size:fs,keep:(la,lo)=>{const [q,r]=ll2hex(la,lo,a);return q===h.q&&r===h.r}});
+  $("mapHint").textContent=ok?`Hexagone affiné en ${fmtKm2(fs)}. Touche un petit hexagone pour son détail.`:"Affinage impossible (hors ligne ?).";
+  return ok;
+}
+// ---- meilleurs hexagones dans un rayon autour d'un point ----
+let bestLayer=null,bestCenter=null;
+const kmTo=(la0,lo0,la,lo)=>{const dy=(la-la0)*KY,dx=(lo-lo0)*111.32*Math.cos(la0*Math.PI/180);return{d:Math.hypot(dx,dy),dx,dy}};
+const compass=(dx,dy)=>["N","NE","E","SE","S","SO","O","NO"][Math.round(((Math.atan2(dx,dy)*180/Math.PI)+360)%360/45)%8];
+function hexAt(la,lo){for(const s of SIZES){const [q,r]=ll2hex(la,lo,side(s)),h=hexStore.hex[`${s}:${q}:${r}`];if(h)return h}return null}
+function getCenter(){
+  if($("bCenter").value==="map"){const c=map.getCenter();return Promise.resolve([c.lat,c.lng])}
+  return new Promise((res,rej)=>{if(!navigator.geolocation)return rej("Localisation non disponible ici.");
+    navigator.geolocation.getCurrentPosition(p=>res([p.coords.latitude,p.coords.longitude]),()=>rej("Position refusée ou indisponible : choisis « Centre de la carte »."),{enableHighAccuracy:true,timeout:15000,maximumAge:60000})});
+}
+function coverage(la0,lo0,R){ // part du disque déjà analysée (sur une grille de points)
+  let n=0,ok=0;const st=R/8,kx=111.32*Math.cos(la0*Math.PI/180);
+  for(let y=-R;y<=R;y+=st)for(let x=-R;x<=R;x+=st)if(x*x+y*y<=R*R){n++;if(hexAt(la0+y/KY,lo0+x/kx))ok++}
+  return n?ok/n:0;
+}
+function bestHexes(){
+  if(!bestCenter)return;const [la0,lo0]=bestCenter,R=+$("bRad").value,sp=$("hSp").value,cov=coveredIds();
+  if(!bestLayer)bestLayer=L.layerGroup().addTo(map);bestLayer.clearLayers();
+  L.circle([la0,lo0],{radius:R*1000,color:"#7a4a22",weight:1.5,fill:false,dashArray:"5 5",interactive:false}).addTo(bestLayer);
+  L.circleMarker([la0,lo0],{radius:6,color:"#fff",weight:2,fillColor:"#2a78d6",fillOpacity:1,interactive:false}).addTo(bestLayer);
+  let unknown=0;const rows=[];
+  for(const h of Object.values(hexStore.hex)){if(cov.has(h.id))continue;const g=kmTo(la0,lo0,h.lat,h.lon);if(g.d>R)continue;
+    const ix=hexIndex(h,sp,hMode);if(!ix)continue;if(h.forest==null){unknown++;continue}rows.push({h,ix,...g})}
+  rows.sort((x,y)=>y.ix.v-x.ix.v);const top=rows.slice(0,10),pc=Math.round(coverage(la0,lo0,R)*100);
+  $("bInfo").textContent=`${spName(sp)} · ${MODE_LAB[hMode]}`;
+  $("bMsg").innerHTML=(rows.length?`${rows.length} hexagones analysés dans ce rayon`:"Aucun hexagone analysé dans ce rayon")+
+    ` · ${pc} % du disque couvert${pc<90?" — touche « Analyser ce rayon » pour le compléter":""}${unknown?` · ${unknown} sans donnée de forêt écartés`:""}.`;
+  $("bAna").classList.toggle("pri",pc<90);$("bGo").classList.toggle("pri",pc>=90);
+  const box=$("bList");box.innerHTML="";
+  top.forEach((o,k)=>{const {h,ix}=o,m=ix.m,fs=finer(h.size);
+    L.marker([h.lat,h.lon],{icon:L.divIcon({className:"",iconSize:[22,22],iconAnchor:[11,11],html:`<div class="brank">${k+1}</div>`})}).on("click",()=>goHex(h)).addTo(bestLayer);
+    const d=document.createElement("div");d.className="spot";
+    d.innerHTML=`<span class="dot" style="background:${gradColor(ix.v)}"></span><div><b>${k+1}. ${Math.round(ix.v*100)}/100${hMode==="fc"&&lvl(ix.raw)?` · ${m.dateOf(ix.i)}`:""}</b><small>${o.d<1?Math.round(o.d*1000)+" m":o.d.toFixed(1).replace(".",",")+" km"} ${compass(o.dx,o.dy)} · ${h.alt!=null?Math.round(h.alt)+" m":"altitude ?"} · forêt ${Math.round(h.forest*100)} % · ${fmtKm2(h.size)}</small></div>${fs?`<button class="btn" style="padding:6px 10px">Affiner</button>`:""}`;
+    d.onclick=()=>goHex(h);
+    const b=d.querySelector("button");if(b)b.onclick=async e=>{e.stopPropagation();if(await refineHex(h))bestHexes()};
+    box.appendChild(d)});
+}
+function goHex(h){$("map").scrollIntoView({behavior:"smooth",block:"center"});
+  map.setView([h.lat,h.lon],Math.max(map.getZoom(),labZFor(h.size)),{animate:false});drawHexes();
+  const p=hexPoly[h.id];if(p)hexPopup(h,p)}
+$("bGo").onclick=async()=>{$("bMsg").textContent="Recherche de la position…";
+  try{bestCenter=await getCenter()}catch(e){$("bMsg").textContent=e;return}
+  LS.set("best",{c:$("bCenter").value,r:$("bRad").value});bestHexes()};
+// analyse du disque à la taille la plus fine qui tient dans une analyse (≈ 550 hexagones)
+$("bAna").onclick=async()=>{
+  if(hexBusy){$("bMsg").textContent="Une analyse est déjà en cours, patiente un instant.";return}
+  $("bMsg").textContent="Recherche de la position…";
+  try{bestCenter=await getCenter()}catch(e){$("bMsg").textContent=e;return}
+  LS.set("best",{c:$("bCenter").value,r:$("bRad").value});
+  const [la0,lo0]=bestCenter,R=+$("bRad").value,s=SIZES.find(s=>Math.PI*R*R/s<=550)||10;
+  const dLat=R/KY,dLon=R/(111.32*Math.cos(la0*Math.PI/180)),bb=[lo0-dLon,la0-dLat,lo0+dLon,la0+dLat];
+  map.fitBounds([[bb[1],bb[0]],[bb[3],bb[2]]]);
+  $("bMsg").textContent=`Analyse du rayon de ${R} km en hexagones de ${fmtKm2(s)}… (progression dans la carte « Hexagones »)`;
+  const ok=await analyseHex(bb,{size:s,keep:(la,lo)=>kmTo(la0,lo0,la,lo).d<=R+side(s)});
+  if(ok===false&&!hexBusy)$("bMsg").textContent="Analyse impossible.";
+  bestHexes()};
+{const b=LS.get("best",null);if(b){$("bCenter").value=b.c;$("bRad").value=b.r}}
+$("bRad").onchange=()=>{if(bestCenter)bestHexes()};
 $("hexBtn").onclick=()=>analyseHex();
-$("hexClear").onclick=()=>{hexStore={hex:{},pts:hexStore.pts};saveHex();drawHexes();drawGrid();$("hexSteps").innerHTML=""};
+$("hexClear").onclick=()=>{hexStore={hex:{},pts:hexStore.pts};saveHex();drawHexes();drawGrid();$("hexSteps").innerHTML="";if(bestLayer)bestLayer.clearLayers();$("bList").innerHTML=""};
 $("hSp").onchange=drawHexes;
 $("hMode").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{hMode=b.dataset.m;LS.set("hMode",hMode);drawHexes()});
 $("hSize").onchange=()=>{LS.set("hSize",$("hSize").value);drawGrid();drawHexes()};
