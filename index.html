@@ -830,6 +830,7 @@ th:first-child,td:first-child{text-align:left}
 
     <div class="card">
       <div class="ttl">Mes coins <small id="wxAge"></small></div>
+      <p class="note" style="margin:0 2px 6px">Les zones (▢) ont un œil : 👁 affiche ses hexagones, 🚫 les masque, « Seule » masque toutes les autres.</p>
       <div id="spotList"><p class="note">Aucun coin enregistré pour l'instant.</p></div>
       <div class="row" style="margin-top:8px"><button class="btn" id="refreshAll">↻ Mettre à jour la météo de tous les coins</button></div>
     </div>
@@ -1084,11 +1085,14 @@ const CachedLayer=L.TileLayer.extend({
     return img;
   }
 });
-let hexLayer,gridLayer,map,base,forestLayer,markers={},addMode=false,locMarker=null;
+let hexLayer,hexRenderer,gridLayer,map,base,forestLayer,markers={},addMode=false,locMarker=null;
 const ATTR='© <a href="https://geoservices.ign.fr">IGN</a> · Etalab 2.0';
 function initMap(){
   const v=LS.get("view",{c:[45.2,1.5],z:6});
   map=L.map("map",{zoomControl:true,attributionControl:true,preferCanvas:true}).setView(v.c,v.z);
+  // hexagones peints opaques sur leur propre calque, la transparence est celle du calque entier : là où deux grilles de
+  // tailles différentes se chevauchent (elles ne s'emboîtent pas), le plus fin recouvre le plus grand sans double teinte
+  const hp=map.createPane("hexPane");hp.style.zIndex=390;hp.style.opacity=.72;hexRenderer=L.canvas({pane:"hexPane"});
   hexLayer=L.layerGroup().addTo(map);gridLayer=L.layerGroup().addTo(map);labLayer=L.layerGroup().addTo(map);
   base=new CachedLayer("",{lid:"plan",maxZoom:19,maxNativeZoom:19,attribution:ATTR}).addTo(map);
   forestLayer=new CachedLayer("",{lid:"forest",minZoom:6,maxZoom:19,maxNativeZoom:16,opacity:.45});
@@ -1111,7 +1115,7 @@ function initMap(){
 function pinIcon(s){const l=lvl(bestScore(s));return L.divIcon({className:"",iconSize:[26,26],iconAnchor:[13,26],html:`<div class="pin" style="background:${LV[l].hex}"><span>${l?"🍄":"·"}</span></div>`})}
 function drawMarkers(){
   if(!map)return;Object.values(markers).forEach(m=>map.removeLayer(m));markers={};
-  spots.forEach(s=>{if(s.zone&&s.bbox){const r=L.rectangle([[s.bbox[1],s.bbox[0]],[s.bbox[3],s.bbox[2]]],{color:"#7a4a22",weight:1.5,fill:false,dashArray:"6 4"}).addTo(map);markers[s.id+"r"]=r}
+  spots.forEach(s=>{if(s.zone&&s.bbox&&!s.hidden){const r=L.rectangle([[s.bbox[1],s.bbox[0]],[s.bbox[3],s.bbox[2]]],{color:"#7a4a22",weight:1.5,fill:false,dashArray:"6 4"}).addTo(map);markers[s.id+"r"]=r}
     const m=L.marker([s.lat,s.lon],{icon:pinIcon(s)}).addTo(map);
     m.on("click",()=>{if(addMode)return;openForecast(s.id)});markers[s.id]=m});
 }
@@ -1216,10 +1220,22 @@ function renderList(){
     if(M)for(let i=M.today;i<M.N;i++)if(M.E[i]>b){b=M.E[i];bi=i}
     const l=lvl(Math.max(0,b)),w=wxCache[s.id];
     const d=document.createElement("div");d.className="spot";
-    d.innerHTML=`<span class="dot" style="background:${LV[l].hex}"></span><div><b>${s.zone?"▢ ":""}${esc(s.name)}</b><small>${SP[s.sp].n} · ${w?(l?`${LV[l].n} ${M.dateOf(bi)}`:"Rare cette semaine")+" · météo "+ageTxt(w.t):"pas encore de météo"}</small></div><button class="btn" style="padding:6px 10px">✎</button>`;
-    d.querySelector("button").onclick=e=>{e.stopPropagation();openSheet(s.id)};
+    d.innerHTML=`<span class="dot" style="background:${LV[l].hex}"></span><div style="${s.hidden?"opacity:.5":""}"><b>${s.zone?"▢ ":""}${esc(s.name)}</b><small>${s.hidden?"masquée · ":""}${SP[s.sp].n} · ${w?(l?`${LV[l].n} ${M.dateOf(bi)}`:"Rare cette semaine")+" · météo "+ageTxt(w.t):"pas encore de météo"}</small></div>`+
+      (s.zone&&s.bbox?`<button class="btn" data-a="eye" style="padding:6px 9px" title="Afficher ou masquer ses hexagones">${s.hidden?"🚫":"👁"}</button><button class="btn" data-a="only" style="padding:6px 9px">Seule</button>`:"")+
+      `<button class="btn" data-a="edit" style="padding:6px 10px">✎</button>`;
+    d.querySelectorAll("button").forEach(b=>b.onclick=e=>{e.stopPropagation();const a=b.dataset.a;
+      if(a==="edit")return openSheet(s.id);
+      if(a==="eye")s.hidden=!s.hidden;else spots.forEach(z=>{if(z.zone)z.hidden=z.id!==s.id});
+      saveSpots();showZones()});
     d.onclick=()=>openForecast(s.id);el.appendChild(d)});
+  if(spots.some(s=>s.hidden)){const a=document.createElement("button");a.className="btn";a.style.marginTop="8px";a.textContent="Tout afficher";
+    a.onclick=()=>{spots.forEach(s=>delete s.hidden);saveSpots();showZones()};el.appendChild(a)}
 }
+// zones masquées dans « Mes coins » : leurs hexagones disparaissent de la carte et du classement, sauf s'ils sont
+// aussi dans une zone affichée ; les hexagones hors de toute zone (rayon, affinage) restent visibles
+const inBB=(h,b)=>h.lat>=b[1]&&h.lat<=b[3]&&h.lon>=b[0]&&h.lon<=b[2];
+function hexShown(h){let hid=false;for(const z of spots){if(!z.zone||!z.bbox||!inBB(h,z.bbox))continue;if(!z.hidden)return true;hid=true}return!hid}
+function showZones(){renderList();drawMarkers();drawHexes();if(bestCenter)bestHexes()}
 function esc(t){return t.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 $("refreshAll").onclick=async()=>{
   const b=$("refreshAll");b.disabled=true;let ok=0;
@@ -1268,7 +1284,9 @@ function modelFor(source,spOverride){
 // Un facteur f (0–1) entre comme f^poids : poids 1 = peut annuler l'indice, poids 0,3 = ne fait que le moduler.
 const WEIGHTS={
   water:1,   // bilan hydrique (pluie − ETP) de septembre-octobre : meilleur prédicteur annuel du cèpe, R² = 0,66 (Martínez-Peña 2003, pin sylvestre, Soria) ;
-             // l'effet de la pluie arrive avec un mois de décalage (Karavani et al. 2018)
+             // l'effet de la pluie arrive avec un mois de décalage (Karavani et al. 2018). Ces études s'en servent faute de mesure
+             // d'humidité du sol : quand Open-Meteo la fournit, elle prime et le bilan ne pèse plus que waterWithSoil
+  waterWithSoil:.4,
   hum:1,     // humidité du sol du mois en cours (Karavani et al. 2018)
   summer:.5, // bilan hydrique des deux mois précédents : la pluie de fin d'été pèse le plus sur les records de récolte
              // (Espagne, 2017) ; la température du sol d'août entre dans l'équation de Martínez-Peña 2003
@@ -1276,7 +1294,9 @@ const WEIGHTS={
   trig:.6,   // pluie des jours précédents : effet positif mais faible à court terme (Brejon Lamartinière & Hoffman 2025) ;
              // pluie de la semaine précédente pour la girolle (Botany 2011, pinèdes de pin gris au Canada)
   dry:.5,reb:.5, // air sec, redoux : repères de cueilleurs, sans étude chiffrée
-  frost:1,season:1, // contraintes physiques et phénologiques
+  frost:1,   // le gel détruit les carpophores
+  season:.3, // calendrier : fait largement doublon avec la température et l'eau (les mois d'observation en sont la conséquence),
+             // il ne sert plus qu'à écarter les poussées hors saison
   ph:.4,     // sols acides préférés par le cèpe et la girolle (pH ≈ 4,2) ; donnée SoilGrids lissée à 250 m
   slope:.3   // la production baisse quand la pente augmente (Bonet et al. 2008, Pyrénées centrales)
 };
@@ -1315,13 +1335,18 @@ function compute(D,cfg){
     const pre=hn?Math.min(1,Math.max(.4,(hs/hn-10)/10)):.7;
     trig.push({v:rs*(sp.w*sh+(1-sp.w))*pre,rs,sh,pre,r3});
   }
-  // bilan hydrique des 30 derniers jours : pluie − évapotranspiration (≈ 0,1 mm/j par °C au-dessus de −5 °C)
-  const pet=tm.map(v=>Math.max(0,.1*(v+5))),wb=[];
+  // bilan hydrique des 30 derniers jours : pluie − évapotranspiration réelle d'un sous-bois (≈ 0,05 mm/j par °C au-dessus
+  // de −5 °C, soit ~0,9 mm/j à 13 °C ; l'ancienne valeur, double, rendait négatif un octobre à 58 mm)
+  const pet=tm.map(v=>Math.max(0,.05*(v+5))),wb=[];
   for(let d=0;d<N;d++){let s=0;for(let j=Math.max(0,d-29);j<=d;j++)s+=rain[j]-pet[j];wb.push(s)}
   // mémoire de l'été : bilan hydrique des deux mois précédents (J-90 à J-31), ramené à 60 jours ; une sécheresse
-  // de fin d'été affaiblit la poussée d'automne sans l'empêcher (plancher 0,3). Neutre sans au moins 45 jours d'historique.
+  // de fin d'été affaiblit la poussée d'automne sans l'empêcher (plancher 0,5). Neutre sans au moins 45 jours d'historique.
   const summer=rain.map((_,d)=>{let s=0,n=0;for(let j=Math.max(0,d-89);j<=d-30;j++){s+=rain[j]-pet[j];n++}
-    return n<45?1:.3+.7*Math.min(1,Math.max(0,(s*60/n+60)/120))});
+    return n<45?1:.5+.5*Math.min(1,Math.max(0,(s*60/n+40)/100))});
+  // saison lissée jour par jour : interpolation entre les milieux de mois (plus de saut au 1er du mois)
+  const seasonOf=iso=>{const dt=new Date(iso+"T12:00"),m=dt.getMonth()+1,f=(dt.getDate()-15)/30,m2=f<0?(m+10)%12+1:m%12+1,
+    a=sp.season[m]||.1,b=sp.season[m2]||.1;return a+(b-a)*Math.abs(f)};
+  const wW=D.sm&&D.sm.some(v=>v!=null)?WEIGHTS.waterWithSoil:WEIGHTS.water;
   // température de l'air moyenne des 5 derniers jours
   const t5=tm.map((_,d)=>{let s=0,c=0;for(let j=Math.max(0,d-4);j<=d;j++){s+=tm[j];c++}return s/c});
   const pw=(f,w)=>Math.pow(Math.max(0,Math.min(1,f)),w),W=WEIGHTS;
@@ -1339,15 +1364,15 @@ function compute(D,cfg){
       const hum=Math.min(1,Math.max(0,(minH-sp.humMin)/.2));
       // température : courbe en cloche autour de l'optimum de l'espèce (air, moyenne sur 5 jours)
       const tt=t5[d],temp=Math.exp(-(((tt-sp.topt)/(sp.tsd||3.5))**2)/2);
-      const water=Math.min(1,Math.max(0,(wb[d]+30)/90)); // −30 mm → 0, +60 mm → 1
+      const water=Math.min(1,Math.max(0,(wb[d]+20)/60)); // −20 mm → 0, +40 mm → 1
       let mx=-99;for(let j=t+1;j<=Math.min(N-1,t+7);j++)mx=Math.max(mx,ts[j]);
       const reb=sp.hot&&mx>sp.ts[1]+3?.4:1;
       let v=0,vn=0;for(let j=Math.max(0,d-3);j<=d;j++){v+=vpd[j];vn++}v/=vn;
       const dry=Math.min(1,Math.max(.3,1-(v-.6)/1.4));
       const frost=(tmin[d]<sp.frostT||(d&&tmin[d-1]<sp.frostT))?.15:1;
-      const mon=+D.dates[d].slice(5,7);const season=sp.season[mon]||.1;
+      const season=seasonOf(D.dates[d]);
       // produit pondéré : un facteur de poids 1 peut tout bloquer, un poids faible ne fait que moduler
-      const sc=shape*pw(trig[t].v,W.trig)*pw(water,W.water)*pw(hum,W.hum)*pw(temp,W.temp)*pw(reb,W.reb)*pw(frost,W.frost)*pw(dry,W.dry)*pw(season,W.season)*pw(summer[d],W.summer);
+      const sc=shape*pw(trig[t].v,W.trig)*pw(water,wW)*pw(hum,W.hum)*pw(temp,W.temp)*pw(reb,W.reb)*pw(frost,W.frost)*pw(dry,W.dry)*pw(season,W.season)*pw(summer[d],W.summer);
       if(sc>best){best=sc;bd={t,lag,k,hum,temp,water,wb:wb[d],summer:summer[d],reb,frost,dry,season,minH,tt,v,tr:trig[t]}}
     }
     E.push(best);Ed.push(bd);
@@ -1711,9 +1736,12 @@ async function analyseHex(bb,opt={}){
   // qui touche la zone (ses petits hexagones débordent donc un peu de la zone), et laisse en place les plus fins
   const inZ=opt.keep||((la,lo)=>la>=bb[1]&&la<=bb[3]&&lo>=bb[0]&&lo<=bb[2]),mg=side(SIZES[SIZES.length-1])*2.2;
   const bbx=[bb[0]-mg/KX,bb[1]-mg/KY,bb[2]+mg/KX,bb[3]+mg/KY];
-  const cand=hexesIn(bbx,a).map(([q,r])=>{const p=hexCenter(q,r,a);return{q,r,z:inZ(...p),c:hexAt(...p,s=>s>size),fine:!!hexAt(...p,s=>s<size)}}).filter(o=>!o.fine);
+  // un petit hexagone est gardé s'il touche (centre ou un coin) un grand hexagone remplacé : il déborde un peu sur le
+  // voisin plutôt que de laisser un trou ; le débordement ne se voit pas, le plus fin étant peint par-dessus
+  const cand=hexesIn(bbx,a).map(([q,r])=>{const p=hexCenter(q,r,a);
+    return{q,r,z:inZ(...p),c:hexAt(...p,s=>s>size),cs:hexCorners(q,r,a,.95).map(k=>hexAt(...k,s=>s>size)).filter(Boolean).map(h=>h.id),fine:!!hexAt(...p,s=>s<size)}}).filter(o=>!o.fine);
   const replaced=new Set(cand.filter(o=>o.z&&o.c).map(o=>o.c.id));
-  const hs=cand.filter(o=>o.c?replaced.has(o.c.id):o.z).map(o=>[o.q,o.r]);
+  const hs=cand.filter(o=>o.c?replaced.has(o.c.id)||o.cs.some(id=>replaced.has(id)):o.z).map(o=>[o.q,o.r]);
   if(!hs.length)return false;
   if(hs.length>600){$("hexSteps").innerHTML=`<li><span>⚠️</span><span>${hs.length} hexagones : trop pour une analyse (600 max). Zoome ou choisis une taille plus grande.</span></li>`;return false}
   hexBusy=true;$("hexBtn").disabled=true;const prog=$("hexProg"),bar=prog.firstElementChild;prog.style.display="";
@@ -1788,16 +1816,16 @@ function hexScore(id,sp,mode){const m=hexModel(id,sp);if(!m)return null;if(mode=
   if(mode==="tom"){const i=Math.min(m.N-1,m.today+1);return{v:m.E[i],i,m}}let b=m.today;for(let i=m.today;i<m.N;i++)if(m.E[i]>m.E[b])b=i;return{v:m.E[b],i:b,m}}
 // grands hexagones qui contiennent le centre d'un plus fin (bord d'une zone affinée) : dessous, ni valeur ni classement
 function coveredIds(){const cov=new Set();
-  for(const h of Object.values(hexStore.hex))for(const s of SIZES)if(s>h.size){const [q,r]=ll2hex(h.lat,h.lon,side(s));cov.add(`${s}:${q}:${r}`)}
+  for(const h of Object.values(hexStore.hex).filter(hexShown))for(const s of SIZES)if(s>h.size){const [q,r]=ll2hex(h.lat,h.lon,side(s));cov.add(`${s}:${q}:${r}`)}
   return cov}
 const hexPoly={}; // polygone affiché par identifiant d'hexagone
 function drawHexes(){if(!hexLayer)return;hexLayer.clearLayers();if(labLayer)labLayer.clearLayers();for(const k in hexModelCache)delete hexModelCache[k];for(const k in hexPoly)delete hexPoly[k];
   const sp=$("hSp").value,mode=hMode;let n=0,sum=0,best=null;
   $("hMode").querySelectorAll(".chip").forEach(b=>b.classList.toggle("on",b.dataset.m===mode));
-  const list=Object.values(hexStore.hex).sort((x,y)=>y.size-x.size),cov=coveredIds();
+  const list=Object.values(hexStore.hex).filter(hexShown).sort((x,y)=>y.size-x.size),cov=coveredIds();
   list.forEach(h=>{const a=side(h.size),covered=cov.has(h.id),ix=hexIndex(h,sp,mode),out=!!excluded(h);
     const fill=!ix?"#9b9a95":out?"#b8b6ae":gradColor(ix.v);
-    const p=L.polygon(hexCorners(h.q,h.r,a),{color:"#ffffff",weight:h.size<2?.5:.8,opacity:.8,fillColor:fill,fillOpacity:!ix?.15:out?.3:.72}).addTo(hexLayer);
+    const p=L.polygon(hexCorners(h.q,h.r,a),{pane:"hexPane",renderer:hexRenderer,color:"#ffffff",weight:h.size<2?.5:.8,opacity:.9,fillColor:fill,fillOpacity:!ix?.2:out?.45:1}).addTo(hexLayer);
     p.on("click",()=>hexPopup(h,p));hexPoly[h.id]=p;
     if(covered||out)return;
     if(ix){n++;sum+=ix.v;if(!best||ix.v>best.v)best={v:ix.v,h}}
@@ -1872,7 +1900,7 @@ function bestHexes(){
   L.circle([la0,lo0],{radius:R*1000,color:"#7a4a22",weight:1.5,fill:false,dashArray:"5 5",interactive:false}).addTo(bestLayer);
   L.circleMarker([la0,lo0],{radius:6,color:"#fff",weight:2,fillColor:"#2a78d6",fillOpacity:1,interactive:false}).addTo(bestLayer);
   let unknown=0;const rows=[];
-  for(const h of Object.values(hexStore.hex)){if(cov.has(h.id))continue;const g=kmTo(la0,lo0,h.lat,h.lon);if(g.d>R)continue;
+  for(const h of Object.values(hexStore.hex)){if(cov.has(h.id)||!hexShown(h))continue;const g=kmTo(la0,lo0,h.lat,h.lon);if(g.d>R)continue;
     const ix=hexIndex(h,sp,hMode);if(!ix)continue;if(h.forest==null||ix.excl){unknown++;continue}rows.push({h,ix,...g})}
   rows.sort((x,y)=>y.ix.v-x.ix.v);const top=rows.slice(0,10),pc=Math.round(coverage(la0,lo0,R)*100);
   $("bInfo").textContent=`${spName(sp)} · ${MODE_LAB[hMode]}`;
