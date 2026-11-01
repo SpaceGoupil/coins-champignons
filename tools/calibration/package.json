@@ -1,0 +1,6 @@
+{
+  "name": "coins-champignons-calibration",
+  "private": true,
+  "description": "Scripts de calibration du modèle (hors de l'app, non publiés avec elle)",
+  "dependencies": { "pngjs": "7.0.0" }
+}
