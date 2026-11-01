@@ -820,11 +820,12 @@ th:first-child,td:first-child{text-align:left}
     <div class="card">
       <div class="ttl">Meilleurs hexagones autour d'un point <small id="bInfo"></small></div>
       <div class="row">
+        <label>Champignon<select id="bSp"></select></label>
         <label>Autour de<select id="bCenter"><option value="place" id="bPlaceOpt" disabled>Lieu recherché (aucun)</option><option value="gps">Ma position</option><option value="map">Centre de la carte</option></select></label>
         <label>Rayon<select id="bRad"><option value="2">2 km</option><option value="5">5 km</option><option value="10" selected>10 km</option><option value="20">20 km</option><option value="30">30 km</option></select></label>
       </div>
       <div class="row" style="margin-top:8px"><button class="btn pri" id="bGo">Chercher</button><button class="btn" id="bAna">Analyser ce rayon</button></div>
-      <p class="note" id="bMsg" style="margin:6px 2px 0">Classement selon l'espèce et la période choisies ci-dessus.</p>
+      <p class="note" id="bMsg" style="margin:6px 2px 0">Classement selon le champignon choisi ici (le même que sur la carte) et la période choisie plus haut.</p>
       <div id="bList"></div>
     </div>
 
@@ -1941,7 +1942,9 @@ showPlace();
 $("bRad").onchange=()=>{if(bestCenter)bestHexes()};
 $("hexBtn").onclick=()=>analyseHex();
 $("hexClear").onclick=()=>{hexStore={hex:{},pts:hexStore.pts};saveHex();drawHexes();drawGrid();$("hexSteps").innerHTML="";if(bestLayer)bestLayer.clearLayers();$("bList").innerHTML=""};
-$("hSp").onchange=drawHexes;
+// le champignon du classement et celui de la carte restent les mêmes : changer l'un change l'autre
+const setSp=v=>{$("hSp").value=v;$("bSp").value=v;drawHexes();if(bestCenter)bestHexes()};
+$("hSp").onchange=()=>setSp($("hSp").value);$("bSp").onchange=()=>setSp($("bSp").value);
 $("hMode").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{hMode=b.dataset.m;LS.set("hMode",hMode);drawHexes()});
 $("hSize").onchange=()=>{LS.set("hSize",$("hSize").value);drawGrid();drawHexes()};
 // taille d'hexagone de la dernière analyse, pour retrouver les hexagones enregistrés au rechargement
@@ -1959,7 +1962,7 @@ $("ioApply").onclick=()=>{try{const j=JSON.parse($("ioBox").value);if(Array.isAr
 for(const k in PRESETS){const b=document.createElement("button");b.className="chip";b.textContent=PRESETS[k].n;b.dataset.k=k;b.onclick=()=>{preset=k;PRESETS[k].f();$("simMonth").value=PRESETS[k].m;render()};$("presets").appendChild(b)}
 ["Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].forEach((n,i)=>$("simMonth").add(new Option(n,i+5)));
 $("simMonth").value=Math.min(12,Math.max(5,new Date().getMonth()+1));
-fillSelect($("sp"),SP);fillSelect($("hSp"),SP);$("hSp").add(new Option(spName(ALL),ALL));fillSelect($("fSp"),SP);fillSelect($("soil"),SOIL);fillSelect($("fSoil"),SOIL);fillSelect($("expo"),EXPO);fillSelect($("fExpo"),EXPO);
+fillSelect($("sp"),SP);fillSelect($("hSp"),SP);$("hSp").add(new Option(spName(ALL),ALL));fillSelect($("bSp"),SP);$("bSp").add(new Option(spName(ALL),ALL));fillSelect($("fSp"),SP);fillSelect($("soil"),SOIL);fillSelect($("fSoil"),SOIL);fillSelect($("expo"),EXPO);fillSelect($("fExpo"),EXPO);
 $("soil").value="limon";
 PRESETS.automne.f();
 buildSrc();renderList();stats();
