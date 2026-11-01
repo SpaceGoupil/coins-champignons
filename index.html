@@ -991,6 +991,11 @@ th:first-child,td:first-child{text-align:left}
   <button data-v="v-info"><b>ℹ️</b>Méthode</button>
 </nav>
 
+<div class="sheet" id="relSheet"><div class="in">
+  <div class="ttl" style="font-size:16px"><span id="relTitle">Relief et versants</span><small id="relSub"></small></div>
+  <div id="relBody"></div>
+  <div class="row" style="margin-top:10px"><button class="btn" id="relClose">Fermer</button></div>
+</div></div>
 <div class="sheet" id="spotSheet"><div class="in">
   <div class="ttl" style="font-size:16px"><span id="sheetTitle">Nouveau coin</span><small id="sheetCoords"></small></div>
   <div class="row" style="flex-direction:column">
@@ -1881,9 +1886,11 @@ function hexPopup(h,p){const sp=$("hSp").value,sc=hexScore(h.id,sp,"fc"),now=hex
   <b>${spName(sp)}</b><br>Indice de pousse : <b>${Math.round(hexIndex(h,sp,"now").v*100)}/100</b> aujourd'hui · <b>${Math.round(hexIndex(h,sp,"tom").v*100)}/100</b> demain · <b>${Math.round(hexIndex(h,sp,"fc").v*100)}/100</b> au mieux sur la semaine${lvl(sc.v)?" ("+m.dateOf(sc.i)+")":""}<br>${sp===ALL?"":`<span style="color:var(--muted)">météo seule : ${Math.round(sc.v*100)}/100, pondérée par les arbres favorables</span><br>`}
   ${top?`Meilleure espèce cette semaine : <b>${SP[top[0]].n}</b> (${Math.round(hexIndex(h,top[0],"fc").v*100)}/100)<br>`:""}
   <button class="btn" style="margin-top:6px;padding:5px 10px" id="hexOpen">Prévision détaillée</button>`:"Pas de météo en cache pour cet hexagone."}
+  <button class="btn" style="margin-top:6px;padding:5px 10px" id="hexRel">⛰ Relief et versants</button>
   ${finer(h.size)?` <button class="btn" style="margin-top:6px;padding:5px 10px" id="hexFine">Affiner en ${fmtKm2(finer(h.size))}</button>`:""}</div>`;
   p.bindPopup(html).openPopup();
   setTimeout(()=>{const f=document.getElementById("hexFine");if(f)f.onclick=()=>{map.closePopup();refineHex(h)};
+    const rl=document.getElementById("hexRel");if(rl)rl.onclick=()=>{map.closePopup();openRelief(h)};
     const b=document.getElementById("hexOpen");if(b)b.onclick=()=>{map.closePopup();const s1=top?top[0]:sp;src={kind:"hex",id:h.id};spSel=s1;$("sp").value=s1;sel=null;buildSrc();showView("v-fc")}},0);
 }
 // affinage : réanalyse la seule surface d'un hexagone en hexagones plus petits (≈ 10 à 20 par hexagone)
@@ -2037,6 +2044,87 @@ async function heatMap(){
   }catch(e){say("Carte continue impossible : "+e.message)}finally{heatBusy=false;$("bHeat").disabled=false}
 }
 $("bHeat").onclick=heatMap;
+
+// ================= RELIEF ET VERSANTS D'UN HEXAGONE =================
+// Cellules d'environ 40 m dans l'hexagone : altitude, pente et versant (tuiles d'altitude IGN), essence (BD Forêt),
+// puis indice de chaque cellule pour l'espèce choisie (météo de l'hexagone corrigée de l'altitude et du versant de la cellule).
+let relMark=null;
+$("relClose").onclick=()=>$("relSheet").classList.remove("on");
+async function openRelief(h){
+  const body=$("relBody"),sp=$("hSp").value,sps=sp===ALL?Object.keys(SP):[sp];
+  $("relTitle").textContent=`Relief et versants · ${fmtKm2(h.size)}`;$("relSub").textContent=`${spName(sp)} · ${MODE_LAB[hMode]}`;
+  $("relSheet").classList.add("on");const say=t=>body.innerHTML=`<p class="note">${t}</p>`;
+  if(hexBusy){say("Une analyse est en cours, réessaie dans un instant.");return}
+  const D0=hexWeather(h);if(!D0){say("Pas de météo en cache pour cet hexagone : relance l'analyse avec du réseau.");return}
+  try{
+  // cellules dans l'hexagone (5 000 au plus)
+  const a=side(h.size),cs=hexCorners(h.q,h.r,a),kx=111.32*Math.cos(h.lat*Math.PI/180),cell=Math.max(.04,Math.sqrt(h.size/5000));
+  const la1=Math.min(...cs.map(c=>c[0])),la2=Math.max(...cs.map(c=>c[0])),lo1=Math.min(...cs.map(c=>c[1])),lo2=Math.max(...cs.map(c=>c[1]));
+  const NX=Math.ceil((lo2-lo1)*kx/cell),NY=Math.ceil((la2-la1)*KY/cell),C=[];
+  for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const la=la2-(j+.5)*cell/KY,lo=lo1+(i+.5)*cell/kx,[q,r]=ll2hex(la,lo,a);if(q===h.q&&r===h.r)C.push({i,j,la,lo})}
+  say(`Relief : ${C.length} cellules de ${Math.round(cell*1000)} m…`);
+  const tl=new Set();C.forEach(c=>tl.add(Math.floor((c.lo+180)/DEM_TD)+"/"+Math.floor((90-c.la)/DEM_TD)));
+  await Promise.all([...tl].map(async k=>{const [c,r]=k.split("/").map(Number);demTiles[k+"#"]=await demTile(c,r)}));
+  const hh=cell/2;
+  C.forEach(c=>{c.alt=demAt(c.la,c.lo);const e=demAt(c.la,c.lo+hh/kx),w=demAt(c.la,c.lo-hh/kx),n=demAt(c.la+hh/KY,c.lo),s=demAt(c.la-hh/KY,c.lo);
+    if([c.alt,e,w,n,s].some(v=>v==null))return;const b=(e-w)/cell,d=(n-s)/cell;c.slope=Math.atan(Math.hypot(b,d)/1000)*180/Math.PI;c.aspect=(Math.atan2(-b,-d)*180/Math.PI+360)%360;
+    c.vers=c.slope<4?"plat":azName(c.aspect)});
+  say("Essences forestières…");const fz=forestZ;forestZ=15;
+  try{for(let k=0;k<C.length;k+=400)await Promise.all(C.slice(k,k+400).map(async c=>{c.cls=await forestPixel(c.la,c.lo)}))}finally{forestZ=fz}
+  // météo : modèle pour une gamme de décalages de température et d'humidité, puis interpolation par cellule
+  say("Indice par cellule…");await new Promise(r=>setTimeout(r,0));
+  const DT=[-6,-4,-3,-2,-1,0,1,2,3,4],DH=[.88,1,1.12];
+  const pick=m=>{if(hMode==="now")return m.E[m.today];if(hMode==="tom")return m.E[Math.min(m.N-1,m.today+1)];let b=0;for(let i=m.today;i<m.N;i++)b=Math.max(b,m.E[i]);return b};
+  const tab={};for(const s of sps)tab[s]=DT.map(dt=>DH.map(dh=>{const t=v=>v==null?null:v+dt;
+    return pick(compute({...D0,tmax:D0.tmax.map(t),tmin:D0.tmin.map(t),tsol:D0.tsol.map(t)},{sp:SP[s],soil:soilClassOf(h),expo:{dT:dt,dH:dh},dT:dt}))}));
+  const lerp=(arr,x,xs)=>{if(x<=xs[0])return arr[0];for(let q=1;q<xs.length;q++)if(x<=xs[q]){const f=(x-xs[q-1])/(xs[q]-xs[q-1]);return arr[q-1]+(arr[q]-arr[q-1])*f}return arr[arr.length-1]};
+  const ok=C.filter(c=>c.slope!=null);
+  if(!ok.length){say("Relief indisponible (tuiles d'altitude non chargées : connexion ?).");return}
+  ok.forEach(c=>{const forest=!!c.cls&&!NON_FOREST.has(c.cls);c.forest=forest;if(!forest||c.alt>ALT_MAX){c.v=0;return}
+    const ex=hexExpo({slope:c.slope,aspect:c.aspect}),dt=-.0065*(c.alt-h.alt)+ex.dT;let tot=0;
+    for(const s of sps)tot+=lerp(tab[s].map(r=>lerp(r,ex.dH,DH)),dt,DT)*hostAff(s,c.cls)*siteW({soil:h.soil,slope:c.slope},s);
+    c.v=tot/sps.length});
+  // synthèse par versant
+  const ORD=["nord","nord-est","est","sud-est","sud","sud-ouest","ouest","nord-ouest","plat"],G={};ORD.forEach(v=>G[v]=[]);ok.forEach(c=>G[c.vers].push(c));
+  const mean=(arr,f)=>arr.length?arr.reduce((x,c)=>x+f(c),0)/arr.length:null,fmt=v=>Math.round(v*100);
+  const rows=ORD.map(v=>{const g=G[v];if(!g.length)return null;const fo=g.filter(c=>c.forest),ess={};fo.forEach(c=>ess[c.cls]=(ess[c.cls]||0)+1);
+    const top=Object.entries(ess).sort((x,y)=>y[1]-x[1])[0];
+    return{v,part:g.length/ok.length,slope:mean(g,c=>c.slope),alt:mean(g,c=>c.alt),forest:fo.length/g.length,ess:top?TREE_N[top[0]]||top[0]:"hors forêt",idx:fo.length?mean(fo,c=>c.v):0}}).filter(Boolean);
+  // rose des versants : secteur proportionnel à la part, couleur = indice moyen de la forêt du versant
+  const mx=Math.max(...rows.filter(r=>r.v!=="plat").map(r=>r.part),.01);
+  let rose=`<svg viewBox="-110 -110 220 220" width="200" height="200" style="display:block;margin:4px auto" role="img" aria-label="Rose des versants">`;
+  [.33,.66,1].forEach(f=>rose+=`<circle r="${90*f}" fill="none" stroke="var(--line)"/>`);
+  rows.filter(r=>r.v!=="plat").forEach(r=>{const k=ORD.indexOf(r.v),a0=(k*45-22.5-90)*Math.PI/180,a1=(k*45+22.5-90)*Math.PI/180,R=12+78*r.part/mx;
+    rose+=`<path d="M0,0 L${(R*Math.cos(a0)).toFixed(1)},${(R*Math.sin(a0)).toFixed(1)} A${R.toFixed(1)},${R.toFixed(1)} 0 0 1 ${(R*Math.cos(a1)).toFixed(1)},${(R*Math.sin(a1)).toFixed(1)} Z" fill="${gradColor(r.idx)}" stroke="var(--surface)" stroke-width="1.5"/>`});
+  const pl=rows.find(r=>r.v==="plat");if(pl)rose+=`<circle r="10" fill="${gradColor(pl.idx)}" stroke="var(--surface)"/>`;
+  ["N","E","S","O"].forEach((t,k)=>{const an=(k*90-90)*Math.PI/180;rose+=`<text x="${(102*Math.cos(an)).toFixed(1)}" y="${(102*Math.sin(an)+4).toFixed(1)}" text-anchor="middle" font-size="12" fill="var(--text2)">${t}</text>`});
+  rose+="</svg>";
+  // pentes
+  const SB=[[0,10,"0–10°"],[10,20,"10–20°"],[20,30,"20–30°"],[30,91,"> 30°"]],sl=SB.map(([s1,s2,n])=>[n,ok.filter(c=>c.slope>=s1&&c.slope<s2).length/ok.length]);
+  // mini-carte : une cellule = un pixel, hors forêt en gris clair
+  const cv=document.createElement("canvas");cv.width=NX;cv.height=NY;const g=cv.getContext("2d"),img=g.createImageData(NX,NY);
+  ok.forEach(c=>{const [r,gg,b]=c.forest?gradRGB(c.v):[205,203,196];img.data.set([r,gg,b,255],(c.j*NX+c.i)*4)});g.putImageData(img,0,0);
+  // meilleur endroit : moyenne sur 3×3 cellules de forêt (au moins 5)
+  const byIJ={};ok.forEach(c=>byIJ[c.i+","+c.j]=c);let best=null;
+  ok.filter(c=>c.forest).forEach(c=>{let s=0,n=0;for(let b=-1;b<=1;b++)for(let a2=-1;a2<=1;a2++){const o=byIJ[(c.i+a2)+","+(c.j+b)];if(o&&o.forest){s+=o.v;n++}}
+    if(n>=5&&(!best||s/n>best.s))best={c,s:s/n}});
+  const alts=ok.map(c=>c.alt);
+  body.innerHTML=`<p class="note" style="margin-top:0">${ok.length} cellules de ${Math.round(cell*1000)} m · altitude ${Math.round(Math.min(...alts))} à ${Math.round(Math.max(...alts))} m · forêt ${fmt(ok.filter(c=>c.forest).length/ok.length)} %</p>
+    <div class="ttl" style="margin-top:6px">Versants <small>taille = part de l'hexagone · couleur = indice de sa forêt</small></div>${rose}
+    <table class="sptab" style="font-size:13px"><tr><th>Versant</th><th>Part</th><th>Pente</th><th>Alt.</th><th>Forêt</th><th>Indice</th></tr>
+    ${rows.sort((x,y)=>y.idx-x.idx).map(r=>`<tr><td><b>${r.v}</b><br><small style="color:var(--muted)">${r.ess}</small></td><td>${fmt(r.part)} %</td><td>${Math.round(r.slope)}°</td><td>${Math.round(r.alt)} m</td><td>${fmt(r.forest)} %</td><td><span class="lvl" style="background:${gradColor(r.idx)};color:${r.idx>=.6?"#fff":"#1a1a1a"}">${fmt(r.idx)}</span></td></tr>`).join("")}</table>
+    <div class="ttl" style="margin-top:12px">Pentes</div>
+    ${sl.map(([n,v])=>`<div class="sub-i"><span class="nm">${n}</span><span class="bar"><i style="width:${fmt(v)}%"></i></span><span class="pc">${fmt(v)}%</span></div>`).join("")}
+    <div class="ttl" style="margin-top:12px">Carte de l'hexagone <small>nord en haut · gris = hors forêt</small></div>
+    <img src="${cv.toDataURL()}" style="width:100%;max-width:360px;display:block;margin:4px auto;border-radius:8px;border:1px solid var(--line)" alt="Indice par cellule dans l'hexagone">
+    ${best?`<p style="margin:8px 2px"><b>Meilleur endroit</b> : ${fmt(best.s)}/100, versant ${best.c.vers}, ${Math.round(best.c.alt)} m, pente ${Math.round(best.c.slope)}°, ${TREE_N[best.c.cls]||best.c.cls}.</p>
+    <button class="btn pri" id="relGo">Voir sur la carte</button>`:""}
+    <p class="note">Relief au pas de ${Math.round(cell*1000)} m (RGE Alti) ; la météo est celle de l'hexagone, corrigée de l'altitude et du versant de chaque cellule.</p>`;
+  if(best)$("relGo").onclick=()=>{$("relSheet").classList.remove("on");$("map").scrollIntoView({behavior:"smooth",block:"center"});map.setView([best.c.la,best.c.lo],16);
+    if(relMark)map.removeLayer(relMark);relMark=L.circleMarker([best.c.la,best.c.lo],{radius:9,color:"#fff",weight:3,fillColor:"#b0161e",fillOpacity:1}).addTo(map)};
+  }catch(e){say("Calcul impossible : "+e.message)}
+}
+
 function goHex(h){$("map").scrollIntoView({behavior:"smooth",block:"center"});
   map.setView([h.lat,h.lon],Math.max(map.getZoom(),labZFor(h.size)),{animate:false});drawHexes();
   const p=hexPoly[h.id];if(p)hexPopup(h,p)}
