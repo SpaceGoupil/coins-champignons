@@ -805,10 +805,11 @@ th:first-child,td:first-child{text-align:left}
       <div class="ttl">Hexagones <small id="hexInfo">grille fixe sur la France</small></div>
       <div class="row">
         <label>Espèce affichée<select id="hSp"></select></label>
-        <label>Indice<select id="hMode"><option value="fc" selected>Meilleur des 7 prochains jours</option><option value="day">Jour choisi</option></select></label>
         <label>Taille<select id="hSize"><option value="2">2 km²</option><option value="5" selected>5 km²</option><option value="10">10 km²</option></select></label>
       </div>
-      <label id="hDayBox" style="display:none;font-size:12px;color:var(--text2);margin-top:8px">Jour : <span class="val" id="hDayLab"></span><input type="range" id="hDay" min="0" max="7" step="1" value="0"></label>
+      <div style="margin-top:8px;font-size:12px;color:var(--text2)">Indice pour
+        <div class="chips" id="hMode" style="margin-top:4px"><button class="chip" data-m="now">Aujourd'hui</button><button class="chip" data-m="tom">Demain</button><button class="chip" data-m="fc">Sur la semaine</button></div>
+      </div>
       <div class="row" style="margin-top:8px"><button class="btn pri" id="hexBtn">⬡ Analyser la zone affichée</button><button class="btn" id="hexClear">Effacer</button></div>
       <ul class="steps" id="hexSteps"></ul>
       <div class="prog" id="hexProg" style="display:none"><i></i></div>
@@ -1584,11 +1585,14 @@ function hexIndex(h,sp,mode){ // indice 0–1 : pousse météo × part de forêt
 const hexModelCache={};
 function hexModel(id,sp){const k=id+"|"+sp;if(hexModelCache[k])return hexModelCache[k];const h=hexStore.hex[id];if(!h)return null;const D=hexWeather(h);if(!D)return null;
   const m=compute(D,{sp:SP[sp],soil:SOIL.limon,expo:EXPO.plat,dT:0,alt:h.alt!=null?Math.round(h.alt):null,elev:null});return hexModelCache[k]=m}
+// période affichée : "now" aujourd'hui, "tom" demain, "fc" meilleur jour des 7 prochains
+let hMode=LS.get("hMode","fc");if(!["now","tom","fc"].includes(hMode))hMode="fc";
+const MODE_LAB={now:"aujourd'hui",tom:"demain",fc:"meilleur jour de la semaine"};
 function hexScore(id,sp,mode){const m=hexModel(id,sp);if(!m)return null;if(mode==="now")return{v:m.E[m.today],i:m.today,m};
-  if(mode==="day"){const i=Math.min(m.N-1,m.today+(+$("hDay").value));return{v:m.E[i],i,m}}let b=m.today;for(let i=m.today;i<m.N;i++)if(m.E[i]>m.E[b])b=i;return{v:m.E[b],i:b,m}}
+  if(mode==="tom"){const i=Math.min(m.N-1,m.today+1);return{v:m.E[i],i,m}}let b=m.today;for(let i=m.today;i<m.N;i++)if(m.E[i]>m.E[b])b=i;return{v:m.E[b],i:b,m}}
 function drawHexes(){if(!hexLayer)return;hexLayer.clearLayers();if(labLayer)labLayer.clearLayers();for(const k in hexModelCache)delete hexModelCache[k];
-  const sp=$("hSp").value,mode=$("hMode").value,size=+$("hSize").value,a=hexA();let n=0,sum=0,best=null;
-  $("hDayBox").style.display=mode==="day"?"":"none";
+  const sp=$("hSp").value,mode=hMode,size=+$("hSize").value,a=hexA();let n=0,sum=0,best=null;
+  $("hMode").querySelectorAll(".chip").forEach(b=>b.classList.toggle("on",b.dataset.m===mode));
   const list=Object.values(hexStore.hex).filter(h=>h.size===size);
   list.forEach(h=>{const ix=hexIndex(h,sp,mode);const noForest=h.forest!=null&&h.forest<.05;
     const fill=!ix?"#9b9a95":noForest?"#b8b6ae":gradColor(ix.v);
@@ -1597,8 +1601,7 @@ function drawHexes(){if(!hexLayer)return;hexLayer.clearLayers();if(labLayer)labL
     if(ix){n++;sum+=ix.v;if(!best||ix.v>best.v)best={v:ix.v,h}}
     if(ix&&labLayer&&map.getZoom()>=13){const [la,lo]=hexCenter(h.q,h.r,a);
       L.marker([la,lo],{interactive:false,icon:L.divIcon({className:"hlab",iconSize:[30,20],iconAnchor:[15,10],html:Math.round(ix.v*100)})}).addTo(labLayer)}});
-  if(list.length){const m0=list.map(h=>hexModel(h.id,sp)).find(Boolean);
-    const dl=mode==="day"&&m0?m0.dateOf(Math.min(m0.N-1,m0.today+(+$("hDay").value))):"";$("hDayLab").textContent=dl;
+  if(list.length){
     $("hexInfo").textContent=n?`${n} hexagones · moyenne ${Math.round(sum/n*100)} · max ${Math.round(best.v*100)}`:"pas de météo en cache";}
   legend(sp,mode);
 }
@@ -1606,7 +1609,7 @@ function legend(sp,mode){
   if(!legendCtl){legendCtl=L.control({position:"topright"});legendCtl.onAdd=()=>{const d=L.DomUtil.create("div","grad-leg");d.id="gradLeg";return d};legendCtl.addTo(map)}
   const has=Object.values(hexStore.hex).some(h=>h.size===+$("hSize").value);const d=document.getElementById("gradLeg");if(!d)return;
   d.style.display=has?"":"none";
-  d.innerHTML=`<b>Indice de pousse</b> · ${SP[sp].n}<br><span style="color:var(--text2)">${mode==="day"?$("hDayLab").textContent:"meilleur des 7 jours"}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> sans forêt</div>`;
+  d.innerHTML=`<b>Indice de pousse</b> · ${SP[sp].n}<br><span style="color:var(--text2)">${MODE_LAB[mode]}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> sans forêt</div>`;
 }
 function hexPopup(h,p){const sp=$("hSp").value,sc=hexScore(h.id,sp,"fc"),now=hexScore(h.id,sp,"now"),m=sc&&sc.m,i=m?m.today:0;
   let r7=0;if(m)for(let d=Math.max(0,i-7);d<i;d++)r7+=m.rain[d];
@@ -1615,14 +1618,15 @@ function hexPopup(h,p){const sp=$("hSp").value,sc=hexScore(h.id,sp,"fc"),now=hex
   Altitude moyenne : ${h.alt!=null?Math.round(h.alt)+" m":"?"}${h.altRange!=null?` (dénivelé ${Math.round(h.altRange)} m)`:""}<br>
   Forêt : ${f}${h.forest!=null&&h.forest<.1?" — peu propice":""}<br>
   ${m?`Pluie des 7 derniers jours : ${Math.round(r7)} mm<br>Sol aujourd'hui : ${m.ts[i].toFixed(1)} °C · humidité ${Math.round(m.H[i]*100)} %<br>
-  <b>${SP[sp].n}</b><br>Indice de pousse : <b>${Math.round(hexIndex(h,sp,"now").v*100)}/100</b> aujourd'hui · <b>${Math.round(hexIndex(h,sp,"fc").v*100)}/100</b> au mieux sur 7 jours${lvl(sc.v)?" ("+m.dateOf(sc.i)+")":""}<br><span style="color:var(--muted)">météo seule : ${Math.round(sc.v*100)}/100, pondérée par la part de forêt</span><br>
+  <b>${SP[sp].n}</b><br>Indice de pousse : <b>${Math.round(hexIndex(h,sp,"now").v*100)}/100</b> aujourd'hui · <b>${Math.round(hexIndex(h,sp,"tom").v*100)}/100</b> demain · <b>${Math.round(hexIndex(h,sp,"fc").v*100)}/100</b> au mieux sur la semaine${lvl(sc.v)?" ("+m.dateOf(sc.i)+")":""}<br><span style="color:var(--muted)">météo seule : ${Math.round(sc.v*100)}/100, pondérée par la part de forêt</span><br>
   <button class="btn" style="margin-top:6px;padding:5px 10px" id="hexOpen">Prévision détaillée</button>`:"Pas de météo en cache pour cet hexagone."}</div>`;
   p.bindPopup(html).openPopup();
   setTimeout(()=>{const b=document.getElementById("hexOpen");if(b)b.onclick=()=>{map.closePopup();src={kind:"hex",id:h.id};spSel=sp;$("sp").value=sp;sel=null;buildSrc();showView("v-fc")}},0);
 }
 $("hexBtn").onclick=()=>analyseHex();
 $("hexClear").onclick=()=>{hexStore={hex:{},pts:hexStore.pts};saveHex();drawHexes();drawGrid();$("hexSteps").innerHTML=""};
-$("hSp").onchange=$("hMode").onchange=drawHexes;$("hDay").oninput=drawHexes;
+$("hSp").onchange=drawHexes;
+$("hMode").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{hMode=b.dataset.m;LS.set("hMode",hMode);drawHexes()});
 $("hSize").onchange=()=>{LS.set("hSize",$("hSize").value);drawGrid();drawHexes()};
 // taille d'hexagone de la dernière analyse, pour retrouver les hexagones enregistrés au rechargement
 $("hSize").value=LS.get("hSize",null)||(Object.values(hexStore.hex).pop()||{size:5}).size;
