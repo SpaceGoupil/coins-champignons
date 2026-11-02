@@ -1,7 +1,7 @@
 # Journal d'avancement : refonte du modèle et de l'ergonomie
 
-- **Dernière mise à jour :** 2026-11-02 04:45 (heure de Paris)
-- **Statut :** terminé (A1-A6 et B1-B6 ; A7 non fait, voir plus bas). Rien n'est publié : trois commits locaux, à pousser seulement sur ta demande.
+- **Dernière mise à jour :** 2026-11-02 06:41 (heure de Paris)
+- **Statut :** terminé (A1-A6 et B1-B6 ; A7 non fait, voir plus bas). Publié sur GitHub Pages le 2 novembre à ta demande (`coins-v26`).
 - **Référence :** `docs/BRIEF-agent-modele-ergonomie.md` (contraintes, architecture, livrables)
 - **Reprise automatique :** désactivée, le travail est terminé.
 
@@ -35,8 +35,8 @@
 **Non fait**
 - **A7** (arbres hôtes réglés sur les observations françaises) : il n'y a que 4 à 15 observations françaises par espèce, trop peu pour régler quoi que ce soit.
 
-**Pour publier**
-- Rien n'a été poussé sur GitHub. Dis-le si tu veux que je publie.
+**Publication**
+- Publiée sur GitHub Pages le 2 novembre à ta demande. Sur le téléphone, la nouvelle version arrive à la prochaine ouverture avec réseau : fermer l'app complètement (liste des apps récentes), puis la rouvrir. Les coins, les cartes calculées et les tuiles enregistrées sont gardés.
 
 ## Règles rappelées
 - Commits **locaux** seulement, jamais de `git push` sans demande explicite de l'utilisateur.
@@ -87,3 +87,4 @@
 - 04:40 B3 : dégradé de la carte revu pour les daltoniens (simulation de Machado 2009) ; B4 : langue courante, virgule décimale, niveaux cohérents avec le chiffre affiché ; cartes calculées avec l'ancien modèle signalées.
 - 04:42 B5 : « Préparer ma sortie » (362 tuiles, relief, routes, météo des 5 meilleurs coins en 11 s ; fiche d'un coin vérifiée réseau coupé) et mode terrain (guidage GPS, boussole, 56 px, contraste 15:1).
 - 04:44 B6 : Lighthouse 100 / 100 (accessibilité, bonnes pratiques) ; thème sombre : boutons principaux corrigés (2,3 → 8:1) ; aucune erreur. Audit final rédigé. Commit local, `CACHE` = `coins-v26`. Statut : terminé.
+- 06:41 Publié sur GitHub Pages à la demande de l'utilisateur (6 commits, `CACHE` = `coins-v26`).
