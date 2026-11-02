@@ -1,6 +1,6 @@
 # Coins à champignons
 
-App web mobile (un seul fichier HTML, sans build) : indice de pousse de six champignons comestibles sur carte IGN, meilleurs coins avec leur accès (route goudronnée la plus proche, temps de trajet), utilisable en mode avion.
+App web mobile (un seul fichier HTML, sans build) : indice de pousse de six champignons comestibles sur carte IGN, meilleurs coins avec leur accès (route goudronnée la plus proche, temps de trajet), carnet de sorties qui compare les trouvailles à l'indice, utilisable en mode avion.
 
 Les indices sont **indicatifs** : poids de départ tirés d'études et de repères de cueilleurs, puis réglés sur des récoltes réelles (GBIF, voir `docs/modele-2026-11.md`).
 
@@ -8,7 +8,7 @@ Les indices sont **indicatifs** : poids de départ tirés d'études et de repèr
 
 - `index.html` : l'app (Leaflet 1.9.4 intégré).
 - `manifest.webmanifest`, `icon-192.png`, `icon-512.png` : installation sur l'écran d'accueil.
-- `sw.js` : met l'app en cache. Les tuiles (IndexedDB) et la météo (localStorage) sont stockées par la page elle-même.
+- `sw.js` : met l'app en cache. Les tuiles (IndexedDB), la météo et le carnet de sorties (localStorage) sont stockés par la page elle-même.
 
 ## Tester en local
 

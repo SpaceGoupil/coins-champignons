@@ -697,10 +697,20 @@ h1{font-size:20px;margin:4px 0 2px;letter-spacing:-.01em}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .row>label{flex:1 1 140px;font-size:12px;color:var(--text2);display:flex;flex-direction:column;gap:4px}
-select,input[type=text],input[type=number]{font:inherit;font-size:15px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);width:100%}
+select,input[type=text],input[type=number],input[type=date]{font:inherit;font-size:15px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);width:100%}
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .chip{flex:0 0 auto;font:inherit;font-size:13px;padding:7px 12px;min-height:44px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer}
 .chip.on{background:var(--text);color:var(--surface);border-color:var(--text)}
+.chips.wrap{flex-wrap:wrap;overflow:visible}
+label.chip{display:inline-flex;align-items:center;gap:6px}
+label.chip input{width:18px;height:18px;margin:0;accent-color:var(--accent)}
+label.chip:has(input:checked){background:var(--text);color:var(--surface);border-color:var(--text)}
+fieldset.lchips{border:0;margin:10px 0 0;padding:0;min-width:0}
+fieldset.lchips legend{font-size:12px;color:var(--text2);padding:0;margin-bottom:4px}
+.spot .rbtns{display:flex;flex-direction:column;gap:4px;flex:0 0 auto}
+.spot .btn{min-width:44px}
+.logpin{width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid #7a4a22;color:#7a4a22;font:700 12px/20px system-ui,sans-serif;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.logpin.none{border-color:#6b6b6b;color:#6b6b6b}
 .btn{font:inherit;font-size:14px;padding:9px 13px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .btn:disabled{opacity:.5}
@@ -803,7 +813,7 @@ body.terrain .card{border:2px solid var(--line)}
       <div class="ttl"><span>Vers le coin n° <span id="gNum">1</span></span> <small id="gInfo"></small></div>
       <div class="gwrap" aria-live="polite"><div class="garrow" id="gArrow" aria-hidden="true"><svg viewBox="-50 -50 100 100"><path d="M0,-46 L30,40 L0,24 L-30,40 Z" fill="var(--accent)" stroke="var(--text)" stroke-width="3" stroke-linejoin="round"/></svg></div>
         <div><div class="gdist" id="gDist">…</div><div id="gDir"></div><div class="note" id="gAcc"></div></div></div>
-      <div class="row"><button class="btn" type="button" id="gPrev" aria-label="Coin précédent">◀</button><button class="btn pri" type="button" id="gOpen">Fiche du coin</button><button class="btn" type="button" id="gNext" aria-label="Coin suivant">▶</button><button class="btn" type="button" id="gOff">Quitter</button></div>
+      <div class="row"><button class="btn" type="button" id="gPrev" aria-label="Coin précédent">◀</button><button class="btn pri" type="button" id="gOpen">Fiche du coin</button><button class="btn" type="button" id="gNext" aria-label="Coin suivant">▶</button><button class="btn" type="button" id="gLog">📒 Noter</button><button class="btn" type="button" id="gOff">Quitter</button></div>
     </div>
     <div class="card intro" id="intro" style="display:none">
       <div class="ttl">Bienvenue</div>
@@ -874,6 +884,15 @@ body.terrain .card{border:2px solid var(--line)}
       <p class="note hexOnly" style="margin:0 2px 6px">Les zones (▢) ont un œil : 👁 affiche ses hexagones, 🚫 les masque, « Seule » masque toutes les autres.</p>
       <div id="spotList"><p class="note">Aucun coin enregistré pour l'instant.</p></div>
       <div class="row" style="margin-top:8px"><button class="btn" id="refreshAll">↻ Mettre à jour la météo de tous les coins</button></div>
+    </div>
+
+    <div class="card" id="logCard">
+      <div class="ttl">📒 Mon carnet de sorties <small id="logCount"></small></div>
+      <p class="note" style="margin:0 2px 6px">Note ce que tu trouves, et aussi quand tu ne trouves rien : l'app compare avec son indice du jour au même endroit, pour savoir s'il marche dans tes forêts. Tout reste sur ton téléphone.</p>
+      <div class="row"><button class="btn pri" type="button" id="logHere">📒 Noter une sortie à ma position</button></div>
+      <p class="note" id="logMsg" aria-live="polite" style="margin:6px 2px 0">Aussi depuis un coin de la liste ③, la carte (touche un point) ou le mode terrain.</p>
+      <div id="logBilan"></div>
+      <div id="logList"></div>
     </div>
 
     </div>
@@ -1047,7 +1066,7 @@ body.terrain .card{border:2px solid var(--line)}
       <p class="note">Ces études portent surtout sur le cèpe de Bordeaux, en pinède espagnole ou en hêtraie allemande. Les poids de départ traduisent l'ordre d'importance trouvé dans ces travaux ; ils ont ensuite été réglés espèce par espèce sur des récoltes réelles. C'est un outil pour comprendre et explorer, pas une garantie.</p>
       <div class="ttl" style="margin-top:12px">Données</div>
       <p class="note">Météo : Open-Meteo (CC BY 4.0), 92 jours passés (32 affichés) et 7 jours de prévision, avec température et humidité du sol modélisées. Cartes, altitude et BD Forêt : Géoplateforme IGN, licence ouverte Etalab 2.0. Sols : SoilGrids (ISRIC, CC BY 4.0). Forêts publiques : ONF, via la Géoplateforme. Coupes récentes : cellules boisées dans la BD Forêt mais absentes du masque forestier IGN 2021-2023 (photos aériennes, détection automatique) ; un écart peut aussi venir d'une différence de cartographie. Routes : BD TOPO IGN (nature et accès en voiture légère). Tout est gardé sur ton téléphone. Rien n'est envoyé ailleurs, sauf les coordonnées demandées aux services météo et d'altitude.</p>
-      <div class="row"><button class="btn" id="exportBtn">Copier mes coins (sauvegarde)</button><button class="btn" id="importBtn">Coller une sauvegarde</button></div>
+      <div class="row"><button class="btn" id="exportBtn">Copier mes coins et mon carnet (sauvegarde)</button><button class="btn" id="importBtn">Coller une sauvegarde</button></div>
       <textarea id="ioBox" style="display:none;width:100%;height:90px;margin-top:8px;font:12px monospace;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:8px"></textarea>
       <button class="btn" id="ioApply" style="display:none;margin-top:6px">Importer</button>
     </div>
@@ -1083,6 +1102,17 @@ body.terrain .card{border:2px solid var(--line)}
     <button class="btn" id="fCancel">Annuler</button>
     <button class="btn" id="fDel" style="margin-left:auto">Supprimer</button>
   </div>
+</div></div>
+<div class="sheet" id="logSheet" role="dialog" aria-modal="true" aria-labelledby="logTitle"><div class="in">
+  <div class="ttl" style="font-size:16px"><span id="logTitle">Noter une sortie</span><small id="logWhere"></small></div>
+  <div class="row">
+    <label>Date<input type="date" id="lDate"></label>
+    <label>Tu cherchais<select id="lSought"></select></label>
+  </div>
+  <fieldset class="lchips"><legend>Tu as trouvé (aucune case : rien parmi ces six)</legend><div class="chips wrap" id="lFound"></div></fieldset>
+  <fieldset class="lchips"><legend>Champignons en général, toutes espèces (facultatif)</legend><div class="chips wrap" id="lAll"></div></fieldset>
+  <div class="row" style="margin-top:10px"><label>Note (facultatif)<input type="text" id="lNote" placeholder="Ex. beaucoup de fausses girolles"></label></div>
+  <div class="row" style="margin-top:12px"><button class="btn pri" type="button" id="lSave">Enregistrer</button><button class="btn" type="button" id="lCancel">Annuler</button></div>
 </div></div>
 <div class="tip" id="tip"></div>
 
@@ -2258,8 +2288,9 @@ function heatShow(sv){
   $("hMsg").textContent=sv.msg+(sv.acc?" "+sv.acc:"")+(Date.now()-sv.t>36e5?` Calculée ${ageTxt(sv.t)}.`:"")+(sv.mv!==MODEL_V?" Calculée avec la version précédente du modèle : touche « Chercher » pour la mettre à jour.":"");
   const box=$("hList");box.innerHTML="";
   sv.zones.forEach((z,n)=>{const d=document.createElement("div"),acc=accTxt(z);d.className="spot";
-    d.innerHTML=`<span class="dot" style="background:${gradColor(z.v)}"></span><div><b>${n+1}. ${Math.round(z.v*100)}/100 · ${LV[lvl(z.v)].act}</b> <span class="note">${z.ha<10?z.ha.toFixed(1).replace(".",","):Math.round(z.ha)} ha</span><small>${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} ${compass(z.dx,z.dy)} · ${Math.round(z.alt)} m · versant ${azName(z.az)} · ${TREE_N[z.ess]||z.ess} · ${PUB_N[z.pub||0]}</small>${acc?`<small>${acc}</small>`:""}</div><button class="btn" style="padding:6px 9px" aria-label="Relief et versants de la zone ${n+1}" title="Relief et versants">⛰</button>`;
-    d.querySelector("button").onclick=e=>{e.stopPropagation();openReliefAt(z.la,z.lo)};
+    d.innerHTML=`<span class="dot" style="background:${gradColor(z.v)}"></span><div><b>${n+1}. ${Math.round(z.v*100)}/100 · ${LV[lvl(z.v)].act}</b> <span class="note">${z.ha<10?z.ha.toFixed(1).replace(".",","):Math.round(z.ha)} ha</span><small>${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} ${compass(z.dx,z.dy)} · ${Math.round(z.alt)} m · versant ${azName(z.az)} · ${TREE_N[z.ess]||z.ess} · ${PUB_N[z.pub||0]}</small>${acc?`<small>${acc}</small>`:""}</div><div class="rbtns"><button class="btn" style="padding:6px 9px" aria-label="Relief et versants de la zone ${n+1}" title="Relief et versants">⛰</button><button class="btn" style="padding:6px 9px" aria-label="Noter une sortie au coin ${n+1}" title="Noter une sortie">📒</button></div>`;
+    const [bRel,bLog]=d.querySelectorAll("button");bRel.onclick=e=>{e.stopPropagation();openReliefAt(z.la,z.lo)};
+    bLog.onclick=e=>{e.stopPropagation();openLog({la:z.la,lo:z.lo,label:`Coin ${n+1} (${spName(sv.sp)}, ${Math.round(z.v*100)}/100)`})};
     d.onclick=()=>{$("map").scrollIntoView({behavior:RM?"auto":"smooth",block:"center"});map.setView([z.la,z.lo],15);heatPopup(L.latLng(z.la,z.lo))};box.appendChild(d)});
   if(sv.zones.length||!(sv.cand&&sv.cand.length))bestSummary(sv.zones[0]&&{...sv.zones[0],desc:`versant ${azName(sv.zones[0].az)}, ${TREE_N[sv.zones[0].ess]||sv.zones[0].ess}, ${Math.round(sv.zones[0].alt)} m`});
   else $("bSum").textContent=`Aucun des ${sv.cand.length} meilleurs coins n'est à moins de ${fmtM(+LS.get("bAcc",0))} d'une route goudronnée : choisis une distance plus grande ou un rayon plus large.`;
@@ -2316,9 +2347,10 @@ function heatPopup(ll){const env=heatEnv;let html=`<div style="font-size:13px;mi
         (forest?`Essence : ${TREE_N[c]||c}<br>`:"")+`${PUB_N[env.pub[k]]}<br>`+
         (env.cut[k]?`<span style="color:var(--warn)">Boisée dans la BD Forêt mais absente du masque forestier 2021-2023 : coupe ou défrichement probable.</span><br>`:"")}}
   else html+=`<span style="color:var(--muted)">Détail de la cellule disponible après un nouveau calcul (carte enregistrée).</span><br>`;
-  html+=`<button class="btn" style="margin-top:6px;padding:5px 10px" id="ptRel">⛰ Relief et versants ici</button></div>`;
+  html+=`<button class="btn" style="margin-top:6px;padding:5px 10px" id="ptRel">⛰ Relief et versants ici</button> <button class="btn" style="margin-top:6px;padding:5px 10px" id="ptLog">📒 Noter une sortie ici</button></div>`;
   L.popup().setLatLng(ll).setContent(html).openOn(map);
-  setTimeout(()=>{const b=document.getElementById("ptRel");if(b)b.onclick=()=>{map.closePopup();openReliefAt(ll.lat,ll.lng)}},0)}
+  setTimeout(()=>{const b=document.getElementById("ptRel");if(b)b.onclick=()=>{map.closePopup();openReliefAt(ll.lat,ll.lng)};
+    const g=document.getElementById("ptLog");if(g)g.onclick=()=>{map.closePopup();openLog({la:ll.lat,lo:ll.lng,label:"Point touché sur la carte"})}},0)}
 // fiche « Relief et versants » sur un hexagone de 1 km² centré sur un point quelconque
 // fiche d'un point : hexagone de 1 km² qui le contient et points de grille météo à moins de 5 km
 function reliefAt(la,lo){const s=1,a=side(s),[q,r]=ll2hex(la,lo,a),[hl,ho]=hexCenter(q,r,a),gs=.025,keys=[];
@@ -2402,6 +2434,94 @@ function setViewMode(v){LS.set("viewMode",v);
 document.querySelectorAll("#vChips .chip").forEach(b=>b.onclick=()=>setViewMode(b.dataset.v));
 $("bHeat").onclick=()=>{setViewMode("heat");$("bGo").onclick()};
 
+// ================= CARNET DE SORTIES =================
+// Chaque sortie notée (date, lieu, espèces cherchées et trouvées) reste sur le téléphone. L'app y joint son indice du jour pour
+// les six espèces, recalculé au même endroit : météo du lieu × arbres de la BD Forêt, comme la carte (sans le versant ni le pH).
+// Le bilan compare ensuite trouvailles et indices, espèce par espèce et niveau par niveau.
+let carnet=LS.get("carnet",[]),logLayer=null,logPos=null;
+const saveCarnet=()=>LS.set("carnet",carnet),ALL_N=["presque rien","quelques-uns","beaucoup"];
+const dateFr=d=>new Date(d+"T12:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short",...(d.slice(0,4)!==isoDay(new Date()).slice(0,4)?{year:"numeric"}:{})});
+fillSelect($("lSought"),SP);$("lSought").add(new Option("Tous les six",ALL));
+$("lFound").innerHTML=Object.entries(SP).map(([k,o])=>`<label class="chip"><input type="checkbox" value="${k}">${o.n}</label>`).join("");
+$("lAll").innerHTML=ALL_N.map((n,i)=>`<label class="chip"><input type="radio" name="lAll" value="${i}">${n}</label>`).join("");
+// pos : {la, lo, label} ; « Tu cherchais » reprend le champignon choisi à l'étape ②
+function openLog(pos){logPos=pos;$("logWhere").textContent=pos.label;const t=isoDay(new Date());$("lDate").value=t;$("lDate").max=t;
+  $("lSought").value=$("cSp").value;if(!$("lSought").value)$("lSought").value=ALL;
+  document.querySelectorAll("#logSheet input[type=checkbox],#logSheet input[type=radio]").forEach(i=>i.checked=false);$("lNote").value="";
+  $("logSheet").classList.add("on")}
+$("lCancel").onclick=()=>$("logSheet").classList.remove("on");
+$("lSave").onclick=async()=>{const p=logPos;if(!p)return;const a=document.querySelector("#lAll input:checked");
+  const o={id:Date.now().toString(36),d:$("lDate").value||isoDay(new Date()),la:+p.la.toFixed(5),lo:+p.lo.toFixed(5),place:p.label,sought:$("lSought").value,
+    found:[...document.querySelectorAll("#lFound input:checked")].map(i=>i.value),all:a?+a.value:null,note:$("lNote").value.trim(),pred:null};
+  carnet.unshift(o);carnet.sort((x,y)=>y.d.localeCompare(x.d));saveCarnet();$("logSheet").classList.remove("on");renderCarnet();drawLogs();
+  $("logMsg").textContent=`Sortie du ${dateFr(o.d)} notée.`;
+  const r=await predFill(o);if(r==="jamais")o.noPred=true;if(r){saveCarnet();renderCarnet()}};
+// indice de l'app le jour de la sortie, pour les six espèces : météo du lieu (hors ligne : point de grille déjà chargé à moins
+// de 5 km) × arbres. Comme au banc d'essai, le score d'un jour est le plus haut du jour et des deux précédents.
+// Renvoie true (calculé), false (à refaire avec du réseau) ou "jamais" (sortie trop ancienne pour la météo disponible).
+async function predFill(o){let p=null,fresh=null;
+  if(navigator.onLine)try{[fresh]=await fetchMeteo(o.la.toFixed(4),o.lo.toFixed(4))}catch(e){}
+  if(fresh&&fresh.dates.includes(o.d))p=fresh;
+  else{let b=null;for(const k in hexStore.pts){const q=hexStore.pts[k];if(!q||!q.l07||!q.dates||!q.dates.includes(o.d))continue;
+      const [a,c]=k.split(",").map(Number),d=kmTo(o.la,o.lo,a,c).d;if(d<5&&(!b||d<b.d))b={d,q}}if(b)p=b.q}
+  // il faut ~40 jours de météo avant la sortie (pluies et températures qui préparent la pousse) ; la météo remonte à 92 jours
+  const j=p?p.dates.indexOf(o.d):-1;if(j<40)return fresh&&o.d<=fresh.dates[39]?"jamais":false;
+  const cut=a=>a.slice(0,j+1);let cls=null;try{cls=await forestPixel(o.la,o.lo)}catch(e){}
+  const pred={};
+  for(const s of Object.keys(SP)){const m=compute({dates:cut(p.dates),tmax:cut(p.tmax),tmin:cut(p.tmin),rain:cut(p.rain),tsol:cut(p.tsol),sm:cut(p.sm),sm2:cut(p.sm2),rh:cut(p.rh),real:true,today:j},
+      {sp:SP[s],soil:SOIL.limon,expo:EXPO.plat,dT:0}),E=m.E,i=E.length-1;
+    pred[s]=Math.round(Math.max(E[i],E[i-1]||0,E[i-2]||0)*(cls&&!NON_FOREST.has(cls)?hostAff(s,cls):1)*100)/100}
+  o.pred=pred;o.cls=cls;return true}
+async function predPending(){let ch=false;
+  for(const o of carnet)if(!o.pred&&!o.noPred){const r=await predFill(o);if(r==="jamais")o.noPred=true;if(r)ch=true}
+  if(ch){saveCarnet();renderCarnet()}}
+// liste des sorties, la plus récente en tête
+function renderCarnet(){const n=carnet.length,box=$("logList");$("logCount").textContent=n?`${n} sortie${n>1?"s":""}`:"";box.innerHTML="";
+  if(!n){box.innerHTML='<p class="note">Aucune sortie notée pour l\'instant.</p>';$("logBilan").innerHTML="";return}
+  carnet.forEach(o=>{const d=document.createElement("div"),sp=o.sought===ALL?Object.keys(SP):[...new Set([o.sought,...o.found])].filter(s=>SP[s]);d.className="spot";
+    const idx=o.pred?"Indice de l'app ce jour-là : "+sp.map(s=>`${SP[s].n.replace(/ \(.*\)/,"")} ${Math.round(o.pred[s]*100)}`).join(" · "):o.noPred?"Sortie trop ancienne pour calculer l'indice de l'app.":"Indice de l'app : à calculer (réseau nécessaire).";
+    d.innerHTML=`<span class="dot" aria-hidden="true" style="background:${o.found.length?"#7a4a22":"#9b9a95"}"></span><div><b>${dateFr(o.d)} · ${o.found.length?"trouvé : "+o.found.map(s=>SP[s].n.replace(/ \(.*\)/,"")).join(", "):"rien trouvé"}</b>`+
+      `<small>${esc(o.place)} · tu cherchais : ${o.sought===ALL?"tous les six":SP[o.sought]?SP[o.sought].n:"?"}${o.all!=null?` · champignons en général : ${ALL_N[o.all]}`:""}${o.note?" · "+esc(o.note):""}</small><small>${idx}</small></div>`+
+      `<button class="btn" style="padding:6px 9px" aria-label="Supprimer la sortie du ${dateFr(o.d)}" title="Supprimer">🗑</button>`;
+    d.querySelector("button").onclick=e=>{e.stopPropagation();if(!confirm(`Supprimer la sortie du ${dateFr(o.d)} ?`))return;carnet=carnet.filter(x=>x!==o);saveCarnet();renderCarnet();drawLogs()};
+    d.onclick=()=>{$("map").scrollIntoView({behavior:RM?"auto":"smooth",block:"center"});map.setView([o.la,o.lo],15)};box.appendChild(d)});
+  renderBilan()}
+// bilan : pour chaque espèce, les sorties où elle était cherchée ou trouvée. L'indice sépare-t-il les trouvailles des sorties blanches ?
+function renderBilan(){const rows=[],pairs=[],done=carnet.filter(o=>o.pred),n=done.length;
+  for(const s of Object.keys(SP)){const os=done.filter(o=>o.sought===ALL||o.sought===s||o.found.includes(s));if(!os.length)continue;
+    const f=os.filter(o=>o.found.includes(s)),b=os.filter(o=>!o.found.includes(s)),m=a=>a.length?Math.round(a.reduce((x,o)=>x+o.pred[s],0)/a.length*100):"–";
+    rows.push(`<tr><td>${SP[s].n.replace(/ \(.*\)/,"")}</td><td>${os.length}</td><td>${f.length}</td><td>${m(f)}</td><td>${m(b)}</td></tr>`);
+    os.forEach(o=>pairs.push({v:o.pred[s],hit:o.found.includes(s)}))}
+  if(!rows.length){$("logBilan").innerHTML="";return}
+  const byL=[0,1,2,3].map(l=>{const a=pairs.filter(p=>lvl(p.v)===l);return a.length?`${LV[l].n} ${a.filter(p=>p.hit).length} sur ${a.length}`:null}).filter(Boolean);
+  const hits=pairs.filter(p=>p.hit),blanks=pairs.filter(p=>!p.hit);let auc=null;
+  if(hits.length&&blanks.length){let s=0;for(const h of hits)for(const b of blanks)s+=h.v>b.v?1:h.v===b.v?.5:0;auc=s/(hits.length*blanks.length)}
+  // avant une vingtaine de sorties, le chiffre seul, sans conclusion
+  const k=auc==null?"":String(Math.round(auc*20)/2).replace(".",","),cmp=`entre une trouvaille et une sortie blanche, l'indice était plus haut pour la trouvaille ${k} fois sur 10`;
+  const verdict=auc==null?`Il faut au moins une trouvaille et une sortie blanche${n<20?", et une vingtaine de sorties,":""} pour juger l'indice.`
+    :n<20?`Pour l'instant, ${cmp}. Il faut une vingtaine de sorties pour conclure (${n} pour l'instant).`
+    :`${cmp[0].toUpperCase()+cmp.slice(1)} : ${auc>=.7?"il marche bien dans tes forêts":auc>=.55?"il aide un peu":"il ne t'aide pas encore, prends-le avec prudence chez toi"}.`;
+  // champignons en général : l'indice le plus haut des six, en moyenne, selon ce que tu as vu (contrôle de la partie météo)
+  const gen=[0,1,2].map(a=>{const os=done.filter(o=>o.all===a);return os.length?`${ALL_N[a]} ${Math.round(os.reduce((x,o)=>x+Math.max(...Object.values(o.pred)),0)/os.length*100)} (${os.length} sortie${os.length>1?"s":""})`:null}).filter(Boolean);
+  $("logBilan").innerHTML=`<div class="ttl" style="margin-top:10px">Bilan <small>${n} sortie${n>1?"s":""} avec indice</small></div>`+
+    `<table><tr><th>Espèce</th><th>Sorties</th><th>Trouvé</th><th>Indice si trouvé</th><th>si rien</th></tr>${rows.join("")}</table>`+
+    `<p class="note">Trouvailles selon le niveau de l'app : ${byL.join(" · ")}.</p>`+
+    (gen.length>1?`<p class="note">Champignons en général, indice le plus haut des six en moyenne : ${gen.join(" · ")}.</p>`:"")+
+    `<p class="note">${verdict}</p>`}
+// repères des sorties sur la carte (la liste ci-dessus en est la version accessible)
+function drawLogs(){if(!map)return;if(!logLayer)logLayer=L.layerGroup().addTo(map);logLayer.clearLayers();
+  carnet.forEach(o=>L.marker([o.la,o.lo],{keyboard:false,icon:L.divIcon({className:"",iconSize:[24,24],iconAnchor:[12,12],html:`<div class="logpin${o.found.length?"":" none"}">${o.found.length?"✓":"✕"}</div>`})})
+    .bindPopup(`<b>${dateFr(o.d)}</b><br>${o.found.length?"Trouvé : "+o.found.map(s=>SP[s].n).join(", "):"Rien trouvé parmi les six"}${o.note?"<br>"+esc(o.note):""}`).addTo(logLayer))}
+$("logHere").onclick=()=>{const say=t=>$("logMsg").textContent=t;
+  if(!navigator.geolocation){say("Localisation non disponible : touche la carte à l'endroit de la sortie.");return}
+  say("Recherche de ta position…");
+  navigator.geolocation.getCurrentPosition(p=>{say("");openLog({la:p.coords.latitude,lo:p.coords.longitude,label:`Ta position (à ${Math.round(p.coords.accuracy)} m près)`})},
+    e=>say(e.code===1?"Position refusée : autorise la localisation, ou touche la carte à l'endroit de la sortie.":"Position indisponible (GPS ?) : touche la carte à l'endroit de la sortie."),
+    {enableHighAccuracy:true,timeout:20000,maximumAge:60000})};
+// mode terrain : la position GPS si tu es sur place (à moins de 500 m du coin), sinon le centre du coin
+$("gLog").onclick=()=>{const z=guideZones()[terr.i];if(!z)return;const here=terr.pos&&terr.acc<=100&&kmTo(terr.pos[0],terr.pos[1],z.la,z.lo).d<.5;
+  openLog(here?{la:terr.pos[0],lo:terr.pos[1],label:`Coin n° ${terr.i+1}, ta position GPS (à ${Math.round(terr.acc)} m près)`}:{la:z.la,lo:z.lo,label:`Coin n° ${terr.i+1}`})};
+
 
 // ================= RELIEF ET VERSANTS D'UN HEXAGONE =================
 // Cellules d'environ 40 m dans l'hexagone : altitude, pente et versant (tuiles d'altitude IGN), essence (BD Forêt),
@@ -2412,7 +2532,7 @@ let relMap=null,relWatch=null,relMe=null,relMeBig=null;
 document.querySelectorAll(".sheet").forEach(sh=>{const inner=sh.querySelector(".in");inner.tabIndex=-1;let back=null;
   new MutationObserver(()=>{if(sh.classList.contains("on")){if(!back){back=document.activeElement;setTimeout(()=>inner.focus(),0)}}
     else if(back){const b=back;back=null;if(b&&b.focus&&document.contains(b))b.focus()}}).observe(sh,{attributes:true,attributeFilter:["class"]})});
-addEventListener("keydown",e=>{if(e.key!=="Escape")return;if($("relSheet").classList.contains("on"))$("relClose").click();else if($("spotSheet").classList.contains("on"))$("fCancel").click()});
+addEventListener("keydown",e=>{if(e.key!=="Escape")return;if($("relSheet").classList.contains("on"))$("relClose").click();else if($("spotSheet").classList.contains("on"))$("fCancel").click();else if($("logSheet").classList.contains("on"))$("lCancel").click()});
 $("relClose").onclick=()=>{$("relSheet").classList.remove("on");if(relWatch!=null){navigator.geolocation.clearWatch(relWatch);relWatch=null}};
 // routes BD TOPO autour de l'hexagone (+ 600 m pour les accès) : nature et accès en voiture légère
 const PAVED=new Set(["Route à 1 chaussée","Route à 2 chaussées","Type autoroutier","Bretelle","Rond-point"]),TRACK=new Set(["Route empierrée","Chemin"]);
@@ -2615,9 +2735,14 @@ function showView(v){document.querySelectorAll(".view").forEach(x=>x.classList.t
   if(v==="v-fc")render();if(v==="v-map"&&map)setTimeout(()=>map.invalidateSize(),50);scrollTo(0,0)}
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
 addEventListener("resize",()=>{if($("v-fc").classList.contains("on"))render()});
-$("exportBtn").onclick=async()=>{const t=JSON.stringify({spots},null,0);$("ioBox").style.display="";$("ioBox").value=t;$("ioApply").style.display="none";try{await navigator.clipboard.writeText(t);$("exportBtn").textContent="Copié ✓"}catch(e){$("ioBox").select()}};
+$("exportBtn").onclick=async()=>{const t=JSON.stringify({spots,carnet},null,0);$("ioBox").style.display="";$("ioBox").value=t;$("ioApply").style.display="none";try{await navigator.clipboard.writeText(t);$("exportBtn").textContent="Copié ✓"}catch(e){$("ioBox").select()}};
 $("importBtn").onclick=()=>{$("ioBox").style.display="";$("ioBox").value="";$("ioApply").style.display="";$("ioBox").focus()};
-$("ioApply").onclick=()=>{try{const j=JSON.parse($("ioBox").value);if(Array.isArray(j.spots)){const ids=new Set(spots.map(s=>s.id));j.spots.forEach(s=>{if(!ids.has(s.id)&&typeof s.lat==="number")spots.push(s)});saveSpots();refreshAllUI();$("ioApply").textContent="Importé ✓"}}catch(e){$("ioApply").textContent="Texte invalide"}};
+$("ioApply").onclick=()=>{try{const j=JSON.parse($("ioBox").value);let ok=false;
+  if(Array.isArray(j.spots)){const ids=new Set(spots.map(s=>s.id));j.spots.forEach(s=>{if(!ids.has(s.id)&&typeof s.lat==="number")spots.push(s)});saveSpots();refreshAllUI();ok=true}
+  // carnet : sorties ajoutées sans doublon (même identifiant), les plus récentes en tête
+  if(Array.isArray(j.carnet)){const ids=new Set(carnet.map(o=>o.id));j.carnet.forEach(o=>{if(o&&!ids.has(o.id)&&typeof o.la==="number"&&Array.isArray(o.found)){o.found=o.found.filter(s=>SP[s]);carnet.push(o)}});
+    carnet.sort((a,b)=>b.d.localeCompare(a.d));saveCarnet();renderCarnet();drawLogs();ok=true}
+  $("ioApply").textContent=ok?"Importé ✓":"Texte invalide"}catch(e){$("ioApply").textContent="Texte invalide"}};
 
 for(const k in PRESETS){const b=document.createElement("button");b.className="chip";b.textContent=PRESETS[k].n;b.dataset.k=k;b.onclick=()=>{preset=k;PRESETS[k].f();$("simMonth").value=PRESETS[k].m;render()};$("presets").appendChild(b)}
 ["Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].forEach((n,i)=>$("simMonth").add(new Option(n,i+5)));
@@ -2630,6 +2755,9 @@ try{initMap()}catch(e){$("map").innerHTML='<p class="note" style="padding:20px">
 try{setViewMode(LS.get("viewMode","heat"))}catch(e){}
 // mode terrain resté actif : on le rétablit (guidage GPS compris)
 if(LS.get("terrain",false))try{setTerrain(true)}catch(e){}
+// carnet de sorties : liste, repères sur la carte, indices encore à calculer (sorties notées hors ligne)
+renderCarnet();try{drawLogs()}catch(e){}
+if(navigator.onLine)predPending();addEventListener("online",predPending);
 // test réseau : la page publiée sur claude.ai bloque les accès externes
 fetch(tileUrl("plan",0,0,0),{mode:"no-cors"}).then(()=>{netOK=true}).catch(()=>{
   if(navigator.onLine){netOK=false;$("envWarn").innerHTML='<div class="warn">Cette version ne peut joindre ni l\'IGN ni le service météo : la carte et la météo réelle sont bloquées. Le simulateur (onglet Prévision) fonctionne. Pour la carte, la météo et le mode avion, ouvre le fichier HTML téléchargé dans le navigateur de ton téléphone.</div>'}});
