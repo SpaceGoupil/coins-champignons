@@ -677,7 +677,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   --text:#0b0b0b; --text2:#52514e; --muted:#67655e;
   --tmax:#eb6834; --tmin:#2a78d6; --tsol:#1baf7a; --rain:#2a78d6;
   --l0:#cfe0f3; --l1:#ffe25c; --l2:#fda034; --l3:#c62a24;
-  --accent:#7a4a22; --fc:rgba(122,74,34,.07); --sel:#0b0b0b; --warn:#b45309;
+  --accent:#7a4a22; --on-accent:#fff; --fc:rgba(122,74,34,.07); --sel:#0b0b0b; --warn:#b45309;
 }
 @media (prefers-color-scheme: dark){
   :root{
@@ -686,7 +686,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     --text:#f0efec; --text2:#c3c2b7; --muted:#8d8b84;
     --tmax:#d95926; --tmin:#3987e5; --tsol:#199e70; --rain:#3987e5;
     --l0:#2b3f5c; --l1:#c9a821; --l2:#e58a1f; --l3:#e0473c;
-    --accent:#d4a373; --fc:rgba(212,163,115,.08); --sel:#f0efec; --warn:#f59e0b;
+    --accent:#d4a373; --on-accent:#1f1408; --fc:rgba(212,163,115,.08); --sel:#f0efec; --warn:#f59e0b;
   }
 }
 *{box-sizing:border-box}
@@ -702,7 +702,7 @@ select,input[type=text],input[type=number]{font:inherit;font-size:15px;padding:8
 .chip{flex:0 0 auto;font:inherit;font-size:13px;padding:7px 12px;min-height:44px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer}
 .chip.on{background:var(--text);color:var(--surface);border-color:var(--text)}
 .btn{font:inherit;font-size:14px;padding:9px 13px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer}
-.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .btn:disabled{opacity:.5}
 .hero{display:flex;gap:12px;align-items:center}
 .badge{width:58px;height:58px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;flex:0 0 auto}
@@ -759,6 +759,17 @@ th:first-child,td:first-child{text-align:left}
 details.expert>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 details.expert>summary small{color:var(--text2);font-weight:400}
 details.expert .card{margin:10px 0 0;padding:10px;border:1px solid var(--line);box-shadow:none}
+/* mode terrain : lumière vive, gants, une seule main */
+body.terrain{font-size:17px;--text2:var(--text);--muted:var(--text)}
+body.terrain .btn,body.terrain .chip{min-height:56px;font-size:17px;font-weight:600}
+body.terrain .note{font-size:15px}
+body.terrain .card{border:2px solid var(--line)}
+.guide{border:3px solid var(--accent)!important}
+.gwrap{display:flex;align-items:center;gap:14px;margin:4px 0 10px}
+.garrow{width:88px;height:88px;flex:0 0 88px;transition:transform .25s}
+.garrow svg{width:100%;height:100%;display:block}
+.gdist{font-size:32px;font-weight:800;line-height:1.1}
+#gDir{font-size:18px;font-weight:600}
 .sheet .in{background:var(--surface);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:16px;max-height:88vh;overflow:auto}
 .leaflet-container{font:inherit}
 .grad-leg{background:var(--surface);color:var(--text);border-radius:10px;padding:6px 8px;font-size:11px;box-shadow:0 1px 5px rgba(0,0,0,.25);min-width:150px}
@@ -786,6 +797,12 @@ details.expert .card{margin:10px 0 0;padding:10px;border:1px solid var(--line);b
 
   <!-- ============ CARTE ============ -->
   <section class="view on" id="v-map">
+    <div class="card guide" id="guide" style="display:none">
+      <div class="ttl"><span>Vers le coin n° <span id="gNum">1</span></span> <small id="gInfo"></small></div>
+      <div class="gwrap" aria-live="polite"><div class="garrow" id="gArrow" aria-hidden="true"><svg viewBox="-50 -50 100 100"><path d="M0,-46 L30,40 L0,24 L-30,40 Z" fill="var(--accent)" stroke="var(--text)" stroke-width="3" stroke-linejoin="round"/></svg></div>
+        <div><div class="gdist" id="gDist">…</div><div id="gDir"></div><div class="note" id="gAcc"></div></div></div>
+      <div class="row"><button class="btn" type="button" id="gPrev" aria-label="Coin précédent">◀</button><button class="btn pri" type="button" id="gOpen">Fiche du coin</button><button class="btn" type="button" id="gNext" aria-label="Coin suivant">▶</button><button class="btn" type="button" id="gOff">Quitter</button></div>
+    </div>
     <div class="card intro" id="intro" style="display:none">
       <div class="ttl">Bienvenue</div>
       <p style="margin:4px 0">L'app estime, jour par jour, vos chances de trouver six champignons (cèpes, girolle, pied de mouton), d'après la météo des trois derniers mois, la forêt, le relief et le sol.</p>
@@ -841,12 +858,15 @@ details.expert .card{margin:10px 0 0;padding:10px;border:1px solid var(--line);b
       <p class="note" id="hMsg" aria-live="polite" style="margin:6px 2px 0"></p>
       <div id="hList"></div>
       <p class="note" id="bMsg" style="margin:6px 2px 0">Classement selon le champignon et le moment choisis à l'étape ②.</p>
+      <div class="row heatOnly" style="margin-top:10px"><button class="btn pri" type="button" id="prepBtn">📦 Préparer ma sortie</button><button class="btn" type="button" id="terrBtn" aria-pressed="false">🥾 Mode terrain</button></div>
+      <div class="prog" id="prepProg" style="display:none"><i></i></div>
+      <p class="note heatOnly" id="prepMsg" aria-live="polite" style="margin:6px 2px 0">Avant de partir, avec du réseau : cartes, relief, routes et météo des 5 meilleurs coins, pour t'en servir en mode avion. Le mode terrain grossit les boutons et te guide vers les coins au GPS.</p>
       <div id="bList" class="hexOnly"></div>
     </div>
 
     <div class="card">
       <div class="ttl">Mes coins <small id="wxAge"></small></div>
-      <p class="note" style="margin:0 2px 6px">Les zones (▢) ont un œil : 👁 affiche ses hexagones, 🚫 les masque, « Seule » masque toutes les autres.</p>
+      <p class="note hexOnly" style="margin:0 2px 6px">Les zones (▢) ont un œil : 👁 affiche ses hexagones, 🚫 les masque, « Seule » masque toutes les autres.</p>
       <div id="spotList"><p class="note">Aucun coin enregistré pour l'instant.</p></div>
       <div class="row" style="margin-top:8px"><button class="btn" id="refreshAll">↻ Mettre à jour la météo de tous les coins</button></div>
     </div>
@@ -985,7 +1005,7 @@ details.expert .card{margin:10px 0 0;padding:10px;border:1px solid var(--line);b
         <li><b>Altitude</b> : correction de −0,65 °C par 100 m entre l'altitude de ton coin et celle de la maille météo.</li>
         <li><b>Exposition</b> : un versant nord est plus frais et plus humide, un versant sud plus chaud et plus sec.</li>
         <li><b>Carte en dégradé</b> : l'indice de chaque hexagone (0–100) est l'indice météo de l'espèce multiplié par la part d'arbres hôtes de l'espèce (pleine valeur dès 50 %), le pH et la pente. Altitude, versant et texture du sol corrigent la météo.</li>
-        <li><b>Gel</b> : il détruit les carpophores. Le pied de mouton supporte de petites gelées.</li>
+        <li><b>Gel</b> : il détruit les champignons sortis. Le pied de mouton supporte de petites gelées.</li>
         <li><b>Redoux</b> : une remontée au-dessus de la plage de l'espèce juste après la pluie déclenchante casse la pousse (cèpes de Bordeaux et des pins).</li>
       </ul>
       <p class="note">La lune n'est pas prise en compte : aucune étude sérieuse ne montre d'effet. L'habitat compte aussi (arbres hôtes, sol acide ou calcaire, coupes récentes) : c'est le choix de tes coins qui le prend en compte.</p>
@@ -1070,6 +1090,7 @@ details.expert .card{margin:10px 0 0;padding:10px;border:1px solid var(--line);b
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
+const fr=(x,n=1)=>x.toFixed(n).replace(".",","); // nombre affiché avec une virgule décimale
 // réglage « réduire les animations » du téléphone : carte et défilements sans animation
 const RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
 // ================= ESPÈCES / SOLS =================
@@ -1114,7 +1135,7 @@ const SP={
 const SOIL={sable:{n:"Sableux / drainant",cap:45,dr:.25},limon:{n:"Limoneux / humifère",cap:85,dr:.12},argile:{n:"Argileux / lourd",cap:125,dr:.06}};
 const EXPO={plat:{n:"Plat / indifférent",dT:0,dH:1},nord:{n:"Versant nord",dT:-1,dH:1.12},sud:{n:"Versant sud",dT:1,dH:.88},est:{n:"Versant est",dT:-.3,dH:1.03},ouest:{n:"Versant ouest",dT:.3,dH:.97}};
 const LV=[{n:"Rare",c:"var(--l0)",hex:"#3168b5",e:"🌑",act:"pas la peine d'y aller"},{n:"Limité",c:"var(--l1)",hex:"#e8c22e",e:"🌱",act:"quelques chances"},{n:"Modéré",c:"var(--l2)",hex:"#f08a24",e:"🍄",act:"ça vaut une sortie"},{n:"Abondant",c:"var(--l3)",hex:"#c62a24",e:"🧺",act:"à ne pas manquer"}];
-const lvl=s=>s>=.65?3:s>=.4?2:s>=.18?1:0;
+const lvl=s=>(s=Math.round(s*100)/100)>=.65?3:s>=.4?2:s>=.18?1:0; // sur la valeur arrondie, celle qu'on affiche /100
 
 // ================= STOCKAGE =================
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
@@ -1245,7 +1266,7 @@ $("dlBtn").onclick=async()=>{
 };
 $("dlStop").onclick=()=>dlAbort=true;
 $("dlClear").onclick=async()=>{await tClear();stats();$("dlEst").textContent="Cache des cartes vidé."};
-async function stats(){const s=await tStats();$("tileStat").textContent=`${s.n.toLocaleString("fr-FR")} tuiles · ${(s.s/1048576).toFixed(1)} Mo`}
+async function stats(){const s=await tStats();$("tileStat").textContent=`${s.n.toLocaleString("fr-FR")} tuiles · ${fr(s.s/1048576)} Mo`}
 
 // ================= MÉTÉO RÉELLE =================
 function isoDay(d){const z=new Date(d.getTime()-d.getTimezoneOffset()*60000);return z.toISOString().slice(0,10)}
@@ -1300,12 +1321,13 @@ function ageTxt(t){const h=(Date.now()-t)/36e5;return h<1?"à l'instant":h<24?`i
 function renderList(){
   const el=$("spotList");if(!spots.length){el.innerHTML='<p class="note">Aucun coin enregistré pour l\'instant.</p>';return}
   el.innerHTML="";
+  const hm=LS.get("viewMode","heat")==="heat"; // carte continue : masquer une zone n'y change rien, pas de boutons 👁 / Seule
   spots.forEach(s=>{const M=modelFor({kind:"spot",id:s.id});let b=-1,bi=0;
     if(M)for(let i=M.today;i<M.N;i++)if(M.E[i]>b){b=M.E[i];bi=i}
     const l=lvl(Math.max(0,b)),w=wxCache[s.id];
     const d=document.createElement("div");d.className="spot";
-    d.innerHTML=`<span class="dot" style="background:${LV[l].hex}"></span><div style="${s.hidden?"opacity:.5":""}"><b>${s.zone?"▢ ":""}${esc(s.name)}</b><small>${s.hidden?"masquée · ":""}${SP[s.sp].n} · ${w?(l?`${LV[l].n} ${M.dateOf(bi)}`:"Rare cette semaine")+" · météo "+ageTxt(w.t):"pas encore de météo"}</small></div>`+
-      (s.zone&&s.bbox?`<button class="btn" data-a="eye" style="padding:6px 9px" aria-pressed="${!s.hidden}" aria-label="${s.hidden?"Afficher":"Masquer"} la zone ${esc(s.name)}" title="${s.hidden?"Afficher":"Masquer"} la zone">${s.hidden?"🚫":"👁"}</button><button class="btn" data-a="only" style="padding:6px 9px" aria-label="N'afficher que la zone ${esc(s.name)}">Seule</button>`:"")+
+    d.innerHTML=`<span class="dot" style="background:${LV[l].hex}"></span><div style="${s.hidden&&!hm?"opacity:.5":""}"><b>${s.zone?"▢ ":""}${esc(s.name)}</b><small>${s.hidden&&!hm?"masquée · ":""}${SP[s.sp].n} · ${w?(l?`${LV[l].n} ${M.dateOf(bi)}`:"Rare cette semaine")+" · météo "+ageTxt(w.t):"pas encore de météo"}</small></div>`+
+      (s.zone&&s.bbox&&!hm?`<button class="btn" data-a="eye" style="padding:6px 9px" aria-pressed="${!s.hidden}" aria-label="${s.hidden?"Afficher":"Masquer"} la zone ${esc(s.name)}" title="${s.hidden?"Afficher":"Masquer"} la zone">${s.hidden?"🚫":"👁"}</button><button class="btn" data-a="only" style="padding:6px 9px" aria-label="N'afficher que la zone ${esc(s.name)}">Seule</button>`:"")+
       `<button class="btn" data-a="edit" style="padding:6px 10px" aria-label="Modifier ${esc(s.name)}" title="Modifier">✎</button>`;
     d.querySelectorAll("button").forEach(b=>b.onclick=e=>{e.stopPropagation();const a=b.dataset.a;
       if(a==="edit")return openSheet(s.id);
@@ -1313,7 +1335,7 @@ function renderList(){
       saveSpots();showZones()});
     d.onclick=()=>openForecast(s.id);el.appendChild(d)});
   if(typeof zoneOptions==="function"&&$("bPlaceOpt"))zoneOptions();
-  if(spots.some(s=>s.hidden)){const a=document.createElement("button");a.className="btn";a.style.marginTop="8px";a.textContent="Tout afficher";
+  if(!hm&&spots.some(s=>s.hidden)){const a=document.createElement("button");a.className="btn";a.style.marginTop="8px";a.textContent="Tout afficher";
     a.onclick=()=>{spots.forEach(s=>delete s.hidden);saveSpots();showZones()};el.appendChild(a)}
 }
 // zones masquées dans « Mes coins » : leurs hexagones disparaissent de la carte et du classement, sauf s'ils sont
@@ -1390,6 +1412,8 @@ const WEIGHTS={
 // rw = fenêtre de la pluie déclenchante (jours), choc = baisse de température du sol (°C) donnant un choc plein,
 // pet = évapotranspiration de sous-bois (mm/j par °C au-dessus de −5 °C), lagT = allongement du délai (jours par °C sous 16 °C)
 const MODEL={rw:7,choc:4,pet:.05,lagT:.5};
+// version du modèle, gardée avec chaque carte continue enregistrée : une carte calculée avec un modèle précédent est signalée
+const MODEL_V="2026-11";
 function compute(D,cfg){
   const {sp,soil,expo}=cfg,N=D.dates.length,rain=D.rain,tmax=D.tmax,tmin=D.tmin;
   const MP=Object.assign({},MODEL,sp.mp||{}),W=Object.assign({},WEIGHTS,sp.wt||{}); // réglages propres à l'espèce
@@ -1507,7 +1531,7 @@ function bg(svg,f,h,top,bot){el("rect",{x:f.L+f.cw*(M.today+1),y:top,width:Math.
 function hit(svg,f,h){for(let i=0;i<M.N;i++){const r=el("rect",{x:f.L+f.cw*i,y:0,width:f.cw,height:h,fill:"transparent",style:"cursor:pointer"},svg);
   r.addEventListener("pointerenter",e=>showTip(e,i));r.addEventListener("pointermove",moveTip);r.addEventListener("pointerleave",()=>tip.style.display="none");
   r.addEventListener("click",()=>{sel=i;tip.style.display="none";render()})}}
-function showTip(e,i){tip.innerHTML=`<b>${M.dateOf(i)}</b> <span style="color:var(--muted)">${relOf(i)}</span><br>Pluie ${M.rain[i].toFixed(0)} mm · ${M.tmin[i].toFixed(0)}/${M.tmax[i].toFixed(0)} °C<br>Sol ≈ ${M.ts[i].toFixed(1)} °C · humidité ${Math.round(M.H[i]*100)} %<br>Cépio : <b>${LV[lvl(M.C[i])].n}</b> · Enrichi : <b>${LV[lvl(M.E[i])].n}</b>`;tip.style.display="block";moveTip(e)}
+function showTip(e,i){tip.innerHTML=`<b>${M.dateOf(i)}</b> <span style="color:var(--muted)">${relOf(i)}</span><br>Pluie ${M.rain[i].toFixed(0)} mm · ${M.tmin[i].toFixed(0)}/${M.tmax[i].toFixed(0)} °C<br>Sol ≈ ${fr(M.ts[i])} °C · humidité ${Math.round(M.H[i]*100)} %<br>Cépio : <b>${LV[lvl(M.C[i])].n}</b> · Enrichi : <b>${LV[lvl(M.E[i])].n}</b>`;tip.style.display="block";moveTip(e)}
 function moveTip(e){const w=tip.offsetWidth;tip.style.left=Math.max(8,Math.min(innerWidth-w-8,e.clientX+12))+"px";tip.style.top=(e.clientY+14)+"px"}
 function line(svg,pts,color,dash){el("polyline",{points:pts.join(" "),fill:"none",stroke:color,"stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round",...(dash?{"stroke-dasharray":"4 3"}:{})},svg)}
 function xLabels(svg,f,h){for(let i=0;i<M.N;i++){if((i-M.today)%7)continue;el("text",{x:f.x(i),y:h-4,"text-anchor":"middle",style:i===M.today?"fill:var(--text);font-weight:600":""},svg).textContent=i===M.today?"auj.":relOf(i)}}
@@ -1538,14 +1562,14 @@ function subs(){
   const d=M.Ed[sel];const box=$("subs");
   if(!d){box.innerHTML=`<p class="note">Aucun déclenchement (pluie et choc) dans le mois précédent ne mène à une sortie ce jour-là.</p>`;return}
   const W=Object.assign({},WEIGHTS,M.sp.wt||{}),wW=M.D.sm&&M.D.sm.some(v=>v!=null)?W.waterWithSoil:W.water;
-  const items=[[M.sp.w?"Déclenchement (pluie × choc)":"Déclenchement (pluie)",d.tr.rs*(M.sp.w*d.tr.sh+(1-M.sp.w)),W.trig],["Réserve du mycélium",d.tr.pre,W.trig],["Bilan hydrique du mois",d.water,wW],["Mémoire de l'été (J-90 à J-31)",d.summer,W.summer],["Humidité du sol pendant la pousse",d.hum,W.hum],["Température de l'air (5 j)",d.temp,W.temp],["Air sec (VPD) ★",d.dry,W.dry],["Saison ★",d.season,W.season],["Redoux ★",d.reb,W.reb],["Gel ★",d.frost,W.frost]];
+  const items=[[M.sp.w?"Déclenchement (pluie × choc)":"Déclenchement (pluie)",d.tr.rs*(M.sp.w*d.tr.sh+(1-M.sp.w)),W.trig],["Réserve du mycélium",d.tr.pre,W.trig],["Bilan hydrique du mois",d.water,wW],["Mémoire de l'été (J-90 à J-31)",d.summer,W.summer],["Humidité du sol pendant la pousse",d.hum,W.hum],["Température de l'air (5 j)",d.temp,W.temp],["Air sec ★",d.dry,W.dry],["Saison ★",d.season,W.season],["Redoux ★",d.reb,W.reb],["Gel ★",d.frost,W.frost]];
   box.innerHTML=items.map(([n,v,w])=>w?`<div class="sub-i"><span class="nm">${n}</span><span class="bar"><i style="width:${Math.round(v*100)}%;background:${v<.5?"var(--tmax)":"var(--tsol)"}"></i></span><span class="pc">${Math.round(v*100)}%</span></div>`
     :`<div class="sub-i"><span class="nm">${n}</span><span class="note" style="flex:1">ne compte pas pour cette espèce</span></div>`).join("")+`<p class="note" style="margin:6px 0 0">★ indices absents de Cépio. L'altitude et l'exposition corrigent directement les températures et l'humidité.</p>`;
 }
 function explain(){
   const i=sel,d=M.Ed[i],c=M.Cd[i],sp=M.sp;let h="";
-  if(M.cfg.alt!=null&&M.cfg.elev!=null)h+=`<li><span>⛰️</span><span>Altitude du coin ${M.cfg.alt} m, maille météo ${Math.round(M.cfg.elev)} m → ${M.cfg.dT>=0?"+":""}${M.cfg.dT.toFixed(1)} °C appliqués (exposition comprise)</span></li>`;
-  h+=`<li><span>📍</span><span>Sol ≈ <b>${M.ts[i].toFixed(1)} °C</b>, humidité ≈ <b>${Math.round(M.H[i]*100)} %</b> (${M.D.real?"Open-Meteo":"estimée"}). Air sur 5 jours ≈ <b>${d?d.tt.toFixed(1):"?"} °C</b> (optimum ${String(sp.topt).replace(".",",")} °C).${d?` Bilan pluie − évaporation sur 30 jours : <b>${d.wb>0?"+":""}${Math.round(d.wb)} mm</b>.`:""}</span></li>`;
+  if(M.cfg.alt!=null&&M.cfg.elev!=null)h+=`<li><span>⛰️</span><span>Altitude du coin ${M.cfg.alt} m, maille météo ${Math.round(M.cfg.elev)} m → ${M.cfg.dT>=0?"+":""}${fr(M.cfg.dT)} °C appliqués (exposition comprise)</span></li>`;
+  h+=`<li><span>📍</span><span>Sol ≈ <b>${fr(M.ts[i])} °C</b>, humidité ≈ <b>${Math.round(M.H[i]*100)} %</b> (${M.D.real?"Open-Meteo":"estimée"}). Air sur 5 jours ≈ <b>${d?fr(d.tt):"?"} °C</b> (optimum ${String(sp.topt).replace(".",",")} °C).${d?` Bilan pluie − évaporation sur 30 jours : <b>${d.wb>0?"+":""}${Math.round(d.wb)} mm</b>.`:""}</span></li>`;
   h+=`<li><span>🔶</span><span><b>Règle Cépio</b> ${pill(M.C[i])} — `;
   if(c.stage===4)h+=`froid jusqu'au ${M.dateOf(c.c)}, plus de 15 mm le ${M.dateOf(c.r)}, puis ${c.dry} jours secs : règle remplie (80 %).`;
   else if(c.stage===3)h+=`froid et pluie OK (${M.dateOf(c.r)}), ${c.dry} jour(s) sec(s) : ${c.dry<5?"il en faut 5 à 8":"fenêtre dépassée"}.`;
@@ -1555,7 +1579,7 @@ function explain(){
   h+=`</span></li><li><span>🟢</span><span><b>Modèle enrichi</b> ${pill(M.E[i])}</span></li>`;
   if(d){h+=`<li><span>${ok(d.tr.rs>=.8)}</span><span>Pluie déclenchante : ${Math.round(d.tr.r3)} mm sur ${(sp.mp&&sp.mp.rw)||MODEL.rw} jours jusqu'au ${M.dateOf(d.t)} (besoin ≈ ${sp.need} mm)</span></li>`;
     h+=`<li><span>⏱️</span><span>Délai de sortie ≈ ${d.lag} jours → ${d.k<0?`pic dans ${-d.k} j`:d.k===0?"premier jour de sortie":`${d.k} j après le début de la sortie`}</span></li>`;
-    h+=`<li><span>${ok(d.dry>=.7)}</span><span>Air : déficit de vapeur ${d.v.toFixed(2)} kPa ${d.v>1.2?"(air sec, les jeunes champignons sèchent)":"(correct)"}</span></li>`}
+    h+=`<li><span>${ok(d.dry>=.7)}</span><span>Air : déficit de vapeur ${fr(d.v,2)} kPa ${d.v>1.2?"(air sec, les jeunes champignons sèchent)":"(correct)"}</span></li>`}
   $("why").innerHTML=h;
 }
 function hero(){
@@ -1565,7 +1589,7 @@ function hero(){
   $("heroSub").textContent=`Règle Cépio : ${lvl(M.C[cb])===0?"rien d'annoncé":LV[lvl(M.C[cb])].n.toLowerCase()+" le "+M.dateOf(cb)}`;
 }
 function table(){let h="<tr><th>Jour</th><th>Pluie</th><th>Min</th><th>Max</th><th>Sol</th><th>Hum.</th><th>Cépio</th><th>Enrichi</th></tr>";
-  for(let i=0;i<M.N;i++)h+=`<tr${i===M.today?' style="font-weight:600"':""}><td>${relOf(i)}</td><td>${M.rain[i].toFixed(0)}</td><td>${M.tmin[i].toFixed(0)}</td><td>${M.tmax[i].toFixed(0)}</td><td>${M.ts[i].toFixed(1)}</td><td>${Math.round(M.H[i]*100)}%</td><td>${LV[lvl(M.C[i])].n}</td><td>${LV[lvl(M.E[i])].n}</td></tr>`;$("tbl").innerHTML=h}
+  for(let i=0;i<M.N;i++)h+=`<tr${i===M.today?' style="font-weight:600"':""}><td>${relOf(i)}</td><td>${M.rain[i].toFixed(0)}</td><td>${M.tmin[i].toFixed(0)}</td><td>${M.tmax[i].toFixed(0)}</td><td>${fr(M.ts[i])}</td><td>${Math.round(M.H[i]*100)}%</td><td>${LV[lvl(M.C[i])].n}</td><td>${LV[lvl(M.E[i])].n}</td></tr>`;$("tbl").innerHTML=h}
 function render(){
   M=modelFor(src,spSel);
   if(!M){$("srcInfo").textContent="pas de météo pour ce coin : mets-la à jour (connexion nécessaire)";src={kind:"sim"};$("srcSel").value="sim";M=modelFor(src,spSel)}
@@ -1663,7 +1687,7 @@ async function prepareZone(it){
   refreshAllUI();renderZoneResult(s);$("zoneBox").scrollIntoView({behavior:RM?"auto":"smooth",block:"start"});
   if(heatMode()){const R=Math.min(15,Math.max((bb[2]-bb[0])*111.32*Math.cos(it.lat*Math.PI/180),(bb[3]-bb[1])*KY)/2);bestCenter=[it.lat,it.lon];
     await Promise.all([pMap,heatRun([it.lat,it.lon],R)]);
-    $("qMsg").textContent=`✅ ${s.name} : carte continue prête (${Math.round(R)} km autour du lieu). Les zones chaudes sont sous la carte.`;return}
+    $("qMsg").textContent=`✅ ${s.name} : carte continue prête (${Math.round(R)} km autour du lieu). Les meilleurs coins sont sous la carte, à l'étape ③.`;return}
   // l'analyse n'attend pas la fin des tuiles : elle va chercher elle-même les tuiles forêt qui lui manquent
   await Promise.all([pMap,analyseHex(bb)]);
   $("qMsg").textContent=`✅ ${s.name} : zone prête${wxCache[s.id]?"":" (sans météo : connexion ?)"}. Les hexagones sont sur la carte.`;
@@ -1899,7 +1923,9 @@ async function analyseHex(bb,opt={}){
 }
 // dégradé séquentiel (une teinte, clair → foncé) pour l'indice de pousse 0–100
 // dégradé de type météo (bleu → jaune → orange → rouge) : lisible sur le vert des forêts du plan IGN
-const GRAD=[[0,[49,104,181]],[.18,[120,180,224]],[.4,[255,226,92]],[.6,[253,160,52]],[.8,[232,83,38]],[1,[176,22,30]]];
+// dégradé de type météo, du bleu au rouge par le jaune et l'orange ; un palier crème entre le bleu et le jaune évite le
+// gris-vert terne au niveau « Limité », et le rouge final plus sombre sépare mieux « Abondant » pour les daltoniens
+const GRAD=[[0,[49,104,181]],[.18,[120,180,224]],[.26,[236,240,214]],[.4,[255,226,92]],[.6,[253,160,52]],[.8,[226,74,36]],[1,[140,14,28]]];
 function gradColor(v){v=Math.max(0,Math.min(1,v));for(let i=1;i<GRAD.length;i++)if(v<=GRAD[i][0]){const [a,ca]=GRAD[i-1],[b,cb]=GRAD[i],t=(v-a)/(b-a);return"rgb("+ca.map((c,k)=>Math.round(c+(cb[k]-c)*t)).join(",")+")"}return"rgb(12,62,26)"}
 const GRAD_CSS="linear-gradient(90deg,"+GRAD.map(([p,c])=>`rgb(${c.join(",")}) ${p*100}%`).join(",")+")";
 let legendCtl=null,labLayer=null;
@@ -1978,7 +2004,7 @@ function hexPopup(h,p){const sp=$("hSp").value,sc=hexScore(h.id,sp,"fc"),now=hex
   ${ess?`Essences : ${ess}<br>`:h.forest?`<span style="color:var(--muted)">Essences non analysées : relance l'analyse.</span><br>`:""}
   ${hab!=null?`Arbres favorables à l'espèce : ${Math.round(hab*100)} % de l'hexagone<br>`:""}
   ${ex?`<b style="color:var(--warn)">Écarté : ${ex}</b><br>`:""}
-  ${m?`Pluie des 7 derniers jours : ${Math.round(r7)} mm<br>Sol aujourd'hui : ${m.ts[i].toFixed(1)} °C · humidité ${Math.round(m.H[i]*100)} %<br>
+  ${m?`Pluie des 7 derniers jours : ${Math.round(r7)} mm<br>Sol aujourd'hui : ${fr(m.ts[i])} °C · humidité ${Math.round(m.H[i]*100)} %<br>
   <b>${spName(sp)}</b><br>Indice de pousse : <b>${Math.round(hexIndex(h,sp,"now").v*100)}/100</b> aujourd'hui · <b>${Math.round(hexIndex(h,sp,"tom").v*100)}/100</b> demain · <b>${Math.round(hexIndex(h,sp,"fc").v*100)}/100</b> au mieux sur la semaine${lvl(sc.v)?" ("+m.dateOf(sc.i)+")":""}<br>${sp===ALL?"":`<span style="color:var(--muted)">météo seule : ${Math.round(sc.v*100)}/100, pondérée par les arbres favorables</span><br>`}
   ${top?`Meilleure espèce cette semaine : <b>${SP[top[0]].n}</b> (${Math.round(hexIndex(h,top[0],"fc").v*100)}/100)<br>`:""}
   <button class="btn" style="margin-top:6px;padding:5px 10px" id="hexOpen">Prévision détaillée</button>`:"Pas de météo en cache pour cet hexagone."}
@@ -2003,6 +2029,7 @@ async function refineHex(h){const fs=finer(h.size);if(!fs)return;const a=side(h.
 let bestLayer=null,bestCenter=null;
 const kmTo=(la0,lo0,la,lo)=>{const dy=(la-la0)*KY,dx=(lo-lo0)*111.32*Math.cos(la0*Math.PI/180);return{d:Math.hypot(dx,dy),dx,dy}};
 const compass=(dx,dy)=>["N","NE","E","SE","S","SO","O","NO"][Math.round(((Math.atan2(dx,dy)*180/Math.PI)+360)%360/45)%8];
+const DIR={N:"nord",NE:"nord-est",E:"est",SE:"sud-est",S:"sud",SO:"sud-ouest",O:"ouest",NO:"nord-ouest"};
 // dernier lieu tapé dans la recherche : centre par défaut du classement
 let lastPlace=LS.get("place",null);
 function showPlace(){const o=$("bPlaceOpt");o.disabled=!lastPlace;o.textContent=lastPlace?`Lieu recherché : ${lastPlace.name}`:"Lieu recherché (aucun)"}
@@ -2066,9 +2093,11 @@ async function autoRefineTop(){
 // reprend le résultat qui correspond à son altitude et à son versant.
 const DEM_Z=11,DEM_TD=360/4096; // tuiles d'altitude brute IGN (RGE Alti) : grille WGS84G, niveau 11, pixel ≈ 38 m
 const demTiles={};
-async function demTile(col,row){const k=col+"/"+row;if(!(k in demTiles))demTiles[k]=(async()=>{
+async function demTile(col,row,keep){const k=col+"/"+row;if(!(k in demTiles))demTiles[k]=(async()=>{
   for(let n=0;n<3;n++){try{const r=await fetch(`https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ELEVATION.ELEVATIONGRIDCOVERAGE.HIGHRES&STYLE=normal&TILEMATRIXSET=WGS84G_6_14&FORMAT=image/x-bil;bits=32&TILEMATRIX=${DEM_Z}&TILEROW=${row}&TILECOL=${col}`,n?{cache:"reload"}:{});
-    if(r.ok){const b=await r.arrayBuffer();if(b.byteLength===256*256*4)return new Float32Array(b)}}catch(e){}}return null})();return demTiles[k]}
+    if(r.ok){const b=await r.arrayBuffer();if(b.byteLength===256*256*4)return new Float32Array(b)}}catch(e){}}// hors ligne : tuile gardée par « Préparer ma sortie »
+    const kept=await tGet("dem/"+k);return kept?new Float32Array(await kept.arrayBuffer()):null})();
+  const t=await demTiles[k];if(t&&keep&&!(await tHas("dem/"+k)))await tPut("dem/"+k,new Blob([t.buffer]));return t}
 function demAt(la,lo){const col=Math.floor((lo+180)/DEM_TD),row=Math.floor((90-la)/DEM_TD),t=demTiles[col+"/"+row+"#"];if(!t)return null;
   const x=((lo+180)/DEM_TD-col)*256-.5,y=((90-la)/DEM_TD-row)*256-.5,x0=Math.max(0,Math.min(254,Math.floor(x))),y0=Math.max(0,Math.min(254,Math.floor(y))),fx=x-x0,fy=y-y0,g=(i,j)=>t[(y0+j)*256+x0+i];
   const v=g(0,0)*(1-fx)*(1-fy)+g(1,0)*fx*(1-fy)+g(0,1)*(1-fx)*fy+g(1,1)*fx*fy;return v>-100?v:null}
@@ -2153,8 +2182,8 @@ function heatRender(env,res){
   const {NX,NY,N,bb}=env,cv=document.createElement("canvas");cv.width=NX;cv.height=NY;const g=cv.getContext("2d"),img=g.createImageData(NX,NY);
   for(let k=0;k<N;k++){const v=res.score[k];if(v===-2){img.data.set([60,60,60,170],k*4);continue}if(v<0)continue;const [r,gg,b]=gradRGB(v);img.data.set([r,gg,b,255],k*4)}
   g.putImageData(img,0,0);
-  const msg=`${res.nForest.toLocaleString("fr-FR")} cellules de forêt de ${Math.round(env.cell*1000)} m sur ${Math.round(env.R)} km${res.nCut?` · ${res.nCut.toLocaleString("fr-FR")} en coupe récente (gris foncé)`:""} · seuil des zones chaudes ${Math.round(res.T*100)}/100 · ${spName(res.sp)} · ${MODE_LAB[res.mode]}.`;
-  const saved={bb,url:cv.toDataURL(),zones:res.zones,msg,la0:env.la0,lo0:env.lo0,R:env.R,sp:res.sp,mode:res.mode,t:Date.now()};
+  const msg=`Forêt analysée sur ${Math.round(env.R)} km autour du point : ${res.nForest.toLocaleString("fr-FR")} carrés de ${Math.round(env.cell*1000)} m${res.nCut?`, dont ${res.nCut.toLocaleString("fr-FR")} en coupe récente (gris foncé)`:""}. Coins retenus : indice d'au moins ${Math.round(res.T*100)}/100 · ${spName(res.sp)} · ${MODE_LAB[res.mode]}.`;
+  const saved={bb,url:cv.toDataURL(),zones:res.zones,msg,la0:env.la0,lo0:env.lo0,R:env.R,sp:res.sp,mode:res.mode,t:Date.now(),mv:MODEL_V};
   LS.set("heat",saved);heatShow(saved);
 }
 // affiche une carte calculée (en direct ou enregistrée : elle reste visible hors ligne)
@@ -2168,7 +2197,7 @@ function heatShow(sv){
   L.circle([sv.la0,sv.lo0],{radius:sv.R*1000,color:"#7a4a22",weight:1.5,fill:false,dashArray:"5 5",interactive:false}).addTo(heatLayer);
   sv.zones.forEach((z,n)=>L.marker([z.la,z.lo],{icon:L.divIcon({className:"",iconSize:[22,22],iconAnchor:[11,11],html:`<div class="brank" style="background:#7a1f12">${n+1}</div>`})})
     .on("click",()=>{map.setView([z.la,z.lo],15);heatPopup(L.latLng(z.la,z.lo))}).addTo(heatLayer));
-  $("hMsg").textContent=sv.msg+(Date.now()-sv.t>36e5?` Calculée ${ageTxt(sv.t)}.`:"");
+  $("hMsg").textContent=sv.msg+(Date.now()-sv.t>36e5?` Calculée ${ageTxt(sv.t)}.`:"")+(sv.mv!==MODEL_V?" Calculée avec la version précédente du modèle : touche « Chercher » pour la mettre à jour.":"");
   const box=$("hList");box.innerHTML=sv.zones.length?"":'<p class="note">Aucune zone au-dessus du seuil.</p>';
   sv.zones.forEach((z,n)=>{const d=document.createElement("div");d.className="spot";
     d.innerHTML=`<span class="dot" style="background:${gradColor(z.v)}"></span><div><b>${n+1}. ${Math.round(z.v*100)}/100 · ${LV[lvl(z.v)].act}</b> <span class="note">${z.ha<10?z.ha.toFixed(1).replace(".",","):Math.round(z.ha)} ha</span><small>${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} ${compass(z.dx,z.dy)} · ${Math.round(z.alt)} m · versant ${azName(z.az)} · ${TREE_N[z.ess]||z.ess} · ${PUB_N[z.pub||0]}</small></div><button class="btn" style="padding:6px 9px" aria-label="Relief et versants de la zone ${n+1}" title="Relief et versants">⛰</button>`;
@@ -2202,18 +2231,80 @@ function heatPopup(ll){const env=heatEnv;let html=`<div style="font-size:13px;mi
   L.popup().setLatLng(ll).setContent(html).openOn(map);
   setTimeout(()=>{const b=document.getElementById("ptRel");if(b)b.onclick=()=>{map.closePopup();openReliefAt(ll.lat,ll.lng)}},0)}
 // fiche « Relief et versants » sur un hexagone de 1 km² centré sur un point quelconque
-async function openReliefAt(la,lo){const s=1,a=side(s),[q,r]=ll2hex(la,lo,a),[hl,ho]=hexCenter(q,r,a),gs=.025,keys=[];
+// fiche d'un point : hexagone de 1 km² qui le contient et points de grille météo à moins de 5 km
+function reliefAt(la,lo){const s=1,a=side(s),[q,r]=ll2hex(la,lo,a),[hl,ho]=hexCenter(q,r,a),gs=.025,keys=[];
   for(let x=Math.round((hl-.05)/gs)*gs;x<=hl+.05;x+=gs)for(let y=Math.round((ho-.07)/gs)*gs;y<=ho+.07;y+=gs)if(Math.hypot((x-hl)*KY,(y-ho)*111.32*Math.cos(hl*Math.PI/180))<5)keys.push(gKey(x,y));
-  try{await fetchGrid(keys,()=>{});saveHex()}catch(e){}
-  const c=Math.floor((ho+180)/DEM_TD),rw=Math.floor((90-hl)/DEM_TD);demTiles[c+"/"+rw+"#"]=await demTile(c,rw);
-  openRelief({id:"pt",q,r,lat:hl,lon:ho,size:s,pts:keys,alt:demAt(hl,ho)||0,soil:null});
+  return{id:"pt",q,r,lat:hl,lon:ho,size:s,pts:keys,soil:null}}
+async function openReliefAt(la,lo){const h=reliefAt(la,lo);
+  try{await fetchGrid(h.pts,()=>{});saveHex()}catch(e){}
+  const c=Math.floor((h.lon+180)/DEM_TD),rw=Math.floor((90-h.lat)/DEM_TD);demTiles[c+"/"+rw+"#"]=await demTile(c,rw);
+  openRelief({...h,alt:demAt(h.lat,h.lon)||0});
 }
+// ---- « Préparer ma sortie » : cartes, relief, routes et météo des meilleurs coins, pour le mode avion ----
+async function prepOuting(){const sv=LS.get("heat",null),say=t=>$("prepMsg").textContent=t;
+  if(!sv||!sv.zones||!sv.zones.length){say("Lance d'abord une recherche : la préparation porte sur les meilleurs coins trouvés.");return}
+  if(!navigator.onLine){say("Pas de réseau : prépare la sortie avant de partir.");return}
+  const zs=sv.zones.slice(0,5),kxOf=la=>111.32*Math.cos(la*Math.PI/180),bar=$("prepProg").firstElementChild;let fail=0;
+  $("prepBtn").disabled=true;$("prepProg").style.display="";bar.style.width="0%";
+  try{
+    // 1. ce que lit la fiche « Relief et versants » de chaque coin : météo des points de grille, altitude, routes
+    for(const [n,z] of zs.entries()){say(`Coin ${n+1} sur ${zs.length} : météo, relief, routes…`);bar.style.width=(n/zs.length*30)+"%";
+      const h=reliefAt(z.la,z.lo),cs=hexCorners(h.q,h.r,side(1));
+      try{await fetchGrid(h.pts,()=>{})}catch(e){fail++}
+      const tl=new Set(cs.concat([[h.lat,h.lon]]).map(c=>Math.floor((c[1]+180)/DEM_TD)+"/"+Math.floor((90-c[0])/DEM_TD)));
+      for(const k of tl){const [c,r]=k.split("/").map(Number);if(!(await demTile(c,r,true)))fail++}
+      try{await jsonKept(roadsURL(cs,kxOf(h.lat)),true)}catch(e){fail++}}
+    saveHex();
+    // 2. cartes : vue d'ensemble du cercle de recherche (plan IGN, 400 tuiles au plus), détail de chaque coin (plan, photos, forêts)
+    const kx=kxOf(sv.la0),bb=[sv.lo0-sv.R/kx,sv.la0-sv.R/KY,sv.lo0+sv.R/kx,sv.la0+sv.R/KY],seen=new Set(),list=[];
+    const add=t=>{const k=t.join("/");if(!seen.has(k)){seen.add(k);list.push(t)}};
+    let zTop=14;while(zTop>11&&bboxTiles(bb,["plan"],11,zTop).length>400)zTop--;
+    bboxTiles(bb,["plan"],11,zTop).forEach(add);
+    zs.forEach(z=>{const d=.8,k2=kxOf(z.la),b2=[z.lo-d/k2,z.la-d/KY,z.lo+d/k2,z.la+d/KY];bboxTiles(b2,["plan","ortho"],15,16).forEach(add);bboxTiles(b2,["forest"],15,15).forEach(add)});
+    dlAbort=false;
+    const r=await downloadTiles(list,(d,f,n)=>{bar.style.width=(30+d/n*70)+"%";say(`Cartes : ${d} / ${n} tuiles${f?` · ${f} échecs`:""}`)});
+    fail+=r.fail;stats();LS.set("prep",{t:Date.now(),n:zs.length});
+    say(fail?`Préparation terminée avec ${fail} échec(s) : refais-la avec un meilleur réseau si possible.`
+      :`✅ Prêt pour le mode avion : ${list.length} tuiles de carte, relief, routes et météo des ${zs.length} meilleurs coins. Le mode terrain te guide ensuite vers eux au GPS.`);
+  }finally{$("prepBtn").disabled=false;$("prepProg").style.display="none"}}
+$("prepBtn").onclick=prepOuting;
+// ---- mode terrain : gros boutons, fort contraste, guidage GPS vers les meilleurs coins (sans réseau) ----
+const terr={on:false,i:0,watch:null,pos:null,acc:null,head:null,me:null,raf:0};
+const guideZones=()=>{const sv=LS.get("heat",null);return sv&&sv.zones?sv.zones.slice(0,10):[]};
+function guideDraw(){terr.raf=0;const zs=guideZones();$("guide").style.display=terr.on?"":"none";if(!terr.on)return;
+  if(!zs.length){$("gDist").textContent="Aucun coin";$("gDir").textContent="Lance une recherche (étape ③) avant de partir.";$("gAcc").textContent="";return}
+  terr.i=Math.max(0,Math.min(zs.length-1,terr.i));const z=zs[terr.i];$("gNum").textContent=terr.i+1;
+  $("gInfo").textContent=`${Math.round(z.v*100)}/100 · ${LV[lvl(z.v)].act}`;
+  if(!terr.pos){$("gDist").textContent="…";$("gDir").textContent="Recherche de ta position (GPS)…";$("gAcc").textContent="";return}
+  const g=kmTo(terr.pos[0],terr.pos[1],z.la,z.lo),brg=(Math.atan2(g.dx,g.dy)*180/Math.PI+360)%360;
+  $("gDist").textContent=g.d<1?Math.round(g.d*1000)+" m":fr(g.d)+" km";
+  $("gDir").textContent=`vers le ${DIR[compass(g.dx,g.dy)]}`+(terr.head==null?" · flèche : nord en haut":"");
+  $("gAcc").textContent=`GPS à ${Math.round(terr.acc)} m près · versant ${azName(z.az)}, ${Math.round(z.alt)} m`;
+  $("gArrow").style.transform=`rotate(${Math.round(brg-(terr.head||0))}deg)`}
+const guideLater=()=>{if(!terr.raf)terr.raf=requestAnimationFrame(guideDraw)};
+// boussole du téléphone : cap absolu (Chrome Android) ou webkitCompassHeading (iPhone) ; sinon la flèche garde le nord en haut
+function onHead(e){const h=e.webkitCompassHeading!=null?e.webkitCompassHeading:e.absolute&&e.alpha!=null?360-e.alpha:null;if(h!=null){terr.head=h;guideLater()}}
+async function setTerrain(on){terr.on=on;LS.set("terrain",on);document.body.classList.toggle("terrain",on);
+  $("terrBtn").setAttribute("aria-pressed",on);$("terrBtn").textContent=on?"🥾 Quitter le mode terrain":"🥾 Mode terrain";
+  if(on){
+    if(navigator.geolocation&&terr.watch==null)terr.watch=navigator.geolocation.watchPosition(p=>{terr.pos=[p.coords.latitude,p.coords.longitude];terr.acc=p.coords.accuracy;
+        if(terr.me)terr.me.setLatLng(terr.pos);else terr.me=L.circleMarker(terr.pos,{radius:8,color:"#fff",weight:3,fillColor:"#2a78d6",fillOpacity:1}).addTo(map);guideLater()},
+      e=>{$("gDir").textContent=e.code===1?"Position refusée : autorise la localisation pour ce site.":"Position indisponible (GPS ?)."},{enableHighAccuracy:true,maximumAge:5000,timeout:30000});
+    try{if(typeof DeviceOrientationEvent!=="undefined"&&DeviceOrientationEvent.requestPermission)await DeviceOrientationEvent.requestPermission()}catch(e){}
+    addEventListener("deviceorientationabsolute",onHead);addEventListener("deviceorientation",onHead);
+    showView("v-map");scrollTo({top:0,behavior:RM?"auto":"smooth"})}
+  else{if(terr.watch!=null)navigator.geolocation.clearWatch(terr.watch);terr.watch=null;terr.head=null;
+    removeEventListener("deviceorientationabsolute",onHead);removeEventListener("deviceorientation",onHead);if(terr.me){map.removeLayer(terr.me);terr.me=null}}
+  guideDraw()}
+$("terrBtn").onclick=()=>setTerrain(!terr.on);$("gOff").onclick=()=>setTerrain(false);
+$("gPrev").onclick=()=>{terr.i--;guideDraw()};$("gNext").onclick=()=>{terr.i++;guideDraw()};
+$("gOpen").onclick=()=>{const z=guideZones()[terr.i];if(z)openReliefAt(z.la,z.lo)};
 // affichage : carte continue (par défaut) ou hexagones
 function setViewMode(v){LS.set("viewMode",v);
   document.querySelectorAll("#vChips .chip").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
   document.querySelectorAll(".hexOnly").forEach(e=>e.style.display=v==="heat"?"none":"");
   document.querySelectorAll(".heatOnly").forEach(e=>e.style.display=v==="heat"?"":"none");
-  $("bTitle").textContent=v==="heat"?"③ Les meilleurs coins":"③ Les meilleurs hexagones";
+  $("bTitle").textContent=v==="heat"?"③ Les meilleurs coins":"③ Les meilleurs hexagones";renderList();
   if(v==="heat"){map.getPane("hexPane").style.display="none";labLayer.clearLayers();gridLayer.clearLayers();if(bestLayer)bestLayer.clearLayers();
     const sv=LS.get("heat",null);if(sv&&!heatOverlay)heatShow(sv);else if(heatOverlay&&!map.hasLayer(heatOverlay))heatOverlay.addTo(map),heatLayer.addTo(map)}
   else{if(heatOverlay)map.removeLayer(heatOverlay);if(heatLayer)map.removeLayer(heatLayer);heatOverlay=null;heatLayer=null;
@@ -2243,10 +2334,15 @@ function nearOnLines(la0,lo0,lines,kx){let best=null;for(const ln of lines)for(l
   const ax=(ln[k-1][1]-lo0)*kx,ay=(ln[k-1][0]-la0)*KY,bx=(ln[k][1]-lo0)*kx,by=(ln[k][0]-la0)*KY,dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;
   const t=l2?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/l2)):0,px=ax+t*dx,py=ay+t*dy,d=Math.hypot(px,py);
   if(!best||d<best.d)best={d,la:la0+py/KY,lo:lo0+px/kx}}return best}
+// réponse JSON : réseau d'abord ; gardée si keep (« Préparer ma sortie ») pour être relue hors ligne
+async function jsonKept(url,keep){
+  try{const r=await tfetch(url,20000);if(!r.ok)throw new Error(r.status);const t=await r.text(),j=JSON.parse(t);if(keep)await tPut("json/"+url,new Blob([t]));return j}
+  catch(e){const b=await tGet("json/"+url);if(b)return JSON.parse(await b.text());throw e}}
+// routes BD TOPO autour d'un hexagone (marge de 600 m)
+function roadsURL(cs,kx){const m=.6,la1=Math.min(...cs.map(c=>c[0]))-m/KY,la2=Math.max(...cs.map(c=>c[0]))+m/KY,lo1=Math.min(...cs.map(c=>c[1]))-m/kx,lo2=Math.max(...cs.map(c=>c[1]))+m/kx;
+  return`https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=BDTOPO_V3:troncon_de_route&COUNT=5000&OUTPUTFORMAT=application/json&PROPERTYNAME=nature,acces_vehicule_leger,geometrie&BBOX=${la1.toFixed(5)},${lo1.toFixed(5)},${la2.toFixed(5)},${lo2.toFixed(5)},urn:ogc:def:crs:EPSG::4326`}
 async function relRoads(h,cs,best,kx){
-  const m=.6,la1=Math.min(...cs.map(c=>c[0]))-m/KY,la2=Math.max(...cs.map(c=>c[0]))+m/KY,lo1=Math.min(...cs.map(c=>c[1]))-m/kx,lo2=Math.max(...cs.map(c=>c[1]))+m/kx;
-  let F;try{const r=await tfetch(`https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=BDTOPO_V3:troncon_de_route&COUNT=5000&OUTPUTFORMAT=application/json&PROPERTYNAME=nature,acces_vehicule_leger,geometrie&BBOX=${la1.toFixed(5)},${lo1.toFixed(5)},${la2.toFixed(5)},${lo2.toFixed(5)},urn:ogc:def:crs:EPSG::4326`,20000);
-    F=(await r.json()).features}catch(e){$("relRoads").textContent="Routes indisponibles (connexion ?) : le plan IGN reste affiché.";return}
+  let F;try{F=(await jsonKept(roadsURL(cs,kx))).features}catch(e){$("relRoads").textContent="Routes indisponibles (connexion ?) : le plan IGN reste affiché.";return}
   if(!relMap)return;const lines={paved:[],track:[],restr:[],foot:[]};
   for(const f of F){const g=f.geometry;if(!g)continue;const parts=g.type==="MultiLineString"?g.coordinates:[g.coordinates];
     for(const pt of parts){const ll=pt.map(c=>[c[1],c[0]]);lines[roadCat(f.properties)].push(ll)}}
@@ -2417,7 +2513,7 @@ $("nearBtn").onclick=()=>{if(!navigator.geolocation){$("qMsg").textContent="Loca
 // phrase de synthèse en tête des meilleurs coins
 const WHEN={now:"aujourd'hui",tom:"demain",fc:"cette semaine"};
 function bestSummary(z){if(!z){$("bSum").textContent="Aucun coin ne se détache pour l'instant : conditions peu favorables.";return}
-  const l=LV[lvl(z.v)];$("bSum").innerHTML=`Meilleure chance ${WHEN[hMode]} : à ${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} vers le ${compass(z.dx,z.dy)}, ${z.desc} — <span class="lvl" style="background:${l.c};color:${lvl(z.v)>=3?"#fff":lvl(z.v)>=1?"#1a1a1a":"var(--text)"}">${Math.round(z.v*100)}/100 · ${l.act}</span>`}
+  const l=LV[lvl(z.v)];$("bSum").innerHTML=`Meilleure chance ${WHEN[hMode]} : à ${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} vers le ${DIR[compass(z.dx,z.dy)]}, ${z.desc} — <span class="lvl" style="background:${l.c};color:${lvl(z.v)>=3?"#fff":lvl(z.v)>=1?"#1a1a1a":"var(--text)"}">${Math.round(z.v*100)}/100 · ${l.act}</span>`}
 $("hSize").onchange=()=>{LS.set("hSize",$("hSize").value);drawGrid();drawHexes()};
 // taille d'hexagone de la dernière analyse, pour retrouver les hexagones enregistrés au rechargement
 $("hSize").value=LS.get("hSize",null)||(Object.values(hexStore.hex).pop()||{size:5}).size;
@@ -2440,6 +2536,8 @@ PRESETS.automne.f();
 buildSrc();renderList();stats();
 try{initMap()}catch(e){$("map").innerHTML='<p class="note" style="padding:20px">Carte indisponible.</p>'}
 try{setViewMode(LS.get("viewMode","heat"))}catch(e){}
+// mode terrain resté actif : on le rétablit (guidage GPS compris)
+if(LS.get("terrain",false))try{setTerrain(true)}catch(e){}
 // test réseau : la page publiée sur claude.ai bloque les accès externes
 fetch(tileUrl("plan",0,0,0),{mode:"no-cors"}).then(()=>{netOK=true}).catch(()=>{
   if(navigator.onLine){netOK=false;$("envWarn").innerHTML='<div class="warn">Cette version ne peut joindre ni l\'IGN ni le service météo : la carte et la météo réelle sont bloquées. Le simulateur (onglet Prévision) fonctionne. Pour la carte, la météo et le mode avion, ouvre le fichier HTML téléchargé dans le navigateur de ton téléphone.</div>'}});
