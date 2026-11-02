@@ -1,3 +1,8 @@
 pino 69 observations
   groupe 1 : actuel 0.588 → optimisé 0.598 (24 obs. mises de côté)
   groupe 2 : actuel 0.704 → optimisé 0.719 (35 obs. mises de côté)
+  groupe 3 : actuel 0.741 → optimisé 0.817 (10 obs. mises de côté)
+  tour 1 : 0.748
+  tour 2 : 0.757
+  tour 3 : 0.757
+  validation croisée : actuel 0.669 → optimisé 0.691 (adopté)

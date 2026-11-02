@@ -1,0 +1,78 @@
+{
+ "edulis": {
+  "n": 80,
+  "cvActuel": 0.797,
+  "cvOptimise": 0.807,
+  "adopte": true,
+  "toutesActuel": 0.797,
+  "toutesOptimise": 0.842,
+  "changements": {
+   "topt": [
+    13.2,
+    14.7
+   ],
+   "need": [
+    30,
+    45
+   ],
+   "win": [
+    6,
+    4
+   ],
+   "w": [
+    0.75,
+    0
+   ],
+   "humMin": [
+    0.12,
+    0.05
+   ],
+   "wt.trig": [
+    0.6,
+    1
+   ],
+   "wt.hum": [
+    1,
+    0
+   ],
+   "wt.dry": [
+    0.5,
+    1
+   ],
+   "mp.rw": [
+    7,
+    5
+   ]
+  },
+  "reglages": {
+   "topt": 14.7,
+   "tsd": 3.3,
+   "lag": 12,
+   "need": 45,
+   "win": 4,
+   "w": 0,
+   "humMin": 0.05,
+   "wt": {
+    "water": 1,
+    "waterWithSoil": 0.4,
+    "hum": 0,
+    "summer": 0.5,
+    "temp": 0.8,
+    "trig": 1,
+    "dry": 1,
+    "reb": 0.5,
+    "frost": 1,
+    "season": 0.3,
+    "ph": 0.4,
+    "slope": 0.3
+   },
+   "mp": {
+    "rw": 5,
+    "choc": 4,
+    "pet": 0.05,
+    "lagT": 0.5
+   }
+  },
+  "minutes": 4.7
+ }
+}

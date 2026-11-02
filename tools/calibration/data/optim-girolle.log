@@ -1,3 +1,8 @@
 girolle 80 observations
   groupe 1 : actuel 0.685 → optimisé 0.717 (36 obs. mises de côté)
   groupe 2 : actuel 0.661 → optimisé 0.675 (34 obs. mises de côté)
+  groupe 3 : actuel 0.562 → optimisé 0.707 (10 obs. mises de côté)
+  tour 1 : 0.743
+  tour 2 : 0.753
+  tour 3 : 0.753
+  validation croisée : actuel 0.659 → optimisé 0.698 (adopté)

@@ -1,3 +1,8 @@
 pdm 75 observations
   groupe 1 : actuel 0.590 → optimisé 0.603 (34 obs. mises de côté)
   groupe 2 : actuel 0.618 → optimisé 0.674 (26 obs. mises de côté)
+  groupe 3 : actuel 0.663 → optimisé 0.736 (15 obs. mises de côté)
+  tour 1 : 0.681
+  tour 2 : 0.691
+  tour 3 : 0.691
+  validation croisée : actuel 0.614 → optimisé 0.654 (adopté)

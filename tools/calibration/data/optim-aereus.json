@@ -1,0 +1,62 @@
+{
+ "aereus": {
+  "n": 70,
+  "cvActuel": 0.833,
+  "cvOptimise": 0.829,
+  "adopte": false,
+  "toutesActuel": 0.833,
+  "toutesOptimise": 0.856,
+  "changements": {
+   "topt": [
+    16.8,
+    17.3
+   ],
+   "tsd": [
+    3.2,
+    4.5
+   ],
+   "lag": [
+    9,
+    12
+   ],
+   "need": [
+    25,
+    30
+   ],
+   "win": [
+    6,
+    9
+   ]
+  },
+  "reglages": {
+   "topt": 17.3,
+   "tsd": 4.5,
+   "lag": 12,
+   "need": 30,
+   "win": 9,
+   "w": 0.3,
+   "humMin": 0.12,
+   "wt": {
+    "water": 1,
+    "waterWithSoil": 0.4,
+    "hum": 1,
+    "summer": 0.5,
+    "temp": 0.8,
+    "trig": 0.6,
+    "dry": 0.5,
+    "reb": 0.5,
+    "frost": 1,
+    "season": 0.3,
+    "ph": 0.4,
+    "slope": 0.3
+   },
+   "mp": {
+    "rw": 7,
+    "choc": 4,
+    "pet": 0.05,
+    "lagT": 0.5
+   }
+  },
+  "minutes": 4.7
+ }
+}

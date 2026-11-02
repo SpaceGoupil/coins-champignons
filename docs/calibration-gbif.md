@@ -1,5 +1,7 @@
 # Calibration par les observations GBIF (1er novembre 2026)
 
+> **Mise à jour du 2 novembre 2026** : les réglages ont depuis été ajustés espèce par espèce sur 69 à 80 observations, avec validation sur des années mises de côté. Voir `docs/modele-2026-11.md`. Les chiffres ci-dessous décrivent l'état précédent.
+
 **Objectif** : remplacer les optimums de température et les saisons estimés par des valeurs observées, pour les espèces sans étude chiffrée.
 
 **Méthode**

@@ -1,0 +1,78 @@
+{
+ "pdm": {
+  "n": 75,
+  "cvActuel": 0.614,
+  "cvOptimise": 0.654,
+  "adopte": true,
+  "toutesActuel": 0.614,
+  "toutesOptimise": 0.691,
+  "changements": {
+   "tsd": [
+    4.4,
+    3.5
+   ],
+   "lag": [
+    12,
+    14
+   ],
+   "need": [
+    25,
+    15
+   ],
+   "humMin": [
+    0.15,
+    0.05
+   ],
+   "wt.trig": [
+    0.6,
+    1
+   ],
+   "wt.waterWithSoil": [
+    0.4,
+    0
+   ],
+   "wt.season": [
+    0.3,
+    1
+   ],
+   "mp.rw": [
+    7,
+    14
+   ],
+   "mp.lagT": [
+    0.5,
+    0.25
+   ]
+  },
+  "reglages": {
+   "topt": 12.3,
+   "tsd": 3.5,
+   "lag": 14,
+   "need": 15,
+   "win": 14,
+   "w": 0.4,
+   "humMin": 0.05,
+   "wt": {
+    "water": 1,
+    "waterWithSoil": 0,
+    "hum": 1,
+    "summer": 0.5,
+    "temp": 0.8,
+    "trig": 1,
+    "dry": 0.5,
+    "reb": 0.5,
+    "frost": 1,
+    "season": 1,
+    "ph": 0.4,
+    "slope": 0.3
+   },
+   "mp": {
+    "rw": 14,
+    "choc": 4,
+    "pet": 0.05,
+    "lagT": 0.25
+   }
+  },
+  "minutes": 6.9
+ }
+}

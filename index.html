@@ -754,6 +754,11 @@ th:first-child,td:first-child{text-align:left}
 .rleg span{display:flex;align-items:center;gap:5px}.rleg i{display:inline-block;width:22px}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 @media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+.intro{border:2px solid var(--accent)}
+.sum{margin:8px 2px 0;font-size:15px;font-weight:600;line-height:1.4}
+details.expert>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+details.expert>summary small{color:var(--text2);font-weight:400}
+details.expert .card{margin:10px 0 0;padding:10px;border:1px solid var(--line);box-shadow:none}
 .sheet .in{background:var(--surface);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:16px;max-height:88vh;overflow:auto}
 .leaflet-container{font:inherit}
 .grad-leg{background:var(--surface);color:var(--text);border-radius:10px;padding:6px 8px;font-size:11px;box-shadow:0 1px 5px rgba(0,0,0,.25);min-width:150px}
@@ -781,13 +786,20 @@ th:first-child,td:first-child{text-align:left}
 
   <!-- ============ CARTE ============ -->
   <section class="view on" id="v-map">
+    <div class="card intro" id="intro" style="display:none">
+      <div class="ttl">Bienvenue</div>
+      <p style="margin:4px 0">L'app estime, jour par jour, vos chances de trouver six champignons (cèpes, girolle, pied de mouton), d'après la météo des trois derniers mois, la forêt, le relief et le sol.</p>
+      <ol style="margin:6px 0 6px 18px;padding:0"><li>Choisissez <b>où chercher</b>.</li><li>Choisissez <b>le champignon et le moment</b>.</li><li>Regardez <b>les meilleurs coins</b> et comment y aller.</li></ol>
+      <p class="note" style="margin:4px 0 8px">Les indices sont <b>indicatifs</b> : ils ne garantissent aucune récolte. Respectez les propriétés et les règles de cueillette locales.</p>
+      <button class="btn pri" id="introOk">J'ai compris</button>
+    </div>
     <div class="card">
-      <div class="ttl">Zone cible <small>forêt, commune, lieu-dit…</small></div>
+      <div class="ttl">① Où chercher ? <small>ville, forêt, lieu-dit</small></div>
       <form id="qForm" class="row" style="gap:6px;flex-wrap:nowrap" autocomplete="off">
         <div class="search" style="flex:1;min-width:0"><span class="ico">🔍</span><input type="search" id="q" placeholder="Ville, forêt, lieu-dit…" enterkeyhint="go" aria-label="Lieu à chercher (ville, forêt, lieu-dit)"></div>
         <button class="btn pri" type="submit" id="qOk" style="flex:0 0 auto">OK</button>
       </form>
-      <div class="row" style="margin-top:8px"><label>Taille de la zone autour du lieu<select id="zSize"><option value="10">10 × 10 km</option><option value="25" selected>25 × 25 km</option><option value="50">50 × 50 km</option></select></label></div>
+      <div class="row" style="margin-top:8px"><button class="btn" id="nearBtn" type="button">📍 Autour de moi</button></div>
       <p class="note" id="qMsg" aria-live="polite" style="margin:6px 2px 0"></p>
       <div class="results" id="results"></div>
       <div id="zoneBox" style="display:none">
@@ -796,8 +808,15 @@ th:first-child,td:first-child{text-align:left}
         <div id="zoneRes"></div>
       </div>
     </div>
+    <div class="card" id="step2">
+      <div class="ttl">② Quel champignon, et quand ?</div>
+      <div class="row"><label>Champignon<select id="cSp"></select></label></div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text2)">Pour
+        <div class="chips" id="hMode" style="margin-top:4px"><button class="chip" data-m="now">Aujourd'hui</button><button class="chip" data-m="tom">Demain</button><button class="chip" data-m="fc">Sur la semaine</button></div>
+      </div>
+      <p class="note" id="cRel" style="margin:6px 2px 0"></p>
+    </div>
     <div class="card" style="padding:8px">
-      <div class="chips" id="vChips" style="margin-bottom:6px"><button class="chip" data-v="heat">🌡 Carte continue</button><button class="chip" data-v="hex">⬡ Hexagones</button></div>
       <div class="chips" id="layerChips" style="margin-bottom:8px"></div>
       <div id="map"></div>
       <div class="row" style="margin-top:8px">
@@ -807,34 +826,21 @@ th:first-child,td:first-child{text-align:left}
       <p class="note" id="mapHint" aria-live="polite" style="margin:6px 2px 0">Touche la carte après « Ajouter un coin » pour poser un repère.</p>
     </div>
 
-    <div class="card">
-      <div class="ttl">Hexagones <small id="hexInfo">grille fixe sur la France</small></div>
-      <div class="row">
-        <label>Espèce affichée<select id="hSp"></select></label>
-        <label class="hexOnly">Taille pour l'analyse<select id="hSize"><option value="0.5">0,5 km²</option><option value="1">1 km²</option><option value="2">2 km²</option><option value="5" selected>5 km²</option><option value="10">10 km²</option></select></label>
-      </div>
-      <div style="margin-top:8px;font-size:12px;color:var(--text2)">Indice pour
-        <div class="chips" id="hMode" style="margin-top:4px"><button class="chip" data-m="now">Aujourd'hui</button><button class="chip" data-m="tom">Demain</button><button class="chip" data-m="fc">Sur la semaine</button></div>
-      </div>
-      <div class="row hexOnly" style="margin-top:8px"><button class="btn pri" id="hexBtn">⬡ Analyser la zone affichée</button><button class="btn" id="hexClear">Effacer</button></div>
-      <ul class="steps" id="hexSteps" aria-live="polite"></ul>
-      <div class="prog" id="hexProg" style="display:none"><i></i></div>
-      <p class="note" style="margin-bottom:0">Pour chaque hexagone : altitude moyenne, pente et versant (7 points IGN ; versant nord plus frais et humide, sud plus chaud et sec), part de forêt et essences (BD Forêt, 19 points) pondérées selon les arbres hôtes de chaque espèce, météo Météo-France (AROME, via Open-Meteo) moyennée entre les points voisins d'une grille de 0,1° à 0,025° selon la taille des hexagones, corrigée de l'altitude. Restent en gris et hors classement : les hexagones sans forêt (villes, cultures, estives), au-dessus de 2 000 m, et en bord de mer ou hors de France. Touche un hexagone pour le détail, ou pour l'<b>affiner</b> en hexagones plus petits : altitude et forêt plus précises (la météo reste celle de la grille de 0,1°). Les hexagones fins s'affichent par-dessus les grands.</p>
-    </div>
 
     <div class="card">
-      <div class="ttl"><span id="bTitle">Meilleurs hexagones autour d'un point</span> <small id="bInfo"></small></div>
+      <div class="ttl"><span id="bTitle">③ Les meilleurs coins</span> <small id="bInfo"></small></div>
       <div class="row">
-        <label>Champignon<select id="bSp"></select></label>
+        <label style="display:none">Champignon<select id="bSp"></select></label>
         <label>Autour de<select id="bCenter"><option value="place" id="bPlaceOpt" disabled>Lieu recherché (aucun)</option><option value="gps">Ma position</option><option value="map">Centre de la carte</option></select></label>
         <label>Rayon<select id="bRad"><option value="2">2 km</option><option value="5">5 km</option><option value="10" selected>10 km</option><option value="20">20 km</option><option value="30">30 km</option></select></label>
       </div>
       <div class="row" style="margin-top:8px"><button class="btn pri" id="bGo">Chercher</button><button class="btn hexOnly" id="bAna">Analyser ce rayon</button></div>
       <label class="hexOnly" style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--text2)"><input type="checkbox" id="bAuto" checked> Affiner automatiquement le top 10 en 0,5 km²</label>
       <div class="row hexOnly" style="margin-top:8px"><button class="btn" id="bHeat">🌡 Passer à la carte continue</button></div>
+      <p class="sum" id="bSum" aria-live="polite"></p>
       <p class="note" id="hMsg" aria-live="polite" style="margin:6px 2px 0"></p>
       <div id="hList"></div>
-      <p class="note" id="bMsg" style="margin:6px 2px 0">Classement selon le champignon choisi ici (le même que sur la carte) et la période choisie plus haut.</p>
+      <p class="note" id="bMsg" style="margin:6px 2px 0">Classement selon le champignon et le moment choisis à l'étape ②.</p>
       <div id="bList" class="hexOnly"></div>
     </div>
 
@@ -845,6 +851,23 @@ th:first-child,td:first-child{text-align:left}
       <div class="row" style="margin-top:8px"><button class="btn" id="refreshAll">↻ Mettre à jour la météo de tous les coins</button></div>
     </div>
 
+    </div>
+    <details class="card expert" id="expert">
+      <summary><b>Réglages avancés</b> <small>taille de zone, affichage, hexagones, cartes hors ligne</small></summary>
+      <div class="row" style="margin-top:8px"><label>Taille de la zone autour du lieu<select id="zSize"><option value="10">10 × 10 km</option><option value="25" selected>25 × 25 km</option><option value="50">50 × 50 km</option></select></label></div>
+      <div style="margin-top:10px;font-size:12px;color:var(--text2)">Affichage de l'indice</div>
+      <div class="chips" id="vChips" style="margin-bottom:6px"><button class="chip" data-v="heat">🌡 Carte continue</button><button class="chip" data-v="hex">⬡ Hexagones</button></div>
+    <div class="card hexOnly">
+      <div class="ttl">Hexagones <small id="hexInfo">grille fixe sur la France</small></div>
+      <div class="row">
+        <label>Espèce affichée<select id="hSp"></select></label>
+        <label class="hexOnly">Taille pour l'analyse<select id="hSize"><option value="0.5">0,5 km²</option><option value="1">1 km²</option><option value="2">2 km²</option><option value="5" selected>5 km²</option><option value="10">10 km²</option></select></label>
+      </div>
+      <div class="row hexOnly" style="margin-top:8px"><button class="btn pri" id="hexBtn">⬡ Analyser la zone affichée</button><button class="btn" id="hexClear">Effacer</button></div>
+      <ul class="steps" id="hexSteps" aria-live="polite"></ul>
+      <div class="prog" id="hexProg" style="display:none"><i></i></div>
+      <p class="note" style="margin-bottom:0">Pour chaque hexagone : altitude moyenne, pente et versant (7 points IGN ; versant nord plus frais et humide, sud plus chaud et sec), part de forêt et essences (BD Forêt, 19 points) pondérées selon les arbres hôtes de chaque espèce, météo Météo-France (AROME, via Open-Meteo) moyennée entre les points voisins d'une grille de 0,1° à 0,025° selon la taille des hexagones, corrigée de l'altitude. Restent en gris et hors classement : les hexagones sans forêt (villes, cultures, estives), au-dessus de 2 000 m, et en bord de mer ou hors de France. Touche un hexagone pour le détail, ou pour l'<b>affiner</b> en hexagones plus petits : altitude et forêt plus précises (la météo reste celle de la grille de 0,1°). Les hexagones fins s'affichent par-dessus les grands.</p>
+    </div>
     <div class="card">
       <div class="ttl">Cartes hors ligne <small id="tileStat">–</small></div>
       <p class="note" style="margin-top:0">Enregistre la zone affichée pour t'en servir en mode avion. Sources : Géoplateforme IGN (Plan IGN, photographies aériennes, BD Forêt), licence ouverte Etalab 2.0.</p>
@@ -859,7 +882,8 @@ th:first-child,td:first-child{text-align:left}
         <button class="btn" id="dlStop" style="display:none">Arrêter</button>
         <button class="btn" id="dlClear">Vider le cache</button>
       </div>
-    </div>
+      <div class="row" style="margin-top:8px"><button class="btn" type="button" id="toMethod">Méthode et fiabilité de l'indice</button></div>
+    </details>
   </section>
 
   <!-- ============ PREVISION ============ -->
@@ -944,15 +968,15 @@ th:first-child,td:first-child{text-align:left}
     <div class="card" style="font-size:14px;color:var(--text2)">
       <div class="ttl">Les deux modèles</div>
       <p><b>Règle Cépio</b> (exemple publié sur cepio.fr) : moyenne journalière sous 12 °C pendant 3 jours, puis plus de 15 mm de pluie dans les 5 jours, puis 5 à 8 jours sans pluie → 80 % de probabilité de fructification. Les niveaux intermédiaires sont une interprétation, car Cépio ne publie pas ses seuils.</p>
-      <p><b>Modèle enrichi</b> : l'indice est le produit de sous-indices compris entre 0 et 1, chacun élevé à un <b>poids</b> qui traduit sa valeur prédictive dans les études (tableau plus bas) : un poids de 1 peut annuler l'indice, un poids de 0,3 ne fait que le moduler.</p>
+      <p><b>Modèle enrichi</b> : l'indice est le produit de sous-indices compris entre 0 et 1, chacun élevé à un <b>poids</b> qui traduit sa valeur prédictive dans les études, puis réglé espèce par espèce sur des récoltes réelles (plus bas) : un poids de 1 peut annuler l'indice, un poids de 0,3 ne fait que le moduler.</p>
       <ul>
-        <li><b>Déclenchement</b> : pluie sur 7 jours rapportée au besoin de l'espèce, combinée à un choc thermique (chute du sol ≥ 4 °C ou 3 jours froids). Le choc compte beaucoup pour les cèpes de Bordeaux et des pins, peu pour les autres espèces.</li>
+        <li><b>Déclenchement</b> : pluie des derniers jours (5 à 14 jours selon l'espèce) rapportée au besoin de l'espèce. Le choc thermique des cueilleurs (chute du sol ≥ 4 °C ou 3 jours froids) ne compte plus pour les cèpes de Bordeaux, des pins et d'été : il ne prévoyait pas mieux leurs poussées. Il module encore un peu l'indice des trois autres espèces.</li>
         <li><b>Réserve du mycélium</b> : chaleur accumulée dans les semaines précédant le déclenchement.</li>
-        <li><b>Délai de sortie</b> : il dépend de l'espèce et s'allonge quand le sol est frais. La girolle et le pied de mouton, qui poussent lentement, restent plus longtemps en place.</li>
-        <li><b>Humidité maintenue</b> : réserve d'eau du sol. Elle vient d'Open-Meteo si la météo est réelle, sinon d'un bilan pluie − évaporation − drainage selon le type de sol.</li>
+        <li><b>Délai de sortie</b> : il dépend de l'espèce (environ 6 jours après la pluie pour la girolle, 8 à 17 jours pour les cèpes, 14 pour le pied de mouton) et s'allonge quand le sol est frais. La girolle et le pied de mouton restent plus longtemps en place.</li>
+        <li><b>Humidité du sol pendant la pousse</b> : la plus basse entre la pluie et le jour regardé. Un sol sec avant l'orage ne pénalise donc pas la poussée qui suit. Elle vient d'Open-Meteo si la météo est réelle, sinon d'un bilan pluie − évaporation − drainage selon le type de sol.</li>
         <li><b>Bilan hydrique du mois</b> : pluie moins évaporation sur les 30 derniers jours.</li>
         <li><b>Mémoire de l'été</b> : bilan hydrique des deux mois précédents (J-90 à J-31). Une fin d'été sèche affaiblit la poussée d'automne.</li>
-        <li><b>Température</b> : moyenne de l'air sur 5 jours, en cloche autour de l'optimum de l'espèce (13,2 °C pour le cèpe de Bordeaux).</li>
+        <li><b>Température</b> : moyenne de l'air sur 5 jours, en cloche autour de l'optimum de l'espèce (14,7 °C pour le cèpe de Bordeaux).</li>
       </ul>
       <div class="ttl" style="margin-top:12px">Indices ajoutés (absents de Cépio)</div>
       <ul>
@@ -962,25 +986,40 @@ th:first-child,td:first-child{text-align:left}
         <li><b>Exposition</b> : un versant nord est plus frais et plus humide, un versant sud plus chaud et plus sec.</li>
         <li><b>Carte en dégradé</b> : l'indice de chaque hexagone (0–100) est l'indice météo de l'espèce multiplié par la part d'arbres hôtes de l'espèce (pleine valeur dès 50 %), le pH et la pente. Altitude, versant et texture du sol corrigent la météo.</li>
         <li><b>Gel</b> : il détruit les carpophores. Le pied de mouton supporte de petites gelées.</li>
-        <li><b>Redoux</b> : une remontée au-dessus de la plage de l'espèce juste après le choc casse la pousse.</li>
+        <li><b>Redoux</b> : une remontée au-dessus de la plage de l'espèce juste après la pluie déclenchante casse la pousse (cèpes de Bordeaux et des pins).</li>
       </ul>
       <p class="note">La lune n'est pas prise en compte : aucune étude sérieuse ne montre d'effet. L'habitat compte aussi (arbres hôtes, sol acide ou calcaire, coupes récentes) : c'est le choix de tes coins qui le prend en compte.</p>
-      <div class="ttl" style="margin-top:12px">Calibration sur des récoltes réelles</div>
-      <p>Le modèle a été calculé aux dates et lieux de 50 observations GBIF par espèce (Europe tempérée, 2018-2025, météo ERA5), et au même endroit 45 jours plus tôt. L'échelle est réglée pour qu'un jour de récolte réel typique vaille <b>55/100</b>. Capacité à distinguer le jour de récolte du jour témoin (0,5 = hasard, 1 = parfait) : cèpe de Bordeaux 0,86, cèpe d'été 0,86, cèpe bronzé 0,84, cèpe des pins 0,72, girolle 0,67, pied de mouton 0,58. Pour la girolle et le pied de mouton, à la saison longue, l'indice reste peu fiable. La « période réfractaire » des repères de cueilleurs a été retirée : l'indice prédit mieux sans elle pour les six espèces.</p>
+      <div class="ttl" style="margin-top:12px">Réglé sur des récoltes réelles</div>
+      <p>Chaque espèce a été réglée sur 69 à 80 observations réelles (GBIF, Europe tempérée, 2018-2025). Pour chacune, on calcule l'indice de tous les jours de la saison au même endroit, et on regarde si le jour de la trouvaille sort du lot. Pour ne pas « apprendre par cœur » ces observations, les réglages sont cherchés sur deux tiers des années et vérifiés sur le tiers restant ; un changement n'est gardé que s'il améliore la prévision sur ces années mises de côté.</p>
+      <p>Résultat, sur les années mises de côté : le jour d'une vraie trouvaille a un meilleur indice que <b>8 jours sur 10</b> de la saison pour les cèpes de Bordeaux, d'été et bronzé, <b>7 sur 10</b> pour le cèpe des pins et la girolle, <b>6 à 7 sur 10</b> pour le pied de mouton (5 sur 10 serait le hasard). Avant ce réglage : 7 à 8 sur 10 pour les cèpes, 6 à 7 pour la girolle et le cèpe des pins, 6 pour le pied de mouton.</p>
+      <p>Ce que le réglage a changé :</p>
+      <ul>
+        <li>La pluie des derniers jours devient indispensable pour les cèpes de Bordeaux, des pins et d'été et pour le pied de mouton. Il faut environ 45 mm en 5 jours pour une pleine poussée du cèpe de Bordeaux, 45 mm en 7 jours pour le cèpe d'été.</li>
+        <li>Le choc thermique ne compte plus pour ces trois cèpes (voir plus haut).</li>
+        <li>Optimum de température : 14,7 °C pour le cèpe de Bordeaux et 13,9 °C pour le cèpe des pins. L'étude allemande donnait 13,2 °C, mesurés en sous-bois ; la maille météo, à découvert, est sans doute un peu plus chaude.</li>
+        <li>La girolle sort environ 6 jours après la pluie, comme dans l'étude canadienne ; le cèpe des pins vers 17 jours.</li>
+        <li>Pour le cèpe de Bordeaux, l'humidité du sol calculée par Open-Meteo n'apporte rien une fois la pluie prise en compte : elle ne compte plus pour lui.</li>
+        <li>Pour le cèpe des pins et le pied de mouton, la météo explique moins bien les poussées : la saison pèse davantage.</li>
+      </ul>
+      <p class="note">Ces observations disent où et quand une espèce a été trouvée, pas en quelle quantité : le réglage améliore le moment de la poussée, pas l'estimation de l'abondance. C'est pourquoi l'eau du sol, liée à l'abondance dans les études, garde un poids minimal. Le cèpe bronzé garde ses réglages : l'ajustement ne faisait pas mieux sur les années mises de côté.</p>
+      <div class="ttl" style="margin-top:12px">Ce que veut dire chaque niveau</div>
+      <p>Sur ces observations, un jour de chaque niveau donne combien de fois plus (×) ou moins (÷) de chances de trouver qu'un jour ordinaire de la saison au même endroit :</p>
+      <div style="overflow-x:auto"><table class="sptab" id="liftTab" style="font-size:13px"></table></div>
       <div class="ttl" style="margin-top:12px">Poids des variables et études</div>
       <table class="sptab" style="font-size:13px"><tr><th>Variable</th><th>Poids</th><th>Appui</th></tr>
-        <tr><td>Bilan hydrique du mois</td><td>1</td><td>Meilleur prédicteur annuel du cèpe : pluie − évaporation de septembre-octobre, R² = 0,66 (Martínez-Peña 2003, pin sylvestre, Soria). La pluie agit avec un mois de décalage, l'humidité du sol le mois même (Karavani et al. 2018, Agric. For. Meteorol.). Les pics de récolte suivent la pluie de fin d'été et d'automne (Espagne, 2017).</td></tr>
-        <tr><td>Humidité du sol</td><td>1</td><td>Karavani et al. 2018.</td></tr>
-        <tr><td>Mémoire de l'été (J-90 à J-31)</td><td>0,5</td><td>La pluie de fin d'été et du début d'automne pèse le plus sur les records de récolte (Espagne, 2017) ; la température du sol d'août entre dans l'équation de Martínez-Peña 2003.</td></tr>
-        <tr><td>Température de l'air (5 jours)</td><td>0,8</td><td>Optimum à 13,2 °C, aucun cèpe au-dessus de 17,5 °C par temps sec ; la température contraint plus que la pluie récente (Brejon Lamartinière &amp; Hoffman 2025, hêtraie, Allemagne, 10 ans, 1 905 cèpes, prépublication). Pour les autres espèces : température médiane des 5 jours précédant 160 observations GBIF chacune (Europe tempérée, 2018-2025), méthode qui redonne 13,3 °C pour le cèpe de Bordeaux : cèpe des pins 12,4 °C, pied de mouton 12,3 °C, girolle 15,3 °C, cèpe bronzé 16,8 °C, cèpe d'été 17,7 °C.</td></tr>
-        <tr><td>Pluie des 7 derniers jours</td><td>0,6</td><td>Effet positif et linéaire mais faible à court terme (même étude) ; pluie de la semaine précédente pour la girolle (Botany 2011, Canada).</td></tr>
+        <tr><td>Bilan hydrique du mois</td><td>0,4 (1 sans humidité du sol ; 0,2 : cèpe des pins, girolle, pied de mouton)</td><td>Meilleur prédicteur annuel du cèpe : pluie − évaporation de septembre-octobre, R² = 0,66 (Martínez-Peña 2003, pin sylvestre, Soria). La pluie agit avec un mois de décalage, l'humidité du sol le mois même (Karavani et al. 2018, Agric. For. Meteorol.). Les pics de récolte suivent la pluie de fin d'été et d'automne (Espagne, 2017).</td></tr>
+        <tr><td>Humidité du sol pendant la pousse</td><td>1 (0 : cèpe de Bordeaux)</td><td>Karavani et al. 2018.</td></tr>
+        <tr><td>Mémoire de l'été (J-90 à J-31)</td><td>0,5 (1 : girolle)</td><td>La pluie de fin d'été et du début d'automne pèse le plus sur les records de récolte (Espagne, 2017) ; la température du sol d'août entre dans l'équation de Martínez-Peña 2003.</td></tr>
+        <tr><td>Température de l'air (5 jours)</td><td>0,8 (0,3 : cèpe des pins)</td><td>Optimum à 13,2 °C, aucun cèpe au-dessus de 17,5 °C par temps sec ; la température contraint plus que la pluie récente (Brejon Lamartinière &amp; Hoffman 2025, hêtraie, Allemagne, 10 ans, 1 905 cèpes, prépublication). Pour les autres espèces : température médiane des 5 jours précédant 160 observations GBIF chacune (Europe tempérée, 2018-2025) : pied de mouton 12,3 °C, girolle 15,3 °C, cèpe bronzé 16,8 °C, cèpe d'été 17,7 °C. Après réglage sur les récoltes : cèpe de Bordeaux 14,7 °C, cèpe des pins 13,9 °C.</td></tr>
+        <tr><td>Pluie des derniers jours</td><td>0,6 (1 : cèpes de Bordeaux, des pins et d'été, pied de mouton)</td><td>Effet positif et linéaire mais faible à court terme (même étude) ; pluie de la semaine précédente pour la girolle (Botany 2011, Canada). Sur les récoltes réelles, elle départage mieux les jours d'une même saison que ne le laissait penser l'étude.</td></tr>
         <tr><td>Arbres hôtes</td><td>1</td><td>Champignons mycorhiziens : sans arbre hôte, pas de fructification.</td></tr>
         <tr><td>pH du sol</td><td>0,4</td><td>Cèpe et girolle sur sols acides (pH ≈ 4,2 ; Bohus 1973) ; pH et rapport C/N expliquent la richesse en champignons mycorhiziens (pin sylvestre, Espagne). Donnée SoilGrids lissée à 250 m.</td></tr>
         <tr><td>Pente</td><td>0,3</td><td>La production baisse avec la pente ; elle augmente avec l'altitude et l'exposition nord (Bonet et al. 2008, Pyrénées centrales).</td></tr>
-        <tr><td>Air sec, redoux</td><td>0,5</td><td>Repères de cueilleurs, sans étude chiffrée.</td></tr>
-        <tr><td>Gel, saison</td><td>1</td><td>Contraintes physiques et phénologiques. Saisons : moitié repères de cueilleurs, moitié répartition par mois des observations GBIF.</td></tr>
+        <tr><td>Air sec, redoux</td><td>0,5 (air sec 0 : cèpe d'été)</td><td>Repères de cueilleurs, sans étude chiffrée.</td></tr>
+        <tr><td>Gel</td><td>1</td><td>Le gel détruit les champignons.</td></tr>
+        <tr><td>Saison</td><td>0,3 (1 : cèpe des pins, pied de mouton ; 0,6 : cèpe d'été, girolle)</td><td>Moitié repères de cueilleurs, moitié répartition par mois des observations GBIF.</td></tr>
       </table>
-      <p class="note">Ces études portent surtout sur le cèpe de Bordeaux, en pinède espagnole ou en hêtraie allemande. Pour les autres espèces, les optimums de température et les préférences de sol restent des estimations. Les poids traduisent l'ordre d'importance trouvé dans ces travaux, pas un ajustement statistique sur des cueillettes : c'est un outil pour comprendre et explorer, pas une garantie.</p>
+      <p class="note">Ces études portent surtout sur le cèpe de Bordeaux, en pinède espagnole ou en hêtraie allemande. Les poids de départ traduisent l'ordre d'importance trouvé dans ces travaux ; ils ont ensuite été réglés espèce par espèce sur des récoltes réelles. C'est un outil pour comprendre et explorer, pas une garantie.</p>
       <div class="ttl" style="margin-top:12px">Données</div>
       <p class="note">Météo : Open-Meteo (CC BY 4.0), 92 jours passés (32 affichés) et 7 jours de prévision, avec température et humidité du sol modélisées. Cartes, altitude et BD Forêt : Géoplateforme IGN, licence ouverte Etalab 2.0. Sols : SoilGrids (ISRIC, CC BY 4.0). Forêts publiques : ONF, via la Géoplateforme. Coupes récentes : cellules boisées dans la BD Forêt mais absentes du masque forestier IGN 2021-2023 (photos aériennes, détection automatique) ; un écart peut aussi venir d'une différence de cartographie. Routes : BD TOPO IGN (nature et accès en voiture légère). Tout est gardé sur ton téléphone. Rien n'est envoyé ailleurs, sauf les coordonnées demandées aux services météo et d'altitude.</p>
       <div class="row"><button class="btn" id="exportBtn">Copier mes coins (sauvegarde)</button><button class="btn" id="importBtn">Coller une sauvegarde</button></div>
@@ -1040,23 +1079,41 @@ const RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
 // méthode redonne 13,3 °C pour le cèpe de Bordeaux. season : moitié repères de cueilleurs, moitié part des observations
 // GBIF par mois (lissée sur ±1 mois), rapportée au mois le plus fréquent.
 // k : échelle de l'indice, fixée pour qu'un jour d'observation réelle (médiane) vaille ≈ 0,55.
+// wt, mp : poids (voir WEIGHTS) et constantes (voir MODEL) propres à l'espèce. Ils viennent d'un ajustement sur 69 à 80
+// récoltes réelles par espèce (GBIF, 2018-2025), validé sur des années mises de côté ; les changements qui n'apportaient
+// presque rien ont été écartés, et l'eau du sol, qui pèse sur l'abondance plus que sur le moment, garde un poids minimal.
+// Détail : docs/modele-2026-11.md. Le cèpe bronzé garde ses réglages : l'ajustement ne faisait pas mieux sur les années tests.
+// rel : fiabilité mesurée sur des années non utilisées pour l'ajustement (moyenne des AUC « saison » et « ±45 jours » :
+// ≥ 0,80 bonne, ≥ 0,68 moyenne, sinon faible). lift : pour chaque niveau (Rare, Limité, Modéré, Abondant), combien de fois
+// plus souvent un jour de ce niveau est un jour de trouvaille qu'un jour ordinaire de la saison (tools/calibration/banc2.mjs).
 const SP={
-  edulis:{n:"Cèpe de Bordeaux",topt:13.2,tsd:3.3,k:0.619,ts:[12,18],lag:12,need:30,w:.75,hot:true,frostT:0,win:6,humMin:.12,
-    season:{6:.21,7:.47,8:.71,9:1,10:.71,11:.33,12:.1}},
-  pino:{n:"Cèpe des pins",topt:12.4,tsd:3.7,k:0.308,ts:[8,15],lag:13,need:30,w:.75,hot:true,frostT:-1,win:6,humMin:.12,
-    season:{6:.13,7:.17,8:.47,9:.88,10:1,11:.69,12:.23}},
-  aest:{n:"Cèpe d'été",topt:17.7,tsd:3.4,k:0.642,ts:[15,22],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
-    season:{5:.31,6:.7,7:.8,8:1,9:.66,10:.34}},
-  aereus:{n:"Cèpe bronzé (tête de nègre)",topt:16.8,tsd:3.2,k:0.581,ts:[16,23],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
-    season:{6:.46,7:.75,8:.9,9:1,10:.87,11:.37}},
-  girolle:{n:"Girolle",topt:15.3,tsd:3.8,k:0.67,ts:[12,22],lag:10,need:25,w:.2,hot:false,frostT:-1,win:12,humMin:.22,
-    season:{5:.12,6:.68,7:1,8:.79,9:.68,10:.52,11:.24}},
-  pdm:{n:"Pied de mouton",topt:12.3,tsd:4.4,k:0.469,ts:[6,15],lag:12,need:25,w:.4,hot:false,frostT:-3,win:14,humMin:.15,
-    season:{1:.24,8:.48,9:.93,10:1,11:.87,12:.5}}
+  edulis:{n:"Cèpe de Bordeaux",topt:14.7,tsd:3.3,k:0.489,ts:[12,18],lag:12,need:45,w:0,hot:true,frostT:0,win:4,humMin:.12,
+    wt:{trig:1,hum:0},mp:{rw:5},
+    season:{6:.21,7:.47,8:.71,9:1,10:.71,11:.33,12:.1},
+    rel:["bonne","Sur des années non utilisées pour le régler, le jour d'une vraie trouvaille a un meilleur indice que 8 jours sur 10 de la saison."],lift:[.11,.68,2.9,6.4]},
+  pino:{n:"Cèpe des pins",topt:13.9,tsd:3.7,k:0.448,ts:[8,15],lag:17,need:30,w:0,hot:true,frostT:-1,win:6,humMin:.05,
+    wt:{trig:1,waterWithSoil:.2,temp:.3,season:1},mp:{rw:10},
+    season:{6:.13,7:.17,8:.47,9:.88,10:1,11:.69,12:.23},
+    rel:["moyenne","Sur des années non utilisées pour le régler, le jour d'une vraie trouvaille a un meilleur indice que 7 jours sur 10 de la saison. La météo explique moins bien ses poussées : le calendrier pèse davantage."],lift:[.49,.45,1.7,4]},
+  aest:{n:"Cèpe d'été",topt:17.7,tsd:6,k:0.662,ts:[15,22],lag:8,need:45,w:0,hot:false,frostT:0,win:9,humMin:.05,
+    wt:{trig:1,dry:0,season:.6},mp:{lagT:1},
+    season:{5:.31,6:.7,7:.8,8:1,9:.66,10:.34},
+    rel:["bonne","Sur des années non utilisées pour le régler, le jour d'une vraie trouvaille a un meilleur indice que 8 jours sur 10 de la saison."],lift:[.23,.43,2.3,11]},
+  aereus:{n:"Cèpe bronzé (tête de nègre)",topt:16.8,tsd:3.2,k:0.663,ts:[16,23],lag:9,need:25,w:.3,hot:false,frostT:0,win:6,humMin:.12,
+    season:{6:.46,7:.75,8:.9,9:1,10:.87,11:.37},
+    rel:["bonne","Sur des années non utilisées pour le régler, le jour d'une vraie trouvaille a un meilleur indice que 8 jours sur 10 de la saison."],lift:[.18,.96,2.4,6.4]},
+  girolle:{n:"Girolle",topt:15.3,tsd:4.5,k:0.685,ts:[12,22],lag:6,need:20,w:.2,hot:false,frostT:-1,win:12,humMin:.3,
+    wt:{waterWithSoil:.2,summer:1,season:.6},
+    season:{5:.12,6:.68,7:1,8:.79,9:.68,10:.52,11:.24},
+    rel:["moyenne","Sur des années non utilisées pour le régler, le jour d'une vraie trouvaille a un meilleur indice que 7 jours sur 10 de la saison. Elle reste longtemps en place, ce qui brouille le moment exact de la poussée."],lift:[.18,.86,1.8,2.7]},
+  pdm:{n:"Pied de mouton",topt:12.3,tsd:3.5,k:0.447,ts:[6,15],lag:14,need:25,w:.4,hot:false,frostT:-3,win:14,humMin:.05,
+    wt:{trig:1,waterWithSoil:.2,season:1},mp:{rw:14},
+    season:{1:.24,8:.48,9:.93,10:1,11:.87,12:.5},
+    rel:["faible","Sur des années non utilisées pour le régler, le jour d'une vraie trouvaille a un meilleur indice que 6 à 7 jours sur 10 seulement : saison longue, poussées étalées. L'indice repose surtout sur la saison."],lift:[.49,1.08,1.2,2.2]}
 };
 const SOIL={sable:{n:"Sableux / drainant",cap:45,dr:.25},limon:{n:"Limoneux / humifère",cap:85,dr:.12},argile:{n:"Argileux / lourd",cap:125,dr:.06}};
 const EXPO={plat:{n:"Plat / indifférent",dT:0,dH:1},nord:{n:"Versant nord",dT:-1,dH:1.12},sud:{n:"Versant sud",dT:1,dH:.88},est:{n:"Versant est",dT:-.3,dH:1.03},ouest:{n:"Versant ouest",dT:.3,dH:.97}};
-const LV=[{n:"Rare",c:"var(--l0)",hex:"#3168b5",e:"🌑"},{n:"Limité",c:"var(--l1)",hex:"#e8c22e",e:"🌱"},{n:"Modéré",c:"var(--l2)",hex:"#f08a24",e:"🍄"},{n:"Abondant",c:"var(--l3)",hex:"#c62a24",e:"🧺"}];
+const LV=[{n:"Rare",c:"var(--l0)",hex:"#3168b5",e:"🌑",act:"pas la peine d'y aller"},{n:"Limité",c:"var(--l1)",hex:"#e8c22e",e:"🌱",act:"quelques chances"},{n:"Modéré",c:"var(--l2)",hex:"#f08a24",e:"🍄",act:"ça vaut une sortie"},{n:"Abondant",c:"var(--l3)",hex:"#c62a24",e:"🧺",act:"à ne pas manquer"}];
 const lvl=s=>s>=.65?3:s>=.4?2:s>=.18?1:0;
 
 // ================= STOCKAGE =================
@@ -1194,16 +1251,18 @@ async function stats(){const s=await tStats();$("tileStat").textContent=`${s.n.t
 function isoDay(d){const z=new Date(d.getTime()-d.getTimezoneOffset()*60000);return z.toISOString().slice(0,10)}
 // 92 jours passés + 7 à venir en une requête : l'historique des prévisions d'Open-Meteo donne les mêmes valeurs que la
 // prévision pour les jours récents et à venir, alors que l'API de prévision ne remonte qu'à une cinquantaine de jours
-// (celle-ci reste le secours, sur 32 jours). Sol aussi à 9–27 cm ; pas de 6 h pour alléger la réponse (≈ 6 fois moins).
-const WX_VARS="daily=temperature_2m_max,temperature_2m_min,precipitation_sum&hourly=soil_temperature_6cm,soil_moisture_3_to_9cm,soil_moisture_9_to_27cm,relative_humidity_2m&temporal_resolution=hourly_6&timezone=Europe%2FParis";
+// (celle-ci reste le secours, sur 32 jours). Sol en couches 0–7 et 7–28 cm, celles d'ERA5 sur lesquelles le modèle a été
+// réglé : les deux services en donnent les mêmes valeurs, alors que les couches 3–9 et 9–27 cm, venues d'autres modèles,
+// s'en écartaient fortement par endroits (Limousin, 2025 : 0,45 contre 0,72). Pas de 6 h pour alléger la réponse.
+const WX_VARS="daily=temperature_2m_max,temperature_2m_min,precipitation_sum&hourly=soil_temperature_0_to_7cm,soil_moisture_0_to_7cm,soil_moisture_7_to_28cm,relative_humidity_2m&temporal_resolution=hourly_6&timezone=Europe%2FParis";
 async function fetchMeteo(lat,lon){ // lat, lon : listes « a,b,c » → une série journalière par point
   const day=k=>{const d=new Date();d.setDate(d.getDate()+k);return isoDay(d)};let j=null;
   try{const r=await tfetch(`https://historical-forecast-api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&${WX_VARS}&start_date=${day(-92)}&end_date=${day(7)}`,30000);if(r.ok)j=await r.json()}catch(e){}
   if(!j||j.error){const r=await tfetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&${WX_VARS}&past_days=32&forecast_days=8`,30000);if(!r.ok)throw new Error("météo");j=await r.json()}
   return(Array.isArray(j)?j:[j]).map(w=>{const N=w.daily.time.length,h=w.hourly,per=Math.round(h.time.length/N),
     avg=a=>Array.from({length:N},(_,d)=>{let s=0,c=0;for(let k=d*per;k<d*per+per&&k<a.length;k++)if(a[k]!=null){s+=a[k];c++}return c?+(s/c).toFixed(2):null});
-    return{t:Date.now(),elev:w.elevation,dates:w.daily.time,tmax:w.daily.temperature_2m_max,tmin:w.daily.temperature_2m_min,rain:w.daily.precipitation_sum.map(v=>v||0),
-      tsol:avg(h.soil_temperature_6cm),sm:avg(h.soil_moisture_3_to_9cm),sm2:avg(h.soil_moisture_9_to_27cm),rh:avg(h.relative_humidity_2m)}});
+    return{t:Date.now(),l07:1,elev:w.elevation,dates:w.daily.time,tmax:w.daily.temperature_2m_max,tmin:w.daily.temperature_2m_min,rain:w.daily.precipitation_sum.map(v=>v||0),
+      tsol:avg(h.soil_temperature_0_to_7cm),sm:avg(h.soil_moisture_0_to_7cm),sm2:avg(h.soil_moisture_7_to_28cm),rh:avg(h.relative_humidity_2m)}});
 }
 async function fetchWx(s){
   [wxCache[s.id]]=await fetchMeteo(s.lat.toFixed(4),s.lon.toFixed(4));saveWx();
@@ -1307,6 +1366,7 @@ function modelFor(source,spOverride){
   return compute(D,cfg);
 }
 // ---- poids de chaque variable, selon sa valeur prédictive dans les études (voir onglet Méthode) ----
+// Valeurs de départ, communes ; chaque espèce peut les remplacer (sp.wt) d'après les récoltes réelles.
 // Un facteur f (0–1) entre comme f^poids : poids 1 = peut annuler l'indice, poids 0,3 = ne fait que le moduler.
 const WEIGHTS={
   water:1,   // bilan hydrique (pluie − ETP) de septembre-octobre : meilleur prédicteur annuel du cèpe, R² = 0,66 (Martínez-Peña 2003, pin sylvestre, Soria) ;
@@ -1343,7 +1403,7 @@ function compute(D,cfg){
     const et=Math.max(0,.07*tmax[i])*(.4+.6*w/soil.cap);
     w=Math.min(soil.cap,Math.max(0,w+rain[i]*.9-et-soil.dr*Math.max(0,w-.55*soil.cap)));
     let h=w/soil.cap;
-    // humidité modélisée par Open-Meteo : moyenne de la surface (3–9 cm) et de la couche où vit le mycélium (9–27 cm)
+    // humidité modélisée par Open-Meteo : moyenne de la surface (0–7 cm) et de la couche où vit le mycélium (7–28 cm)
     const nsm=v=>Math.min(1,Math.max(0,(v-.08)/.3));
     if(D.sm&&D.sm[i]!=null){h=nsm(D.sm[i]);if(D.sm2&&D.sm2[i]!=null)h=(h+nsm(D.sm2[i]))/2}
     H.push(Math.min(1,h*expo.dH));
@@ -1400,17 +1460,17 @@ function compute(D,cfg){
     let best=0,bd=null,minH=1;const g=DAY[d];
     // déclenchements du plus récent au plus ancien : l'humidité minimale depuis le déclenchement se met à jour au passage
     for(let t=d;t>=Math.max(0,d-30);t--){
-      minH=Math.min(minH,H[t]);
+      const mH=t<d?minH:H[d];minH=Math.min(minH,H[t]); // humidité minimale pendant la pousse, après le jour de la pluie
       if(trig[t].v<.08||!g.f)continue;
       const e=Math.min(d,t+7),m=(tsP[e+1]-tsP[t])/(e-t+1);
       const lag=Math.round(Math.max(sp.lag-3,Math.min(sp.lag+5,sp.lag+(16-m)*MP.lagT)));
       const k=d-(t+lag);
       const shape=k<-2?0:k<0?.45:k<=sp.win?1-k*(.55/sp.win):0;
       if(!shape)continue;
-      const hum=Math.min(1,Math.max(0,(minH-sp.humMin)/.2));
+      const hum=Math.min(1,Math.max(0,(mH-sp.humMin)/.2));
       // produit pondéré : un facteur de poids 1 peut tout bloquer, un poids faible ne fait que moduler
       const sc=shape*fT[t]*pw(hum,W.hum)*fReb[t]*g.f;
-      if(sc>best){best=sc;bd={t,lag,k,hum,temp:g.temp,water:g.water,wb:wb[d],summer:summer[d],reb:REB[t],frost:g.frost,dry:g.dry,season:g.season,minH,tt:g.tt,v:g.v,tr:trig[t]}}
+      if(sc>best){best=sc;bd={t,lag,k,hum,temp:g.temp,water:g.water,wb:wb[d],summer:summer[d],reb:REB[t],frost:g.frost,dry:g.dry,season:g.season,minH:mH,tt:g.tt,v:g.v,tr:trig[t]}}
     }
     E.push(best);Ed.push(bd);
   }
@@ -1477,8 +1537,10 @@ const ok=b=>b?"✅":"❌";
 function subs(){
   const d=M.Ed[sel];const box=$("subs");
   if(!d){box.innerHTML=`<p class="note">Aucun déclenchement (pluie et choc) dans le mois précédent ne mène à une sortie ce jour-là.</p>`;return}
-  const items=[["Déclenchement (pluie × choc)",d.tr.rs*(M.sp.w*d.tr.sh+(1-M.sp.w))],["Réserve du mycélium",d.tr.pre],["Bilan hydrique du mois",d.water],["Mémoire de l'été (J-90 à J-31)",d.summer],["Humidité maintenue",d.hum],["Température de l'air (5 j)",d.temp],["Air sec (VPD) ★",d.dry],["Saison ★",d.season],["Redoux ★",d.reb],["Gel ★",d.frost]];
-  box.innerHTML=items.map(([n,v])=>`<div class="sub-i"><span class="nm">${n}</span><span class="bar"><i style="width:${Math.round(v*100)}%;background:${v<.5?"var(--tmax)":"var(--tsol)"}"></i></span><span class="pc">${Math.round(v*100)}%</span></div>`).join("")+`<p class="note" style="margin:6px 0 0">★ indices absents de Cépio. L'altitude et l'exposition corrigent directement les températures et l'humidité.</p>`;
+  const W=Object.assign({},WEIGHTS,M.sp.wt||{}),wW=M.D.sm&&M.D.sm.some(v=>v!=null)?W.waterWithSoil:W.water;
+  const items=[[M.sp.w?"Déclenchement (pluie × choc)":"Déclenchement (pluie)",d.tr.rs*(M.sp.w*d.tr.sh+(1-M.sp.w)),W.trig],["Réserve du mycélium",d.tr.pre,W.trig],["Bilan hydrique du mois",d.water,wW],["Mémoire de l'été (J-90 à J-31)",d.summer,W.summer],["Humidité du sol pendant la pousse",d.hum,W.hum],["Température de l'air (5 j)",d.temp,W.temp],["Air sec (VPD) ★",d.dry,W.dry],["Saison ★",d.season,W.season],["Redoux ★",d.reb,W.reb],["Gel ★",d.frost,W.frost]];
+  box.innerHTML=items.map(([n,v,w])=>w?`<div class="sub-i"><span class="nm">${n}</span><span class="bar"><i style="width:${Math.round(v*100)}%;background:${v<.5?"var(--tmax)":"var(--tsol)"}"></i></span><span class="pc">${Math.round(v*100)}%</span></div>`
+    :`<div class="sub-i"><span class="nm">${n}</span><span class="note" style="flex:1">ne compte pas pour cette espèce</span></div>`).join("")+`<p class="note" style="margin:6px 0 0">★ indices absents de Cépio. L'altitude et l'exposition corrigent directement les températures et l'humidité.</p>`;
 }
 function explain(){
   const i=sel,d=M.Ed[i],c=M.Cd[i],sp=M.sp;let h="";
@@ -1491,7 +1553,7 @@ function explain(){
   else if(c.stage===1)h+=`3 jours froids (${M.dateOf(c.c)}), mais pas plus de 15 mm de pluie dans les 5 jours suivants.`;
   else h+="pas d'épisode de 3 jours sous 12 °C avant ce jour.";
   h+=`</span></li><li><span>🟢</span><span><b>Modèle enrichi</b> ${pill(M.E[i])}</span></li>`;
-  if(d){h+=`<li><span>${ok(d.tr.rs>=.8)}</span><span>Pluie déclenchante : ${Math.round(d.tr.r3)} mm sur 7 jours jusqu'au ${M.dateOf(d.t)} (besoin ≈ ${sp.need} mm)</span></li>`;
+  if(d){h+=`<li><span>${ok(d.tr.rs>=.8)}</span><span>Pluie déclenchante : ${Math.round(d.tr.r3)} mm sur ${(sp.mp&&sp.mp.rw)||MODEL.rw} jours jusqu'au ${M.dateOf(d.t)} (besoin ≈ ${sp.need} mm)</span></li>`;
     h+=`<li><span>⏱️</span><span>Délai de sortie ≈ ${d.lag} jours → ${d.k<0?`pic dans ${-d.k} j`:d.k===0?"premier jour de sortie":`${d.k} j après le début de la sortie`}</span></li>`;
     h+=`<li><span>${ok(d.dry>=.7)}</span><span>Air : déficit de vapeur ${d.v.toFixed(2)} kPa ${d.v>1.2?"(air sec, les jeunes champignons sèchent)":"(correct)"}</span></li>`}
   $("why").innerHTML=h;
@@ -1657,8 +1719,8 @@ const saveHex=()=>LS.set("hexes",hexStore);
 const gKey=(la,lo)=>`${la.toFixed(3)},${lo.toFixed(3)}`;
 const gridStep=s=>s>=5?.1:s>=1?.05:.025; // pas de la grille météo (°) selon la taille d'hexagone (km²)
 async function fetchGrid(keys,onProg){
-  // à refaire : trop ancien (6 h), ou ancien format sans la couche de sol profonde (séries de 40 jours)
-  const todo=keys.filter(k=>{const p=hexStore.pts[k];return!p||!p.sm2||Date.now()-p.t>6*36e5});
+  // à refaire : trop ancien (6 h), ou ancien format (sans la couche de sol profonde, ou couches de sol d'avant ERA5)
+  const todo=keys.filter(k=>{const p=hexStore.pts[k];return!p||!p.sm2||!p.l07||Date.now()-p.t>6*36e5});
   for(let i=0;i<todo.length;i+=50){const part=todo.slice(i,i+50),la=part.map(k=>k.split(",")[0]).join(","),lo=part.map(k=>k.split(",")[1]).join(",");
     (await fetchMeteo(la,lo)).forEach((w,n)=>{hexStore.pts[part[n]]=w});
     onProg(Math.min(todo.length,i+50),todo.length)}
@@ -1891,11 +1953,15 @@ function drawHexes(){if(!hexLayer)return;hexLayer.clearLayers();if(labLayer)labL
     $("hexInfo").textContent=n?`${n} hexagones · moyenne ${Math.round(sum/n*100)} · max ${Math.round(best.v*100)}`:"pas de météo en cache";}
   legend(sp,mode);
 }
+// chances d'un jour « Abondant » par rapport à un jour ordinaire de la saison (moyenne des espèces pour l'indice moyen)
+const liftOf=sp=>{const v=sp===ALL?Object.values(SP).reduce((a,o)=>a+o.lift[3],0)/Object.keys(SP).length:SP[sp].lift[3];return Math.round(v)};
+function fmtLift(v){const f=x=>String(x<3?Math.round(x*10)/10:Math.round(x)).replace(".",",");return v>=.85&&v<=1.15?"≈ 1":v>1?"×"+f(v):"÷"+f(1/v)}
+$("liftTab").innerHTML="<tr><th>Espèce</th>"+LV.map(l=>`<th>${l.n}</th>`).join("")+"</tr>"+Object.values(SP).map(o=>`<tr><td>${o.n}</td>${o.lift.map(v=>`<td>${fmtLift(v)}</td>`).join("")}</tr>`).join("");
 function legend(sp,mode){
   if(!legendCtl){legendCtl=L.control({position:"topright"});legendCtl.onAdd=()=>{const d=L.DomUtil.create("div","grad-leg");d.id="gradLeg";return d};legendCtl.addTo(map)}
   const hm=typeof heatMode==="function"&&heatMode(),has=hm?!!heatOverlay:Object.keys(hexStore.hex).length>0;const d=document.getElementById("gradLeg");if(!d)return;
   d.style.display=has?"":"none";
-  d.innerHTML=`<b>Indice de pousse</b> · ${spName(sp)}<br><span style="color:var(--text2)">${MODE_LAB[mode]}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div style="color:var(--text2);margin-top:2px">Rare &lt; 18 · Limité &lt; 40 · Modéré &lt; 65 · Abondant</div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> ${hm?`<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3c3c3c;vertical-align:middle;margin-left:-14px"></span> coupe récente · incolore : hors forêt ou &gt; ${ALT_MAX} m`:`écarté : sans forêt, &gt; ${ALT_MAX} m ou bord de mer`}</div>`;
+  d.innerHTML=`<b>Indice de pousse</b> · ${spName(sp)}<br><span style="color:var(--text2)">${MODE_LAB[mode]}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div style="color:var(--text2);margin-top:2px">Rare &lt; 18 · Limité &lt; 40 · Modéré &lt; 65 · Abondant</div><div style="color:var(--text2)">Abondant : ≈ ${liftOf(sp)} fois plus de chances qu'un jour ordinaire</div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> ${hm?`<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3c3c3c;vertical-align:middle;margin-left:-14px"></span> coupe récente · incolore : hors forêt ou &gt; ${ALT_MAX} m`:`écarté : sans forêt, &gt; ${ALT_MAX} m ou bord de mer`}</div>`;
 }
 function hexPopup(h,p){const sp=$("hSp").value,sc=hexScore(h.id,sp,"fc"),now=hexScore(h.id,sp,"now"),m=sc&&sc.m,i=m?m.today:0;
   let r7=0;if(m)for(let d=Math.max(0,i-7);d<i;d++)r7+=m.rain[d];
@@ -1979,6 +2045,7 @@ function bestHexes(){
     d.onclick=()=>goHex(h);
     const b=d.querySelector("button");if(b)b.onclick=async e=>{e.stopPropagation();if(await refineHex(h))bestHexes()};
     box.appendChild(d)});
+  bestSummary(top[0]&&{v:top[0].ix.v,d:top[0].d,dx:top[0].dx,dy:top[0].dy,desc:`${versant(top[0].h)?"versant "+versant(top[0].h)+", ":""}${top[0].h.trees&&Object.keys(top[0].h.trees).length?TREE_N[Object.entries(top[0].h.trees).sort((x,y)=>y[1]-x[1])[0][0]]+", ":""}${Math.round(top[0].h.alt)} m`});
   bestTop=top;autoRefineTop();
 }
 // affinage automatique : les hexagones du top 10 plus grands que 0,5 km² sont réanalysés en 0,5 km² (une seule analyse
@@ -2093,7 +2160,7 @@ function heatRender(env,res){
 // affiche une carte calculée (en direct ou enregistrée : elle reste visible hors ligne)
 function heatShow(sv){
   // l'espèce et la période affichées sont celles de la carte montrée (utile au rechargement)
-  if(sv.sp){$("hSp").value=sv.sp;$("bSp").value=sv.sp}
+  if(sv.sp){$("hSp").value=sv.sp;$("bSp").value=sv.sp;$("cSp").value=sv.sp;showRel(sv.sp)}
   if(sv.mode&&sv.mode!==hMode){hMode=sv.mode;LS.set("hMode",hMode);document.querySelectorAll("#hMode .chip").forEach(b=>b.classList.toggle("on",b.dataset.m===hMode))}
   if(!map.getPane("heatPane")){const hp=map.createPane("heatPane");hp.style.zIndex=395;hp.style.opacity=.75}
   if(heatOverlay)map.removeLayer(heatOverlay);heatOverlay=L.imageOverlay(sv.url,[[sv.bb[1],sv.bb[0]],[sv.bb[3],sv.bb[2]]],{pane:"heatPane"}).addTo(map);
@@ -2104,9 +2171,10 @@ function heatShow(sv){
   $("hMsg").textContent=sv.msg+(Date.now()-sv.t>36e5?` Calculée ${ageTxt(sv.t)}.`:"");
   const box=$("hList");box.innerHTML=sv.zones.length?"":'<p class="note">Aucune zone au-dessus du seuil.</p>';
   sv.zones.forEach((z,n)=>{const d=document.createElement("div");d.className="spot";
-    d.innerHTML=`<span class="dot" style="background:${gradColor(z.v)}"></span><div><b>${n+1}. ${Math.round(z.v*100)}/100 · ${z.ha<10?z.ha.toFixed(1).replace(".",","):Math.round(z.ha)} ha</b><small>${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} ${compass(z.dx,z.dy)} · ${Math.round(z.alt)} m · versant ${azName(z.az)} · ${TREE_N[z.ess]||z.ess} · ${PUB_N[z.pub||0]}</small></div><button class="btn" style="padding:6px 9px" aria-label="Relief et versants de la zone ${n+1}" title="Relief et versants">⛰</button>`;
+    d.innerHTML=`<span class="dot" style="background:${gradColor(z.v)}"></span><div><b>${n+1}. ${Math.round(z.v*100)}/100 · ${LV[lvl(z.v)].act}</b> <span class="note">${z.ha<10?z.ha.toFixed(1).replace(".",","):Math.round(z.ha)} ha</span><small>${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} ${compass(z.dx,z.dy)} · ${Math.round(z.alt)} m · versant ${azName(z.az)} · ${TREE_N[z.ess]||z.ess} · ${PUB_N[z.pub||0]}</small></div><button class="btn" style="padding:6px 9px" aria-label="Relief et versants de la zone ${n+1}" title="Relief et versants">⛰</button>`;
     d.querySelector("button").onclick=e=>{e.stopPropagation();openReliefAt(z.la,z.lo)};
     d.onclick=()=>{$("map").scrollIntoView({behavior:RM?"auto":"smooth",block:"center"});map.setView([z.la,z.lo],15);heatPopup(L.latLng(z.la,z.lo))};box.appendChild(d)});
+  bestSummary(sv.zones[0]&&{...sv.zones[0],desc:`versant ${azName(sv.zones[0].az)}, ${TREE_N[sv.zones[0].ess]||sv.zones[0].ess}, ${Math.round(sv.zones[0].alt)} m`});
   legend($("hSp").value,hMode);
 }
 async function heatRun(center,R){
@@ -2145,7 +2213,7 @@ function setViewMode(v){LS.set("viewMode",v);
   document.querySelectorAll("#vChips .chip").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
   document.querySelectorAll(".hexOnly").forEach(e=>e.style.display=v==="heat"?"none":"");
   document.querySelectorAll(".heatOnly").forEach(e=>e.style.display=v==="heat"?"":"none");
-  $("bTitle").textContent=v==="heat"?"Zones chaudes autour d'un point":"Meilleurs hexagones autour d'un point";
+  $("bTitle").textContent=v==="heat"?"③ Les meilleurs coins":"③ Les meilleurs hexagones";
   if(v==="heat"){map.getPane("hexPane").style.display="none";labLayer.clearLayers();gridLayer.clearLayers();if(bestLayer)bestLayer.clearLayers();
     const sv=LS.get("heat",null);if(sv&&!heatOverlay)heatShow(sv);else if(heatOverlay&&!map.hasLayer(heatOverlay))heatOverlay.addTo(map),heatLayer.addTo(map)}
   else{if(heatOverlay)map.removeLayer(heatOverlay);if(heatLayer)map.removeLayer(heatLayer);heatOverlay=null;heatLayer=null;
@@ -2327,9 +2395,29 @@ $("bRad").onchange=()=>{if(bestCenter)bestHexes()};
 $("hexBtn").onclick=()=>analyseHex();
 $("hexClear").onclick=()=>{hexStore={hex:{},pts:hexStore.pts};saveHex();drawHexes();drawGrid();$("hexSteps").innerHTML="";if(bestLayer)bestLayer.clearLayers();$("bList").innerHTML=""};
 // le champignon du classement et celui de la carte restent les mêmes : changer l'un change l'autre
-const setSp=v=>{$("hSp").value=v;$("bSp").value=v;if(heatMode()){heatRescore();legend(v,hMode);return}drawHexes();if(bestCenter)bestHexes()};
+const setSp=v=>{$("hSp").value=v;$("bSp").value=v;$("cSp").value=v;showRel(v);if(heatMode()){heatRescore();legend(v,hMode);return}drawHexes();if(bestCenter)bestHexes()};
 $("hSp").onchange=()=>setSp($("hSp").value);$("bSp").onchange=()=>setSp($("bSp").value);
-$("hMode").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{hMode=b.dataset.m;LS.set("hMode",hMode);drawHexes();if(heatMode())heatRescore()});
+$("hMode").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{hMode=b.dataset.m;LS.set("hMode",hMode);drawHexes();if(heatMode())heatRescore();else if(bestCenter)bestHexes()});
+$("cSp").onchange=()=>setSp($("cSp").value);
+// fiabilité de l'indice pour l'espèce choisie (mesurée sur des récoltes réelles : voir l'onglet Méthode)
+function showRel(sp){const r=sp===ALL?null:SP[sp].rel;
+  $("cRel").innerHTML=sp===ALL?"Moyenne des six espèces : utile pour un repérage général.":r?`Fiabilité de l'indice pour cette espèce : <b>${r[0]}</b>. ${r[1]}`:""}
+// accueil au premier lancement
+if(!LS.get("introOk",false))$("intro").style.display="";
+$("introOk").onclick=()=>{LS.set("introOk",true);$("intro").style.display="none"};
+$("toMethod").onclick=()=>showView("v-info");
+// « Autour de moi » : meilleurs coins sur 5 km autour de la position
+$("nearBtn").onclick=()=>{if(!navigator.geolocation){$("qMsg").textContent="Localisation non disponible sur cet appareil.";return}
+  $("qMsg").textContent="Recherche de ta position…";
+  navigator.geolocation.getCurrentPosition(p=>{const c=[p.coords.latitude,p.coords.longitude];bestCenter=c;$("bCenter").value="gps";
+    $("qMsg").textContent="Position trouvée : calcul des meilleurs coins sur 5 km…";$("map").scrollIntoView({behavior:RM?"auto":"smooth",block:"center"});
+    if(heatMode())heatRun(c,5).then(()=>$("qMsg").textContent="✅ Meilleurs coins autour de toi (5 km) : voir ③.");else{map.setView(c,13);bestHexes()}},
+    e=>$("qMsg").textContent=e.code===1?"Position refusée : autorise la localisation pour ce site dans Chrome.":"Position indisponible (GPS ?).",
+    {enableHighAccuracy:true,timeout:20000,maximumAge:60000})};
+// phrase de synthèse en tête des meilleurs coins
+const WHEN={now:"aujourd'hui",tom:"demain",fc:"cette semaine"};
+function bestSummary(z){if(!z){$("bSum").textContent="Aucun coin ne se détache pour l'instant : conditions peu favorables.";return}
+  const l=LV[lvl(z.v)];$("bSum").innerHTML=`Meilleure chance ${WHEN[hMode]} : à ${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} vers le ${compass(z.dx,z.dy)}, ${z.desc} — <span class="lvl" style="background:${l.c};color:${lvl(z.v)>=3?"#fff":lvl(z.v)>=1?"#1a1a1a":"var(--text)"}">${Math.round(z.v*100)}/100 · ${l.act}</span>`}
 $("hSize").onchange=()=>{LS.set("hSize",$("hSize").value);drawGrid();drawHexes()};
 // taille d'hexagone de la dernière analyse, pour retrouver les hexagones enregistrés au rechargement
 $("hSize").value=LS.get("hSize",null)||(Object.values(hexStore.hex).pop()||{size:5}).size;
@@ -2346,7 +2434,7 @@ $("ioApply").onclick=()=>{try{const j=JSON.parse($("ioBox").value);if(Array.isAr
 for(const k in PRESETS){const b=document.createElement("button");b.className="chip";b.textContent=PRESETS[k].n;b.dataset.k=k;b.onclick=()=>{preset=k;PRESETS[k].f();$("simMonth").value=PRESETS[k].m;render()};$("presets").appendChild(b)}
 ["Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].forEach((n,i)=>$("simMonth").add(new Option(n,i+5)));
 $("simMonth").value=Math.min(12,Math.max(5,new Date().getMonth()+1));
-fillSelect($("sp"),SP);fillSelect($("hSp"),SP);$("hSp").add(new Option(spName(ALL),ALL));fillSelect($("bSp"),SP);$("bSp").add(new Option(spName(ALL),ALL));fillSelect($("fSp"),SP);fillSelect($("soil"),SOIL);fillSelect($("fSoil"),SOIL);fillSelect($("expo"),EXPO);fillSelect($("fExpo"),EXPO);
+fillSelect($("sp"),SP);fillSelect($("hSp"),SP);$("hSp").add(new Option(spName(ALL),ALL));fillSelect($("bSp"),SP);$("bSp").add(new Option(spName(ALL),ALL));fillSelect($("cSp"),SP);$("cSp").add(new Option(spName(ALL),ALL));fillSelect($("fSp"),SP);fillSelect($("soil"),SOIL);fillSelect($("fSoil"),SOIL);fillSelect($("expo"),EXPO);fillSelect($("fExpo"),EXPO);
 $("soil").value="limon";
 PRESETS.automne.f();
 buildSrc();renderList();stats();

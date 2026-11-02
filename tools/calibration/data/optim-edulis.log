@@ -2,3 +2,7 @@ edulis 80 observations
   groupe 1 : actuel 0.796 → optimisé 0.814 (60 obs. mises de côté)
   groupe 2 : actuel 0.865 → optimisé 0.895 (10 obs. mises de côté)
   groupe 3 : actuel 0.729 → optimisé 0.678 (10 obs. mises de côté)
+  tour 1 : 0.839
+  tour 2 : 0.842
+  tour 3 : 0.842
+  validation croisée : actuel 0.797 → optimisé 0.807 (adopté)

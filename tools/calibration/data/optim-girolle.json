@@ -1,0 +1,78 @@
+{
+ "girolle": {
+  "n": 80,
+  "cvActuel": 0.659,
+  "cvOptimise": 0.698,
+  "adopte": true,
+  "toutesActuel": 0.659,
+  "toutesOptimise": 0.753,
+  "changements": {
+   "tsd": [
+    3.8,
+    4.5
+   ],
+   "lag": [
+    10,
+    6
+   ],
+   "need": [
+    25,
+    20
+   ],
+   "win": [
+    12,
+    4
+   ],
+   "humMin": [
+    0.22,
+    0.3
+   ],
+   "wt.waterWithSoil": [
+    0.4,
+    0
+   ],
+   "wt.summer": [
+    0.5,
+    1
+   ],
+   "wt.temp": [
+    0.8,
+    0.6
+   ],
+   "wt.season": [
+    0.3,
+    0.6
+   ]
+  },
+  "reglages": {
+   "topt": 15.3,
+   "tsd": 4.5,
+   "lag": 6,
+   "need": 20,
+   "win": 4,
+   "w": 0.2,
+   "humMin": 0.3,
+   "wt": {
+    "water": 1,
+    "waterWithSoil": 0,
+    "hum": 1,
+    "summer": 1,
+    "temp": 0.6,
+    "trig": 0.6,
+    "dry": 0.5,
+    "reb": 0.5,
+    "frost": 1,
+    "season": 0.6,
+    "ph": 0.4,
+    "slope": 0.3
+   },
+   "mp": {
+    "rw": 7,
+    "choc": 4,
+    "pet": 0.05,
+    "lagT": 0.5
+   }
+  },
+  "minutes": 6.4
+ }
+}

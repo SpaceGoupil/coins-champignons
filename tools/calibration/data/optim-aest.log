@@ -1,3 +1,8 @@
 aest 74 observations
   groupe 1 : actuel 0.752 → optimisé 0.768 (25 obs. mises de côté)
   groupe 2 : actuel 0.776 → optimisé 0.803 (30 obs. mises de côté)
+  groupe 3 : actuel 0.836 → optimisé 0.921 (19 obs. mises de côté)
+  tour 1 : 0.851
+  tour 2 : 0.856
+  tour 3 : 0.856
+  validation croisée : actuel 0.783 → optimisé 0.822 (adopté)

@@ -1,0 +1,123 @@
+{
+ "edulis": {
+  "actuel": 0.797,
+  "optimise": 0.842,
+  "cv": [
+   0.797,
+   0.807
+  ],
+  "adopte": true,
+  "contrib": {
+   "topt": 0.014,
+   "need": 0.007,
+   "win": 0.004,
+   "w": 0.006,
+   "humMin": 0,
+   "wt.trig": 0.01,
+   "wt.hum": 0.008,
+   "wt.dry": 0.002,
+   "mp.rw": 0.004
+  }
+ },
+ "pino": {
+  "actuel": 0.669,
+  "optimise": 0.757,
+  "cv": [
+   0.669,
+   0.691
+  ],
+  "adopte": true,
+  "contrib": {
+   "topt": 0.014,
+   "tsd": 0.001,
+   "lag": 0.011,
+   "win": 0.002,
+   "w": 0.014,
+   "humMin": 0.019,
+   "wt.trig": 0.008,
+   "wt.waterWithSoil": 0.005,
+   "wt.temp": 0.012,
+   "wt.dry": 0,
+   "wt.season": 0.016,
+   "mp.rw": 0.009
+  }
+ },
+ "aest": {
+  "actuel": 0.783,
+  "optimise": 0.856,
+  "cv": [
+   0.783,
+   0.822
+  ],
+  "adopte": true,
+  "contrib": {
+   "tsd": 0.018,
+   "lag": 0.007,
+   "need": 0.03,
+   "win": 0.003,
+   "w": 0.014,
+   "humMin": 0,
+   "wt.trig": 0.01,
+   "wt.hum": 0.002,
+   "wt.dry": 0.004,
+   "wt.season": 0.005,
+   "mp.lagT": 0.013
+  }
+ },
+ "aereus": {
+  "actuel": 0.833,
+  "optimise": 0.856,
+  "cv": [
+   0.833,
+   0.829
+  ],
+  "adopte": false,
+  "contrib": {
+   "topt": 0.002,
+   "tsd": 0.008,
+   "lag": 0.007,
+   "need": 0.007,
+   "win": 0.005
+  }
+ },
+ "girolle": {
+  "actuel": 0.659,
+  "optimise": 0.753,
+  "cv": [
+   0.659,
+   0.698
+  ],
+  "adopte": true,
+  "contrib": {
+   "tsd": 0.005,
+   "lag": 0.081,
+   "need": 0.006,
+   "win": 0.004,
+   "humMin": 0.007,
+   "wt.waterWithSoil": 0.005,
+   "wt.summer": 0.003,
+   "wt.temp": 0.002,
+   "wt.season": 0.007
+  }
+ },
+ "pdm": {
+  "actuel": 0.614,
+  "optimise": 0.691,
+  "cv": [
+   0.614,
+   0.654
+  ],
+  "adopte": true,
+  "contrib": {
+   "tsd": 0.004,
+   "lag": 0.003,
+   "need": 0.002,
+   "humMin": 0.01,
+   "wt.trig": 0.006,
+   "wt.waterWithSoil": 0.004,
+   "wt.season": 0.02,
+   "mp.rw": 0.013,
+   "mp.lagT": 0.001
+  }
+ }
+}
