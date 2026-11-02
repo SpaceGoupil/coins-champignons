@@ -674,7 +674,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 :root{
   color-scheme:light;
   --bg:#f6f5f1; --surface:#fcfcfb; --line:#e3e1da; --grid:#ecebe5;
-  --text:#0b0b0b; --text2:#52514e; --muted:#85837c;
+  --text:#0b0b0b; --text2:#52514e; --muted:#67655e;
   --tmax:#eb6834; --tmin:#2a78d6; --tsol:#1baf7a; --rain:#2a78d6;
   --l0:#cfe0f3; --l1:#ffe25c; --l2:#fda034; --l3:#c62a24;
   --accent:#7a4a22; --fc:rgba(122,74,34,.07); --sel:#0b0b0b; --warn:#b45309;
@@ -699,9 +699,9 @@ h1{font-size:20px;margin:4px 0 2px;letter-spacing:-.01em}
 .row>label{flex:1 1 140px;font-size:12px;color:var(--text2);display:flex;flex-direction:column;gap:4px}
 select,input[type=text],input[type=number]{font:inherit;font-size:15px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);width:100%}
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
-.chip{flex:0 0 auto;font:inherit;font-size:13px;padding:7px 11px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer}
+.chip{flex:0 0 auto;font:inherit;font-size:13px;padding:7px 12px;min-height:44px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer}
 .chip.on{background:var(--text);color:var(--surface);border-color:var(--text)}
-.btn{font:inherit;font-size:14px;padding:9px 13px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer}
+.btn{font:inherit;font-size:14px;padding:9px 13px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn:disabled{opacity:.5}
 .hero{display:flex;gap:12px;align-items:center}
@@ -752,6 +752,8 @@ th:first-child,td:first-child{text-align:left}
 .sheet.on{display:flex}
 .rleg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--text2);margin:6px 2px 0}
 .rleg span{display:flex;align-items:center;gap:5px}.rleg i{display:inline-block;width:22px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 .sheet .in{background:var(--surface);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:16px;max-height:88vh;overflow:auto}
 .leaflet-container{font:inherit}
 .grad-leg{background:var(--surface);color:var(--text);border-radius:10px;padding:6px 8px;font-size:11px;box-shadow:0 1px 5px rgba(0,0,0,.25);min-width:150px}
@@ -782,14 +784,14 @@ th:first-child,td:first-child{text-align:left}
     <div class="card">
       <div class="ttl">Zone cible <small>forêt, commune, lieu-dit…</small></div>
       <form id="qForm" class="row" style="gap:6px;flex-wrap:nowrap" autocomplete="off">
-        <div class="search" style="flex:1;min-width:0"><span class="ico">🔍</span><input type="search" id="q" placeholder="Ville, forêt, lieu-dit…" enterkeyhint="go"></div>
+        <div class="search" style="flex:1;min-width:0"><span class="ico">🔍</span><input type="search" id="q" placeholder="Ville, forêt, lieu-dit…" enterkeyhint="go" aria-label="Lieu à chercher (ville, forêt, lieu-dit)"></div>
         <button class="btn pri" type="submit" id="qOk" style="flex:0 0 auto">OK</button>
       </form>
       <div class="row" style="margin-top:8px"><label>Taille de la zone autour du lieu<select id="zSize"><option value="10">10 × 10 km</option><option value="25" selected>25 × 25 km</option><option value="50">50 × 50 km</option></select></label></div>
-      <p class="note" id="qMsg" style="margin:6px 2px 0"></p>
+      <p class="note" id="qMsg" aria-live="polite" style="margin:6px 2px 0"></p>
       <div class="results" id="results"></div>
       <div id="zoneBox" style="display:none">
-        <ul class="steps" id="zoneSteps"></ul>
+        <ul class="steps" id="zoneSteps" aria-live="polite"></ul>
         <div class="prog" id="zoneProg"><i></i></div>
         <div id="zoneRes"></div>
       </div>
@@ -802,7 +804,7 @@ th:first-child,td:first-child{text-align:left}
         <button class="btn pri" id="addSpotBtn">＋ Ajouter un coin</button>
         <button class="btn" id="locBtn">◎ Ma position</button>
       </div>
-      <p class="note" id="mapHint" style="margin:6px 2px 0">Touche la carte après « Ajouter un coin » pour poser un repère.</p>
+      <p class="note" id="mapHint" aria-live="polite" style="margin:6px 2px 0">Touche la carte après « Ajouter un coin » pour poser un repère.</p>
     </div>
 
     <div class="card">
@@ -815,7 +817,7 @@ th:first-child,td:first-child{text-align:left}
         <div class="chips" id="hMode" style="margin-top:4px"><button class="chip" data-m="now">Aujourd'hui</button><button class="chip" data-m="tom">Demain</button><button class="chip" data-m="fc">Sur la semaine</button></div>
       </div>
       <div class="row hexOnly" style="margin-top:8px"><button class="btn pri" id="hexBtn">⬡ Analyser la zone affichée</button><button class="btn" id="hexClear">Effacer</button></div>
-      <ul class="steps" id="hexSteps"></ul>
+      <ul class="steps" id="hexSteps" aria-live="polite"></ul>
       <div class="prog" id="hexProg" style="display:none"><i></i></div>
       <p class="note" style="margin-bottom:0">Pour chaque hexagone : altitude moyenne, pente et versant (7 points IGN ; versant nord plus frais et humide, sud plus chaud et sec), part de forêt et essences (BD Forêt, 19 points) pondérées selon les arbres hôtes de chaque espèce, météo Météo-France (AROME, via Open-Meteo) moyennée entre les points voisins d'une grille de 0,1° à 0,025° selon la taille des hexagones, corrigée de l'altitude. Restent en gris et hors classement : les hexagones sans forêt (villes, cultures, estives), au-dessus de 2 000 m, et en bord de mer ou hors de France. Touche un hexagone pour le détail, ou pour l'<b>affiner</b> en hexagones plus petits : altitude et forêt plus précises (la météo reste celle de la grille de 0,1°). Les hexagones fins s'affichent par-dessus les grands.</p>
     </div>
@@ -830,7 +832,7 @@ th:first-child,td:first-child{text-align:left}
       <div class="row" style="margin-top:8px"><button class="btn pri" id="bGo">Chercher</button><button class="btn hexOnly" id="bAna">Analyser ce rayon</button></div>
       <label class="hexOnly" style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--text2)"><input type="checkbox" id="bAuto" checked> Affiner automatiquement le top 10 en 0,5 km²</label>
       <div class="row hexOnly" style="margin-top:8px"><button class="btn" id="bHeat">🌡 Passer à la carte continue</button></div>
-      <p class="note" id="hMsg" style="margin:6px 2px 0"></p>
+      <p class="note" id="hMsg" aria-live="polite" style="margin:6px 2px 0"></p>
       <div id="hList"></div>
       <p class="note" id="bMsg" style="margin:6px 2px 0">Classement selon le champignon choisi ici (le même que sur la carte) et la période choisie plus haut.</p>
       <div id="bList" class="hexOnly"></div>
@@ -988,18 +990,18 @@ th:first-child,td:first-child{text-align:left}
   </section>
 </div>
 
-<nav class="tabs">
-  <button data-v="v-map" class="on"><b>🗺️</b>Carte</button>
-  <button data-v="v-fc"><b>📈</b>Prévision</button>
-  <button data-v="v-info"><b>ℹ️</b>Méthode</button>
+<nav class="tabs" role="tablist" aria-label="Sections de l'app">
+  <button data-v="v-map" class="on" role="tab" aria-selected="true" aria-controls="v-map"><b aria-hidden="true">🗺️</b>Carte</button>
+  <button data-v="v-fc" role="tab" aria-selected="false" aria-controls="v-fc"><b aria-hidden="true">📈</b>Prévision</button>
+  <button data-v="v-info" role="tab" aria-selected="false" aria-controls="v-info"><b aria-hidden="true">ℹ️</b>Méthode</button>
 </nav>
 
-<div class="sheet" id="relSheet"><div class="in">
+<div class="sheet" id="relSheet" role="dialog" aria-modal="true" aria-labelledby="relTitle"><div class="in">
   <div class="ttl" style="font-size:16px"><span id="relTitle">Relief et versants</span><small id="relSub"></small></div>
   <div id="relBody"></div>
   <div class="row" style="margin-top:10px"><button class="btn" id="relClose">Fermer</button></div>
 </div></div>
-<div class="sheet" id="spotSheet"><div class="in">
+<div class="sheet" id="spotSheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><div class="in">
   <div class="ttl" style="font-size:16px"><span id="sheetTitle">Nouveau coin</span><small id="sheetCoords"></small></div>
   <div class="row" style="flex-direction:column">
     <label>Nom<input type="text" id="fName" placeholder="Ex. Chênaie du haut"></label>
@@ -1029,6 +1031,8 @@ th:first-child,td:first-child{text-align:left}
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
+// réglage « réduire les animations » du téléphone : carte et défilements sans animation
+const RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
 // ================= ESPÈCES / SOLS =================
 // topt, tsd : température de l'air (moyenne sur 5 jours) la plus favorable et largeur de la cloche. Cèpe de Bordeaux :
 // 13,2 °C (Brejon Lamartinière & Hoffman 2025). Autres espèces : médiane et écart type de la température des 5 jours
@@ -1108,7 +1112,7 @@ let hexLayer,hexRenderer,gridLayer,map,base,forestLayer,onfLayer,markers={},addM
 const ATTR='© <a href="https://geoservices.ign.fr">IGN</a> · Etalab 2.0';
 function initMap(){
   const v=LS.get("view",{c:[45.2,1.5],z:6});
-  map=L.map("map",{zoomControl:true,attributionControl:true,preferCanvas:true}).setView(v.c,v.z);
+  map=L.map("map",{zoomControl:true,attributionControl:true,preferCanvas:true,zoomAnimation:!RM,fadeAnimation:!RM,markerZoomAnimation:!RM}).setView(v.c,v.z);
   // hexagones peints opaques sur leur propre calque, la transparence est celle du calque entier : là où deux grilles de
   // tailles différentes se chevauchent (elles ne s'emboîtent pas), le plus fin recouvre le plus grand sans double teinte
   const hp=map.createPane("hexPane");hp.style.zIndex=390;hp.style.opacity=.72;hexRenderer=L.canvas({pane:"hexPane"});
@@ -1242,8 +1246,8 @@ function renderList(){
     const l=lvl(Math.max(0,b)),w=wxCache[s.id];
     const d=document.createElement("div");d.className="spot";
     d.innerHTML=`<span class="dot" style="background:${LV[l].hex}"></span><div style="${s.hidden?"opacity:.5":""}"><b>${s.zone?"▢ ":""}${esc(s.name)}</b><small>${s.hidden?"masquée · ":""}${SP[s.sp].n} · ${w?(l?`${LV[l].n} ${M.dateOf(bi)}`:"Rare cette semaine")+" · météo "+ageTxt(w.t):"pas encore de météo"}</small></div>`+
-      (s.zone&&s.bbox?`<button class="btn" data-a="eye" style="padding:6px 9px" title="Afficher ou masquer ses hexagones">${s.hidden?"🚫":"👁"}</button><button class="btn" data-a="only" style="padding:6px 9px">Seule</button>`:"")+
-      `<button class="btn" data-a="edit" style="padding:6px 10px">✎</button>`;
+      (s.zone&&s.bbox?`<button class="btn" data-a="eye" style="padding:6px 9px" aria-pressed="${!s.hidden}" aria-label="${s.hidden?"Afficher":"Masquer"} la zone ${esc(s.name)}" title="${s.hidden?"Afficher":"Masquer"} la zone">${s.hidden?"🚫":"👁"}</button><button class="btn" data-a="only" style="padding:6px 9px" aria-label="N'afficher que la zone ${esc(s.name)}">Seule</button>`:"")+
+      `<button class="btn" data-a="edit" style="padding:6px 10px" aria-label="Modifier ${esc(s.name)}" title="Modifier">✎</button>`;
     d.querySelectorAll("button").forEach(b=>b.onclick=e=>{e.stopPropagation();const a=b.dataset.a;
       if(a==="edit")return openSheet(s.id);
       if(a==="eye")s.hidden=!s.hidden;else spots.forEach(z=>{if(z.zone)z.hidden=z.id!==s.id});
@@ -1377,30 +1381,36 @@ function compute(D,cfg){
   // température de l'air moyenne des 5 derniers jours
   const t5=tm.map((_,d)=>{let s=0,c=0;for(let j=Math.max(0,d-4);j<=d;j++){s+=tm[j];c++}return s/c});
   const pw=(f,w)=>Math.pow(Math.max(0,Math.min(1,f)),w);
+  // facteurs qui ne dépendent que du jour d : calculés une fois par jour (et non pour chaque déclenchement possible)
+  const DAY=Array.from({length:N},(_,d)=>{
+    // température : courbe en cloche autour de l'optimum de l'espèce (air, moyenne sur 5 jours)
+    const tt=t5[d],temp=Math.exp(-(((tt-sp.topt)/(sp.tsd||3.5))**2)/2);
+    const water=Math.min(1,Math.max(0,(wb[d]+20)/60)); // −20 mm → 0, +40 mm → 1
+    let v=0,vn=0;for(let j=Math.max(0,d-3);j<=d;j++){v+=vpd[j];vn++}v/=vn;
+    const dry=Math.min(1,Math.max(.3,1-(v-.6)/1.4));
+    const frost=(tmin[d]<sp.frostT||(d&&tmin[d-1]<sp.frostT))?.15:1;
+    const season=seasonOf(D.dates[d]);
+    return{tt,temp,water,dry,frost,season,v,f:pw(water,wW)*pw(temp,W.temp)*pw(frost,W.frost)*pw(dry,W.dry)*pw(season,W.season)*pw(summer[d],W.summer)}});
+  // facteurs qui ne dépendent que du jour de déclenchement t
+  const tsP=[0];for(let i=0;i<N;i++)tsP.push(tsP[i]+ts[i]); // sommes cumulées de la température du sol
+  const REB=ts.map((_,t)=>{let mx=-99;for(let j=t+1;j<=Math.min(N-1,t+7);j++)mx=Math.max(mx,ts[j]);return sp.hot&&mx>sp.ts[1]+3?.4:1});
+  const fT=trig.map(o=>pw(o.v,W.trig)),fReb=REB.map(r=>pw(r,W.reb));
   const E=[],Ed=[];
   for(let d=0;d<N;d++){
-    let best=0,bd=null;
-    for(let t=Math.max(0,d-30);t<=d;t++){
-      if(trig[t].v<.08)continue;
-      let m=0,c=0;for(let k=t;k<=Math.min(d,t+7);k++){m+=ts[k];c++}m/=c;
+    let best=0,bd=null,minH=1;const g=DAY[d];
+    // déclenchements du plus récent au plus ancien : l'humidité minimale depuis le déclenchement se met à jour au passage
+    for(let t=d;t>=Math.max(0,d-30);t--){
+      minH=Math.min(minH,H[t]);
+      if(trig[t].v<.08||!g.f)continue;
+      const e=Math.min(d,t+7),m=(tsP[e+1]-tsP[t])/(e-t+1);
       const lag=Math.round(Math.max(sp.lag-3,Math.min(sp.lag+5,sp.lag+(16-m)*MP.lagT)));
       const k=d-(t+lag);
       const shape=k<-2?0:k<0?.45:k<=sp.win?1-k*(.55/sp.win):0;
       if(!shape)continue;
-      let minH=1;for(let j=t;j<=d;j++)minH=Math.min(minH,H[j]);
       const hum=Math.min(1,Math.max(0,(minH-sp.humMin)/.2));
-      // température : courbe en cloche autour de l'optimum de l'espèce (air, moyenne sur 5 jours)
-      const tt=t5[d],temp=Math.exp(-(((tt-sp.topt)/(sp.tsd||3.5))**2)/2);
-      const water=Math.min(1,Math.max(0,(wb[d]+20)/60)); // −20 mm → 0, +40 mm → 1
-      let mx=-99;for(let j=t+1;j<=Math.min(N-1,t+7);j++)mx=Math.max(mx,ts[j]);
-      const reb=sp.hot&&mx>sp.ts[1]+3?.4:1;
-      let v=0,vn=0;for(let j=Math.max(0,d-3);j<=d;j++){v+=vpd[j];vn++}v/=vn;
-      const dry=Math.min(1,Math.max(.3,1-(v-.6)/1.4));
-      const frost=(tmin[d]<sp.frostT||(d&&tmin[d-1]<sp.frostT))?.15:1;
-      const season=seasonOf(D.dates[d]);
       // produit pondéré : un facteur de poids 1 peut tout bloquer, un poids faible ne fait que moduler
-      const sc=shape*pw(trig[t].v,W.trig)*pw(water,wW)*pw(hum,W.hum)*pw(temp,W.temp)*pw(reb,W.reb)*pw(frost,W.frost)*pw(dry,W.dry)*pw(season,W.season)*pw(summer[d],W.summer);
-      if(sc>best){best=sc;bd={t,lag,k,hum,temp,water,wb:wb[d],summer:summer[d],reb,frost,dry,season,minH,tt,v,tr:trig[t]}}
+      const sc=shape*fT[t]*pw(hum,W.hum)*fReb[t]*g.f;
+      if(sc>best){best=sc;bd={t,lag,k,hum,temp:g.temp,water:g.water,wb:wb[d],summer:summer[d],reb:REB[t],frost:g.frost,dry:g.dry,season:g.season,minH,tt:g.tt,v:g.v,tr:trig[t]}}
     }
     E.push(best);Ed.push(bd);
   }
@@ -1588,7 +1598,7 @@ async function prepareZone(it){
   const list=bboxTiles(bb,["plan","forest"],9,zMax);msg.map=`Carte IGN hors ligne (détail jusqu'au zoom ${zMax} ; zoome puis « Enregistrer cette zone » pour plus de détail)`;
   const pMap=downloadTiles(list,(d,f,n)=>{bar.style.width=(d/n*100)+"%";paint({map:` · ${d}/${n}`})}).then(({done,fail})=>{st.map=fail===list.length?"❌":fail?"⚠️":"✅";paint({map:` · ${done-fail} tuiles`});stats()});
   await Promise.all([pAlt,pWx]);
-  refreshAllUI();renderZoneResult(s);$("zoneBox").scrollIntoView({behavior:"smooth",block:"start"});
+  refreshAllUI();renderZoneResult(s);$("zoneBox").scrollIntoView({behavior:RM?"auto":"smooth",block:"start"});
   if(heatMode()){const R=Math.min(15,Math.max((bb[2]-bb[0])*111.32*Math.cos(it.lat*Math.PI/180),(bb[3]-bb[1])*KY)/2);bestCenter=[it.lat,it.lon];
     await Promise.all([pMap,heatRun([it.lat,it.lon],R)]);
     $("qMsg").textContent=`✅ ${s.name} : carte continue prête (${Math.round(R)} km autour du lieu). Les zones chaudes sont sous la carte.`;return}
@@ -1885,7 +1895,7 @@ function legend(sp,mode){
   if(!legendCtl){legendCtl=L.control({position:"topright"});legendCtl.onAdd=()=>{const d=L.DomUtil.create("div","grad-leg");d.id="gradLeg";return d};legendCtl.addTo(map)}
   const hm=typeof heatMode==="function"&&heatMode(),has=hm?!!heatOverlay:Object.keys(hexStore.hex).length>0;const d=document.getElementById("gradLeg");if(!d)return;
   d.style.display=has?"":"none";
-  d.innerHTML=`<b>Indice de pousse</b> · ${spName(sp)}<br><span style="color:var(--text2)">${MODE_LAB[mode]}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> ${hm?`<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3c3c3c;vertical-align:middle;margin-left:-14px"></span> coupe récente · incolore : hors forêt ou &gt; ${ALT_MAX} m`:`écarté : sans forêt, &gt; ${ALT_MAX} m ou bord de mer`}</div>`;
+  d.innerHTML=`<b>Indice de pousse</b> · ${spName(sp)}<br><span style="color:var(--text2)">${MODE_LAB[mode]}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div style="color:var(--text2);margin-top:2px">Rare &lt; 18 · Limité &lt; 40 · Modéré &lt; 65 · Abondant</div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> ${hm?`<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3c3c3c;vertical-align:middle;margin-left:-14px"></span> coupe récente · incolore : hors forêt ou &gt; ${ALT_MAX} m`:`écarté : sans forêt, &gt; ${ALT_MAX} m ou bord de mer`}</div>`;
 }
 function hexPopup(h,p){const sp=$("hSp").value,sc=hexScore(h.id,sp,"fc"),now=hexScore(h.id,sp,"now"),m=sc&&sc.m,i=m?m.today:0;
   let r7=0;if(m)for(let d=Math.max(0,i-7);d<i;d++)r7+=m.rain[d];
@@ -2094,9 +2104,9 @@ function heatShow(sv){
   $("hMsg").textContent=sv.msg+(Date.now()-sv.t>36e5?` Calculée ${ageTxt(sv.t)}.`:"");
   const box=$("hList");box.innerHTML=sv.zones.length?"":'<p class="note">Aucune zone au-dessus du seuil.</p>';
   sv.zones.forEach((z,n)=>{const d=document.createElement("div");d.className="spot";
-    d.innerHTML=`<span class="dot" style="background:${gradColor(z.v)}"></span><div><b>${n+1}. ${Math.round(z.v*100)}/100 · ${z.ha<10?z.ha.toFixed(1).replace(".",","):Math.round(z.ha)} ha</b><small>${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} ${compass(z.dx,z.dy)} · ${Math.round(z.alt)} m · versant ${azName(z.az)} · ${TREE_N[z.ess]||z.ess} · ${PUB_N[z.pub||0]}</small></div><button class="btn" style="padding:6px 9px">⛰</button>`;
+    d.innerHTML=`<span class="dot" style="background:${gradColor(z.v)}"></span><div><b>${n+1}. ${Math.round(z.v*100)}/100 · ${z.ha<10?z.ha.toFixed(1).replace(".",","):Math.round(z.ha)} ha</b><small>${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} ${compass(z.dx,z.dy)} · ${Math.round(z.alt)} m · versant ${azName(z.az)} · ${TREE_N[z.ess]||z.ess} · ${PUB_N[z.pub||0]}</small></div><button class="btn" style="padding:6px 9px" aria-label="Relief et versants de la zone ${n+1}" title="Relief et versants">⛰</button>`;
     d.querySelector("button").onclick=e=>{e.stopPropagation();openReliefAt(z.la,z.lo)};
-    d.onclick=()=>{$("map").scrollIntoView({behavior:"smooth",block:"center"});map.setView([z.la,z.lo],15);heatPopup(L.latLng(z.la,z.lo))};box.appendChild(d)});
+    d.onclick=()=>{$("map").scrollIntoView({behavior:RM?"auto":"smooth",block:"center"});map.setView([z.la,z.lo],15);heatPopup(L.latLng(z.la,z.lo))};box.appendChild(d)});
   legend($("hSp").value,hMode);
 }
 async function heatRun(center,R){
@@ -2150,6 +2160,11 @@ $("bHeat").onclick=()=>{setViewMode("heat");$("bGo").onclick()};
 // puis indice de chaque cellule pour l'espèce choisie (météo de l'hexagone corrigée de l'altitude et du versant de la cellule).
 let relMark=null;
 let relMap=null,relWatch=null,relMe=null,relMeBig=null;
+// panneaux (boîtes de dialogue) : le focus y entre à l'ouverture, revient au bouton d'origine à la fermeture ; Échap ferme
+document.querySelectorAll(".sheet").forEach(sh=>{const inner=sh.querySelector(".in");inner.tabIndex=-1;let back=null;
+  new MutationObserver(()=>{if(sh.classList.contains("on")){if(!back){back=document.activeElement;setTimeout(()=>inner.focus(),0)}}
+    else if(back){const b=back;back=null;if(b&&b.focus&&document.contains(b))b.focus()}}).observe(sh,{attributes:true,attributeFilter:["class"]})});
+addEventListener("keydown",e=>{if(e.key!=="Escape")return;if($("relSheet").classList.contains("on"))$("relClose").click();else if($("spotSheet").classList.contains("on"))$("fCancel").click()});
 $("relClose").onclick=()=>{$("relSheet").classList.remove("on");if(relWatch!=null){navigator.geolocation.clearWatch(relWatch);relWatch=null}};
 // routes BD TOPO autour de l'hexagone (+ 600 m pour les accès) : nature et accès en voiture légère
 const PAVED=new Set(["Route à 1 chaussée","Route à 2 chaussées","Type autoroutier","Bretelle","Rond-point"]),TRACK=new Set(["Route empierrée","Chemin"]);
@@ -2260,11 +2275,11 @@ async function openRelief(h){
     <div class="ttl" style="margin-top:12px">Carte de l'hexagone <small>plan IGN · couleur = indice de la forêt</small></div>
     <div id="relMap" style="height:320px;border-radius:10px;border:1px solid var(--line);margin-top:4px"></div>
     <div class="rleg"><span><i style="background:#d7191c;height:4px"></i>route goudronnée</span><span><i style="border-top:3px dashed #f28c28"></i>piste ou chemin ouvert aux voitures</span><span><i style="border-top:2px dashed #7a7a7a"></i>accès réservé</span><span><i style="border-top:2px dotted #6b4a2b"></i>sentier (à pied)</span></div>
-    <p class="note" id="relRoads" style="margin:4px 2px">Routes (BD TOPO)…</p>
+    <p class="note" id="relRoads" aria-live="polite" style="margin:4px 2px">Routes (BD TOPO)…</p>
     ${best?`<p style="margin:8px 2px"><b>Meilleur endroit</b> (repère rouge) : ${fmt(best.s)}/100, versant ${best.c.vers}, ${Math.round(best.c.alt)} m, pente ${Math.round(best.c.slope)}°, ${TREE_N[best.c.cls]||best.c.cls}.</p>
-    <p id="relAccess" style="margin:4px 2px"></p>`:""}
+    <p id="relAccess" aria-live="polite" style="margin:4px 2px"></p>`:""}
     <div class="row" style="margin-top:6px"><button class="btn pri" id="relLoc">📍 Me localiser</button>${best?`<button class="btn" id="relGo">Voir sur la grande carte</button>`:""}</div>
-    <p id="relPos" class="note" style="margin:4px 2px"></p>
+    <p id="relPos" aria-live="polite" class="note" style="margin:4px 2px"></p>
     <p class="note">Relief au pas de ${Math.round(cell*1000)} m (RGE Alti) ; la météo est celle de l'hexagone, corrigée de l'altitude et du versant de chaque cellule.</p>`;
   // carte de l'hexagone : plan IGN, cellules en transparence, contour, meilleur endroit
   if(relMap){relMap.remove();relMap=null}
@@ -2276,12 +2291,12 @@ async function openRelief(h){
   relMap.fitBounds(L.latLngBounds(cs).pad(.05));setTimeout(()=>relMap.invalidateSize(),60);
   relRoads(h,cs,best,kx);
   $("relLoc").onclick=()=>relLocate(best);
-  if(best)$("relGo").onclick=()=>{$("relSheet").classList.remove("on");$("map").scrollIntoView({behavior:"smooth",block:"center"});map.setView([best.c.la,best.c.lo],16);
+  if(best)$("relGo").onclick=()=>{$("relSheet").classList.remove("on");$("map").scrollIntoView({behavior:RM?"auto":"smooth",block:"center"});map.setView([best.c.la,best.c.lo],16);
     if(relMark)map.removeLayer(relMark);relMark=L.circleMarker([best.c.la,best.c.lo],{radius:9,color:"#fff",weight:3,fillColor:"#b0161e",fillOpacity:1}).addTo(map)};
   }catch(e){say("Calcul impossible : "+e.message)}
 }
 
-function goHex(h){$("map").scrollIntoView({behavior:"smooth",block:"center"});
+function goHex(h){$("map").scrollIntoView({behavior:RM?"auto":"smooth",block:"center"});
   map.setView([h.lat,h.lon],Math.max(map.getZoom(),labZFor(h.size)),{animate:false});drawHexes();
   const p=hexPoly[h.id];if(p)hexPopup(h,p)}
 $("bGo").onclick=async()=>{$("bMsg").textContent="Recherche de la position…";
@@ -2320,7 +2335,7 @@ $("hSize").onchange=()=>{LS.set("hSize",$("hSize").value);drawGrid();drawHexes()
 $("hSize").value=LS.get("hSize",null)||(Object.values(hexStore.hex).pop()||{size:5}).size;
 
 // ================= ONGLETS / DIVERS =================
-function showView(v){document.querySelectorAll(".view").forEach(x=>x.classList.toggle("on",x.id===v));document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+function showView(v){document.querySelectorAll(".view").forEach(x=>x.classList.toggle("on",x.id===v));document.querySelectorAll(".tabs button").forEach(b=>{b.classList.toggle("on",b.dataset.v===v);b.setAttribute("aria-selected",b.dataset.v===v)});
   if(v==="v-fc")render();if(v==="v-map"&&map)setTimeout(()=>map.invalidateSize(),50);scrollTo(0,0)}
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
 addEventListener("resize",()=>{if($("v-fc").classList.contains("on"))render()});

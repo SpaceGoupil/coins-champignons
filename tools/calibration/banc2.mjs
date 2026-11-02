@@ -3,7 +3,7 @@
 // plus souvent on y trouve un jour d'observation qu'un jour quelconque de la saison (« multiplicateur »).
 // Usage : node banc2.mjs ../../index.html [fichier de sortie]
 import fs from "fs";import {loadModel,evalRows,yearFolds} from "./lib.mjs";
-const M=loadModel(process.argv[2]||"../../index.html",{full:true,noCepio:true}),data=JSON.parse(fs.readFileSync("data/calibwx2.json"));
+const M=loadModel(process.argv[2]||"../../index.html",{full:true,noCepio:true}),data=JSON.parse(fs.readFileSync(process.env.DATA||"data/calibwx2.json"));
 const LV=[[0,.18,"Rare"],[.18,.4,"Limité"],[.4,.65,"Modéré"],[.65,1.01,"Abondant"]],out={};
 for(const [sp,rows] of Object.entries(data)){const r=evalRows(M,M.SP[sp],rows);
   // multiplicateur par niveau : part des jours d'observation dans le niveau / part des jours témoins dans le niveau

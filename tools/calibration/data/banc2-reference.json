@@ -1,0 +1,227 @@
+{
+ "edulis": {
+  "n": 50,
+  "aucSaison": 0.834,
+  "aucProche": 0.827,
+  "aucParGroupeAnnees": [
+   0.834
+  ],
+  "medObs": 0.571,
+  "medTemoin": 0.179,
+  "niveaux": [
+   {
+    "niveau": "Rare",
+    "obs": 6,
+    "temoins": 50,
+    "multiplicateur": 0.12
+   },
+   {
+    "niveau": "Limité",
+    "obs": 22,
+    "temoins": 24,
+    "multiplicateur": 0.92
+   },
+   {
+    "niveau": "Modéré",
+    "obs": 36,
+    "temoins": 18,
+    "multiplicateur": 1.96
+   },
+   {
+    "niveau": "Abondant",
+    "obs": 36,
+    "temoins": 8,
+    "multiplicateur": 4.63
+   }
+  ]
+ },
+ "pino": {
+  "n": 50,
+  "aucSaison": 0.665,
+  "aucProche": 0.602,
+  "aucParGroupeAnnees": [
+   0.534,
+   0.651,
+   0.863
+  ],
+  "medObs": 0.556,
+  "medTemoin": 0.273,
+  "niveaux": [
+   {
+    "niveau": "Rare",
+    "obs": 24,
+    "temoins": 42,
+    "multiplicateur": 0.57
+   },
+   {
+    "niveau": "Limité",
+    "obs": 6,
+    "temoins": 19,
+    "multiplicateur": 0.32
+   },
+   {
+    "niveau": "Modéré",
+    "obs": 28,
+    "temoins": 21,
+    "multiplicateur": 1.35
+   },
+   {
+    "niveau": "Abondant",
+    "obs": 42,
+    "temoins": 19,
+    "multiplicateur": 2.26
+   }
+  ]
+ },
+ "aest": {
+  "n": 50,
+  "aucSaison": 0.828,
+  "aucProche": 0.764,
+  "aucParGroupeAnnees": [
+   0.84,
+   0.882,
+   0.761
+  ],
+  "medObs": 0.565,
+  "medTemoin": 0.201,
+  "niveaux": [
+   {
+    "niveau": "Rare",
+    "obs": 8,
+    "temoins": 48,
+    "multiplicateur": 0.17
+   },
+   {
+    "niveau": "Limité",
+    "obs": 18,
+    "temoins": 24,
+    "multiplicateur": 0.74
+   },
+   {
+    "niveau": "Modéré",
+    "obs": 44,
+    "temoins": 23,
+    "multiplicateur": 1.95
+   },
+   {
+    "niveau": "Abondant",
+    "obs": 30,
+    "temoins": 6,
+    "multiplicateur": 5.33
+   }
+  ]
+ },
+ "aereus": {
+  "n": 50,
+  "aucSaison": 0.856,
+  "aucProche": 0.816,
+  "aucParGroupeAnnees": [
+   0.806,
+   0.954,
+   0.83
+  ],
+  "medObs": 0.598,
+  "medTemoin": 0.116,
+  "niveaux": [
+   {
+    "niveau": "Rare",
+    "obs": 6,
+    "temoins": 56,
+    "multiplicateur": 0.11
+   },
+   {
+    "niveau": "Limité",
+    "obs": 14,
+    "temoins": 18,
+    "multiplicateur": 0.8
+   },
+   {
+    "niveau": "Modéré",
+    "obs": 48,
+    "temoins": 19,
+    "multiplicateur": 2.52
+   },
+   {
+    "niveau": "Abondant",
+    "obs": 32,
+    "temoins": 7,
+    "multiplicateur": 4.44
+   }
+  ]
+ },
+ "girolle": {
+  "n": 50,
+  "aucSaison": 0.713,
+  "aucProche": 0.667,
+  "aucParGroupeAnnees": [
+   0.774,
+   0.647
+  ],
+  "medObs": 0.551,
+  "medTemoin": 0.245,
+  "niveaux": [
+   {
+    "niveau": "Rare",
+    "obs": 18,
+    "temoins": 42,
+    "multiplicateur": 0.43
+   },
+   {
+    "niveau": "Limité",
+    "obs": 10,
+    "temoins": 25,
+    "multiplicateur": 0.39
+   },
+   {
+    "niveau": "Modéré",
+    "obs": 52,
+    "temoins": 24,
+    "multiplicateur": 2.14
+   },
+   {
+    "niveau": "Abondant",
+    "obs": 20,
+    "temoins": 8,
+    "multiplicateur": 2.44
+   }
+  ]
+ },
+ "pdm": {
+  "n": 50,
+  "aucSaison": 0.575,
+  "aucProche": 0.511,
+  "aucParGroupeAnnees": [
+   0.719,
+   0.523,
+   0.561
+  ],
+  "medObs": 0.551,
+  "medTemoin": 0.433,
+  "niveaux": [
+   {
+    "niveau": "Rare",
+    "obs": 10,
+    "temoins": 21,
+    "multiplicateur": 0.47
+   },
+   {
+    "niveau": "Limité",
+    "obs": 26,
+    "temoins": 23,
+    "multiplicateur": 1.13
+   },
+   {
+    "niveau": "Modéré",
+    "obs": 30,
+    "temoins": 31,
+    "multiplicateur": 0.96
+   },
+   {
+    "niveau": "Abondant",
+    "obs": 34,
+    "temoins": 24,
+    "multiplicateur": 1.39
+   }
+  ]
+ }
+}

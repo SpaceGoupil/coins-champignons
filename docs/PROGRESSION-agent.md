@@ -1,7 +1,7 @@
 # Journal d'avancement : refonte du modèle et de l'ergonomie
 
-- **Dernière mise à jour :** 2026-11-02 01:05 (heure de Paris)
-- **Statut :** en pause (limite d'utilisation atteinte à 01:05), reprise prévue à 4 h 00
+- **Dernière mise à jour :** 2026-11-02 04:09 (heure de Paris)
+- **Statut :** en cours (la session d'origine a repris à 03:51)
 - **Référence :** `docs/BRIEF-agent-modele-ergonomie.md` (contraintes, architecture, livrables)
 - **Reprise automatique :** tâche planifiée « reprise-coins-champignons » à 4 h 00. Elle n'agit pas si ce journal ou un fichier du projet a été modifié dans les 25 dernières minutes.
 
@@ -18,18 +18,18 @@
 4. **A5-A6** : reporter les réglages adoptés dans `SP` d'`index.html` (`sp.wt` = poids propres à l'espèce, `sp.mp` = constantes `rw`, `choc`, `pet`, `lagT`), recaler `k` (médiane des jours d'observation ≈ 0,55), mettre à jour `docs/calibration-gbif.md`, l'onglet Méthode et les multiplicateurs par niveau donnés par `banc2.mjs`.
 
 ## Chantier A : modèle prédictif
-- [~] **A1** Météo ERA5 élargie (d−200 → d+75) des 50 observations par espèce : `calibwx2.mjs` → `data/calibwx2.json` (en cours)
-- [~] **A2** Banc v2 écrit (`lib.mjs`, `banc2.mjs`) : témoins = jours de d−100 à d+75 hors ±10 j ; AUC « saison » et « proche » (±45 j) par observation ; groupes d'années ; multiplicateur par niveau. À tester.
-- [ ] **A3** Mesure de référence du modèle actuel avec le banc v2
+- [x] **A1** Météo ERA5 élargie (d−200 → d+75) des 50 observations par espèce : `calibwx2.mjs` → `data/calibwx2.json` (6 × 50 observations, 276 jours, sans trou)
+- [x] **A2** Banc v2 écrit et testé (`lib.mjs`, `banc2.mjs`) : témoins = jours de d−100 à d+75 hors ±10 j ; AUC « saison » et « proche » (±45 j) par observation ; groupes d'années ; multiplicateur par niveau. À tester.
+- [x] **A3** Référence du modèle actuel (banc v2, 50 obs/espèce) : AUC saison / proche = cèpe de Bordeaux 0,834/0,827 ; cèpe des pins 0,665/0,602 ; cèpe d'été 0,828/0,764 ; cèpe bronzé 0,856/0,816 ; girolle 0,713/0,667 ; pied de mouton 0,575/0,511 → `data/banc2-reference.json`
 - [~] **A4** Optimiseur écrit (`optim.mjs`, descente de coordonnées sur 17 paramètres, validation croisée en 3 groupes d'années). À lancer.
 - [ ] **A5** Échelle de l'indice au sens explicite (proposition : garder 55 = jour de trouvaille typique et afficher, par niveau, « × N plus souvent qu'un jour moyen de saison » d'après `banc2.mjs`)
 - [ ] **A6** Intégration dans `index.html`, vérification dans le navigateur, docs, onglet Méthode, commit
 - [ ] **A7** (si le temps le permet) Arbres hôtes calibrés sur les observations françaises
 
 ## Chantier B : ergonomie et accessibilité
-- [ ] **B1** Audit d'accessibilité initial → `docs/audit-accessibilite.md`
+- [x] **B1** Audit d'accessibilité initial → `docs/audit-accessibilite.md` (Lighthouse 100/100, mais 11 constats manuels)
 - [ ] **B2** Parcours guidé en 3 étapes et mode « Expert »
-- [ ] **B3** Accessibilité : ARIA, libellés, contraste, cibles de 44 px, focus, daltonisme
+- [~] **B3** Accessibilité : contraste (gris 3,7 → 5,7:1), noms des boutons-icônes, étiquette de recherche, onglets ARIA, panneaux en dialogue (focus, Échap), messages annoncés, cibles 44 px, focus visible, « réduire les animations », niveaux nommés dans la légende. Reste : couleur seule sur la carte (palette daltonisme), langue claire (B4)
 - [ ] **B4** Premier lancement, phrases claires, niveaux reliés à une action
 - [ ] **B5** Mode terrain et préparation de sortie hors ligne
 - [ ] **B6** Vérification mobile en clair et en sombre, audit final, commit
@@ -39,3 +39,9 @@
 - 00:58 `compute()` rendu paramétrable par espèce sans changer son comportement : constantes `MODEL` (`rw`, `choc`, `pet`, `lagT`) et réglages `sp.wt` / `sp.mp`. Ancien banc relancé : résultats identiques (AUC 0,86 / 0,72 / 0,86 / 0,84 / 0,67 / 0,58).
 - 01:00 `lib.mjs` (chargement du modèle depuis index.html, évaluation, groupes d'années), `banc2.mjs`, `optim.mjs` écrits ; collecte `calibwx2.mjs` lancée.
 - 01:05 Limite d'utilisation atteinte : pause. Commit local de l'état.
+- 01:10 Collecte arrêtée par une réponse tronquée d'Open-Meteo après 4 espèces sur 6 (`edulis`, `pino`, `aest`, `aereus` dans `data/calibwx2.json`). Script rendu tolérant (nouvel essai) et relancé : il reprend à `girolle`. À 4 h, vérifier que `data/calibwx2.json` contient les 6 espèces, sinon relancer `node calibwx2.mjs`.
+- 03:51 Reprise de la session d'origine (limite levée). A1 terminé : 300 observations complètes.
+- 03:58 Échantillon trop concentré dans le temps (cèpe de Bordeaux : 50 obs. toutes de 2025). `gbifyears.mjs` ajoute 5 obs./an de 2018 à 2023 par espèce : 69 à 80 obs./espèce sur 2018-2025 (l'ancien fichier est gardé en `data/calibwx2-50.json`).
+- 04:10 `compute()` accéléré dans l'app (facteurs du jour calculés une fois par jour, humidité minimale au fil de l'eau, sommes cumulées) : 5,5 ms par série de 276 jours, résultats strictement identiques sur les deux bancs.
+- 04:05 Optimisation lancée en parallèle (une espèce par processus) → `data/optim-<espèce>.json`.
+- 04:09 B1 et B3 (première partie) faits, vérifiés dans le navigateur (aucune erreur), commit local. Optimisation encore en cours.

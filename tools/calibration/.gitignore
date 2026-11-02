@@ -1,3 +1,2 @@
 node_modules/
-data/calibwx.json
-data/calibwx2.json
+data/calibwx*.json

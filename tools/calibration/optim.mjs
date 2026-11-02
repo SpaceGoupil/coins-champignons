@@ -5,8 +5,8 @@
 // les nouveaux réglages que s'ils battent le modèle actuel sur les années mises de côté.
 // Usage : node optim.mjs ../../index.html [espèce] → data/optim.json
 import fs from "fs";import {loadModel,evalRows,yearFolds} from "./lib.mjs";
-const M=loadModel(process.argv[2]||"../../index.html",{full:true,noCepio:true}),data=JSON.parse(fs.readFileSync("data/calibwx2.json"));
-const only=process.argv[3],OUT="data/optim.json",res=fs.existsSync(OUT)?JSON.parse(fs.readFileSync(OUT)):{};
+const M=loadModel(process.argv[2]||"../../index.html",{full:true,noCepio:true}),data=JSON.parse(fs.readFileSync(process.env.DATA||"data/calibwx2.json"));
+const only=process.argv[3],OUT=process.env.OUT||"data/optim.json",res=fs.existsSync(OUT)?JSON.parse(fs.readFileSync(OUT)):{};
 // espace de recherche : chemin du paramètre → valeurs candidates (fonction de la valeur courante pour topt)
 const SPACE=[
   ["topt",x=>[x-3,x-1.5,x-.5,x,x+.5,x+1.5,x+3].map(v=>+v.toFixed(1))],["tsd",[2.5,3.5,4.5,6]],

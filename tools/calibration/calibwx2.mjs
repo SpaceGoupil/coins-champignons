@@ -9,7 +9,9 @@ const iso=d=>d.toISOString().slice(0,10),shift=(s,k)=>{const d=new Date(s+"T12:0
 const VARS="daily=temperature_2m_max,temperature_2m_min,precipitation_sum&hourly=soil_moisture_0_to_7cm,soil_moisture_7_to_28cm,soil_temperature_0_to_7cm,relative_humidity_2m&timezone=auto";
 async function get(o,a,b){const u=`https://archive-api.open-meteo.com/v1/archive?latitude=${o.la.toFixed(4)}&longitude=${o.lo.toFixed(4)}&start_date=${a}&end_date=${b}&${VARS}`;
   for(let n=0;n<6;n++){const r=await fetch(u);
-    if(r.ok){const j=await r.json(),N=j.daily.time.length,h=j.hourly,per=Math.round(h.time.length/N),
+    // réponse parfois tronquée par le serveur (« timeoutReached » au lieu du JSON) : on réessaie
+    let j=null;if(r.ok){try{j=await r.json()}catch(e){console.log("réponse illisible, nouvel essai");await sleep(5000);continue}}
+    if(j){const N=j.daily.time.length,h=j.hourly,per=Math.round(h.time.length/N),
         avg=x=>Array.from({length:N},(_,d)=>{let s=0,c=0;for(let k=d*per;k<d*per+per;k++)if(x[k]!=null){s+=x[k];c++}return c?+(s/c).toFixed(3):null});
       return{dates:j.daily.time,tmax:j.daily.temperature_2m_max,tmin:j.daily.temperature_2m_min,rain:j.daily.precipitation_sum.map(v=>v||0),
         tsol:avg(h.soil_temperature_0_to_7cm),sm:avg(h.soil_moisture_0_to_7cm),sm2:avg(h.soil_moisture_7_to_28cm),rh:avg(h.relative_humidity_2m)}}
