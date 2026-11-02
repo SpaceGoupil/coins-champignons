@@ -1,8 +1,8 @@
 # Coins à champignons
 
-App web mobile (un seul fichier HTML, sans build) : indice de pousse de six champignons comestibles, par hexagones sur carte IGN, utilisable en mode avion.
+App web mobile (un seul fichier HTML, sans build) : indice de pousse de six champignons comestibles sur carte IGN, meilleurs coins avec leur accès (route goudronnée la plus proche, temps de trajet), utilisable en mode avion.
 
-Les indices sont **indicatifs** : paramètres issus de repères de cueilleurs, pas d'une calibration.
+Les indices sont **indicatifs** : poids de départ tirés d'études et de repères de cueilleurs, puis réglés sur des récoltes réelles (GBIF, voir `docs/modele-2026-11.md`).
 
 ## Fichiers
 
@@ -18,7 +18,7 @@ python -m http.server 8765
 
 puis ouvrir http://localhost:8765/.
 
-## Services utilisés (vérifiés le 01/11/2026)
+## Services utilisés (vérifiés le 01/11/2026 ; routes et trajets le 02/11/2026)
 
 | Usage | Service | Notes |
 |---|---|---|
@@ -29,6 +29,8 @@ puis ouvrir http://localhost:8765/.
 | Forêt | `LANDCOVER.FORESTINVENTORY.V2` | Fond transparent, mais lande, formation herbacée et « sans couvert arboré » sont opaques : elles sont exclues par couleur |
 | Sols | WCS SoilGrids `maps.isric.org` (pH, argile, sable, 5–15 cm, 250 m) | CORS ouvert ; GeoTIFF 16 bits, tuiles 256, deflate + prédicteur horizontal, lu sans bibliothèque. L'API REST ponctuelle répondait 503 |
 | Essences | WFS `LANDCOVER.FORESTINVENTORY.V2:formation_vegetale` | Sert seulement à vérifier la table couleur → formation des tuiles ; filtre « point dans le polygone » en Lambert-93 (`INTERSECTS(geom,POINT(x y))`) |
+| Routes | WFS `BDTOPO_V3:troncon_de_route`, filtre `CQL_FILTER` | Route « goudronnée » = `nature` « Route à 1 chaussée », « Route à 2 chaussées » ou « Rond-point », `acces_vehicule_leger` « Libre », hors routes nommées « forestière » (les pistes forestières sont surtout des « Route empierrée »). Cherchées dans un carré de ± 1 à 2 km autour de chaque coin : la zone entière (rayon 15 km) pèse ~6 Mo pour 12 700 tronçons. Avec un `CQL_FILTER`, le `BBOX` va dans le filtre (lat, lon en `urn:ogc:def:crs:EPSG::4326`) ; coordonnées en 3D |
+| Trajet | `data.geopf.fr/navigation/itineraire`, ressource **`bdtopo-valhalla`**, `profile=car` | `bdtopo-osrm` n'existe pas (400). CORS ouvert ; ~0,4 s par trajet ; durée en minutes, distance en km. Reçoit la position de l'utilisateur : la première fois à sa demande, puis à chaque nouvelle recherche si la localisation reste autorisée |
 
 Le poids de chaque variable et les études qui l'appuient sont détaillés dans l'onglet Méthode de l'app et dans la constante `WEIGHTS` d'`index.html`.
 

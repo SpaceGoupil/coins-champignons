@@ -775,6 +775,8 @@ body.terrain .card{border:2px solid var(--line)}
 .grad-leg{background:var(--surface);color:var(--text);border-radius:10px;padding:6px 8px;font-size:11px;box-shadow:0 1px 5px rgba(0,0,0,.25);min-width:150px}
 .grad-leg .gb{height:10px;border-radius:5px;margin:4px 0 2px}
 .grad-leg .gt{display:flex;justify-content:space-between;color:var(--text2)}
+.grad-leg .legtg{display:block;width:100%;min-height:32px;padding:2px 0;margin:0;font:inherit;color:inherit;background:none;border:0;text-align:left;cursor:pointer}
+.grad-leg .legop{display:block;width:100%;margin-top:6px;min-height:44px;font:inherit;font-size:12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer}
 .brank{width:22px;height:22px;border-radius:50%;background:#7a4a22;color:#fff;border:2px solid #fff;font:700 11px/18px system-ui,sans-serif;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.4)}
 .hlab{font-size:11px;font-weight:700;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.7);text-align:center;line-height:20px}
 .search{position:relative}
@@ -850,6 +852,7 @@ body.terrain .card{border:2px solid var(--line)}
         <label style="display:none">Champignon<select id="bSp"></select></label>
         <label>Autour de<select id="bCenter"><option value="place" id="bPlaceOpt" disabled>Lieu recherché (aucun)</option><option value="gps">Ma position</option><option value="map">Centre de la carte</option></select></label>
         <label>Rayon<select id="bRad"><option value="2">2 km</option><option value="5">5 km</option><option value="10" selected>10 km</option><option value="20">20 km</option><option value="30">30 km</option></select></label>
+        <label class="heatOnly">Route goudronnée à moins de<select id="bAcc"><option value="0">peu importe</option><option value="200">200 m</option><option value="500">500 m</option><option value="1000">1 km</option><option value="2000">2 km</option></select></label>
       </div>
       <div class="row" style="margin-top:8px"><button class="btn pri" id="bGo">Chercher</button><button class="btn hexOnly" id="bAna">Analyser ce rayon</button></div>
       <label class="hexOnly" style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--text2)"><input type="checkbox" id="bAuto" checked> Affiner automatiquement le top 10 en 0,5 km²</label>
@@ -857,6 +860,8 @@ body.terrain .card{border:2px solid var(--line)}
       <p class="sum" id="bSum" aria-live="polite"></p>
       <p class="note" id="hMsg" aria-live="polite" style="margin:6px 2px 0"></p>
       <div id="hList"></div>
+      <div class="row heatOnly" style="margin-top:8px"><button class="btn" type="button" id="tripBtn">🚗 Temps de trajet depuis ma position</button></div>
+      <p class="note heatOnly" id="tripMsg" aria-live="polite" style="margin:6px 2px 0">Calculé comme un GPS (itinéraire de l'IGN), en voiture jusqu'à la route goudronnée la plus proche de chaque coin. Ta position n'est envoyée qu'à ce service ; une fois demandé, le calcul se refait à chaque recherche.</p>
       <p class="note" id="bMsg" style="margin:6px 2px 0">Classement selon le champignon et le moment choisis à l'étape ②.</p>
       <div class="row heatOnly" style="margin-top:10px"><button class="btn pri" type="button" id="prepBtn">📦 Préparer ma sortie</button><button class="btn" type="button" id="terrBtn" aria-pressed="false">🥾 Mode terrain</button></div>
       <div class="prog" id="prepProg" style="display:none"><i></i></div>
@@ -1191,6 +1196,7 @@ const ATTR='© <a href="https://geoservices.ign.fr">IGN</a> · Etalab 2.0';
 function initMap(){
   const v=LS.get("view",{c:[45.2,1.5],z:6});
   map=L.map("map",{zoomControl:true,attributionControl:true,preferCanvas:true,zoomAnimation:!RM,fadeAnimation:!RM,markerZoomAnimation:!RM}).setView(v.c,v.z);
+  L.control.scale({imperial:false,maxWidth:120}).addTo(map);
   // hexagones peints opaques sur leur propre calque, la transparence est celle du calque entier : là où deux grilles de
   // tailles différentes se chevauchent (elles ne s'emboîtent pas), le plus fin recouvre le plus grand sans double teinte
   const hp=map.createPane("hexPane");hp.style.zIndex=390;hp.style.opacity=.72;hexRenderer=L.canvas({pane:"hexPane"});
@@ -1210,10 +1216,10 @@ function initMap(){
     b.onclick=()=>{
       if(k==="forest"){if(map.hasLayer(forestLayer)){map.removeLayer(forestLayer);b.classList.remove("on")}else{forestLayer.addTo(map);b.classList.add("on")}return}
       if(k==="onf"){if(map.hasLayer(onfLayer)){map.removeLayer(onfLayer);b.classList.remove("on")}else{onfLayer.addTo(map);b.classList.add("on")}return}
-      map.removeLayer(base);base=new CachedLayer("",{lid:k,maxZoom:19,maxNativeZoom:19,attribution:ATTR}).addTo(map);base.bringToBack();
+      map.removeLayer(base);base=new CachedLayer("",{lid:k,maxZoom:19,maxNativeZoom:19,attribution:ATTR}).addTo(map);base.bringToBack();heatOpApply();
       lc.querySelectorAll('[data-k="plan"],[data-k="ortho"]').forEach(x=>x.classList.toggle("on",x.dataset.k===k));
     };lc.appendChild(b)});
-  drawMarkers();estimate();drawGrid();drawHexes();
+  heatOpApply();drawMarkers();estimate();drawGrid();drawHexes();
 }
 function pinIcon(s){const l=lvl(bestScore(s));return L.divIcon({className:"",iconSize:[26,26],iconAnchor:[13,26],html:`<div class="pin" style="background:${LV[l].hex}"><span>${l?"🍄":"·"}</span></div>`})}
 function drawMarkers(){
@@ -1984,10 +1990,17 @@ const liftOf=sp=>{const v=sp===ALL?Object.values(SP).reduce((a,o)=>a+o.lift[3],0
 function fmtLift(v){const f=x=>String(x<3?Math.round(x*10)/10:Math.round(x)).replace(".",",");return v>=.85&&v<=1.15?"≈ 1":v>1?"×"+f(v):"÷"+f(1/v)}
 $("liftTab").innerHTML="<tr><th>Espèce</th>"+LV.map(l=>`<th>${l.n}</th>`).join("")+"</tr>"+Object.values(SP).map(o=>`<tr><td>${o.n}</td>${o.lift.map(v=>`<td>${fmtLift(v)}</td>`).join("")}</tr>`).join("");
 function legend(sp,mode){
-  if(!legendCtl){legendCtl=L.control({position:"topright"});legendCtl.onAdd=()=>{const d=L.DomUtil.create("div","grad-leg");d.id="gradLeg";return d};legendCtl.addTo(map)}
+  if(!legendCtl){legendCtl=L.control({position:"topright"});legendCtl.onAdd=()=>{const d=L.DomUtil.create("div","grad-leg");d.id="gradLeg";L.DomEvent.disableClickPropagation(d);L.DomEvent.disableScrollPropagation(d);return d};legendCtl.addTo(map)}
   const hm=typeof heatMode==="function"&&heatMode(),has=hm?!!heatOverlay:Object.keys(hexStore.hex).length>0;const d=document.getElementById("gradLeg");if(!d)return;
   d.style.display=has?"":"none";
-  d.innerHTML=`<b>Indice de pousse</b> · ${spName(sp)}<br><span style="color:var(--text2)">${MODE_LAB[mode]}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div style="color:var(--text2);margin-top:2px">Rare &lt; 18 · Limité &lt; 40 · Modéré &lt; 65 · Abondant</div><div style="color:var(--text2)">Abondant : ≈ ${liftOf(sp)} fois plus de chances qu'un jour ordinaire</div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> ${hm?`<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3c3c3c;vertical-align:middle;margin-left:-14px"></span> coupe récente · incolore : hors forêt ou &gt; ${ALT_MAX} m`:`écarté : sans forêt, &gt; ${ALT_MAX} m ou bord de mer`}</div>`;
+  // repliable (le titre est un bouton) : repliée, il reste le dégradé et le bouton d'intensité, et le haut de la carte se lit
+  const open=LS.get("legOpen",true),op=OPS[LS.get("heatOp",0)]||OPS[0];
+  d.innerHTML=`<button type="button" class="legtg" id="legTg" aria-expanded="${open}"><b>Indice de pousse</b> · ${spName(sp)} <span aria-hidden="true">${open?"▴":"▾"}</span></button><span style="display:block;color:var(--text2)">${MODE_LAB[mode]}</span><div class="gb" style="background:${GRAD_CSS}"></div><div class="gt"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>`+
+    (open?`<div style="color:var(--text2);margin-top:2px">Rare &lt; 18 · Limité &lt; 40 · Modéré &lt; 65 · Abondant</div><div style="color:var(--text2)">Abondant : ≈ ${liftOf(sp)} fois plus de chances qu'un jour ordinaire</div><div style="margin-top:3px;color:var(--text2)"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b8b6ae;vertical-align:middle"></span> ${hm?`<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3c3c3c;vertical-align:middle;margin-left:-14px"></span> coupe récente · incolore : hors forêt ou &gt; ${ALT_MAX} m`:`écarté : sans forêt, &gt; ${ALT_MAX} m ou bord de mer`}</div>`:"")+
+    `<button type="button" class="legop" id="legOp"><span aria-hidden="true">◐</span> Couleurs ${op[1]} · changer</button>`;
+  // la légende est redessinée pendant l'appui : sans stopPropagation, Leaflet ne reconnaît plus le bouton et ouvre la fiche du point dessous
+  $("legTg").onclick=e=>{e.stopPropagation();LS.set("legOpen",!open);legend(sp,mode);$("legTg").focus()};
+  $("legOp").onclick=e=>{e.stopPropagation();LS.set("heatOp",(OPS.indexOf(op)+1)%OPS.length);heatOpApply();legend(sp,mode);$("legOp").focus()};
 }
 function hexPopup(h,p){const sp=$("hSp").value,sc=hexScore(h.id,sp,"fc"),now=hexScore(h.id,sp,"now"),m=sc&&sc.m,i=m?m.today:0;
   let r7=0;if(m)for(let d=Math.max(0,i-7);d<i;d++)r7+=m.rain[d];
@@ -2030,6 +2043,7 @@ let bestLayer=null,bestCenter=null;
 const kmTo=(la0,lo0,la,lo)=>{const dy=(la-la0)*KY,dx=(lo-lo0)*111.32*Math.cos(la0*Math.PI/180);return{d:Math.hypot(dx,dy),dx,dy}};
 const compass=(dx,dy)=>["N","NE","E","SE","S","SO","O","NO"][Math.round(((Math.atan2(dx,dy)*180/Math.PI)+360)%360/45)%8];
 const DIR={N:"nord",NE:"nord-est",E:"est",SE:"sud-est",S:"sud",SO:"sud-ouest",O:"ouest",NO:"nord-ouest"};
+const vers=c=>(c==="E"||c==="O"?"vers l'":"vers le ")+DIR[c]; // « vers l'ouest », « vers le sud »
 // dernier lieu tapé dans la recherche : centre par défaut du classement
 let lastPlace=LS.get("place",null);
 function showPlace(){const o=$("bPlaceOpt");o.disabled=!lastPlace;o.textContent=lastPlace?`Lieu recherché : ${lastPlace.name}`:"Lieu recherché (aucun)"}
@@ -2161,49 +2175,94 @@ function heatScore(env,sp,mode){
         v+=nnW[k*4+q]*lerpT(o.s[s].map(r=>lerpT(r,ex.dH,HDH)),dt,HDT);w+=nnW[k*4+q]}
       if(w)tot+=(v/w)*hostAff(s,c)*siteW(site,s)}
     score[k]=tot/sps.length}
-  // zones chaudes : lissage 3×3, seuil (≥ 0,35 et 10 % des meilleures cellules), taches d'au moins ~1,5 ha
+  // coins : lissage 3×3, puis taches d'au moins ~1,5 ha parmi les 10 % de forêt les mieux notés du secteur. Le seuil est
+  // relatif : quand les conditions sont faibles partout, les coins les mieux placés (essence, altitude, versant) restent
+  // proposés avec leur niveau réel. 40 candidats au plus, pour le filtre d'accès appliqué ensuite (heatAccess).
   const sm=new Float32Array(N).fill(-1);for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const k=j*NX+i;if(score[k]<0)continue;let s=0,n=0;
     for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const jj=j+b,ii=i+a;if(jj<0||ii<0||jj>=NY||ii>=NX)continue;const v=score[jj*NX+ii];if(v>=0){s+=v;n++}}sm[k]=s/n}
-  const valid=[...sm].filter(v=>v>=0).sort((a,b)=>a-b),T=Math.max(.35,valid[Math.floor(valid.length*.9)]||1),lab=new Int32Array(N).fill(-1),groups=[];
+  const valid=[...sm].filter(v=>v>=0).sort((a,b)=>a-b),T=Math.max(.01,valid[Math.floor(valid.length*.9)]||0),lab=new Int32Array(N).fill(-1),groups=[];
+  const nCut=[...score].filter(v=>v===-2).length;
+  // indice nul partout (hors saison, pas de pluie) : aucun classement n'a de sens
+  if(!valid.length||valid[valid.length-1]<.02)return{score,cand:[],T,flat:true,nForest:valid.length,nCut,sp,mode};
   for(let k=0;k<N;k++){if(sm[k]<T||lab[k]>=0)continue;const st=[k],cells=[];lab[k]=groups.length;
     while(st.length){const q=st.pop();cells.push(q);const qi=q%NX,qj=(q-qi)/NX;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const ii=qi+a,jj=qj+b;if(ii<0||jj<0||ii>=NX||jj>=NY)continue;const r=jj*NX+ii;if(lab[r]<0&&sm[r]>=T){lab[r]=groups.length;st.push(r)}}}
     groups.push(cells)}
   const minC=Math.max(2,Math.ceil(.015/(cell*cell)));
-  const zones=groups.filter(c=>c.length>=minC).map(c=>{let s=0,la=0,lo=0,al=0,sx=0,sy=0;const ess={},pb=[0,0,0];
+  const cand=groups.filter(c=>c.length>=minC).map(c=>{let s=0,la=0,lo=0,al=0,sx=0,sy=0;const ess={},pb=[0,0,0];
     c.forEach(k=>{const i=k%NX,j=(k-i)/NX;s+=score[k];la+=cla(j);lo+=clo(i);al+=alt[k];ess[cls[k]]=(ess[cls[k]]||0)+1;pb[env.pub[k]]++;sx+=Math.sin(aspect[k]*Math.PI/180);sy+=Math.cos(aspect[k]*Math.PI/180)});
     const n=c.length,cl=la/n,cn=lo/n,g=kmTo(la0,lo0,cl,cn);
     return{v:s/n,ha:n*cell*cell*100,la:cl,lo:cn,alt:al/n,ess:Object.entries(ess).sort((a,b)=>b[1]-a[1])[0][0],az:(Math.atan2(sx,sy)*180/Math.PI+360)%360,
-      pub:pb[1]>=pb[2]&&pb[1]>=pb[0]?1:pb[2]>pb[0]?2:0,...g}}).sort((a,b)=>b.v-a.v).slice(0,10);
-  return{score,zones,T,nForest:valid.length,nCut:[...score].filter(v=>v===-2).length,sp,mode};
+      pub:pb[1]>=pb[2]&&pb[1]>=pb[0]?1:pb[2]>pb[0]?2:0,...g}}).sort((a,b)=>b.v-a.v).slice(0,40);
+  return{score,cand,T,nForest:valid.length,nCut,sp,mode};
 }
 const PUB_N=["forêt privée ou non recensée","forêt domaniale","forêt publique (communale…)"];
 
-function heatRender(env,res){
+// couleur de plus en plus couvrante avec l'indice : là où il est faible, le plan IGN se lit presque comme sans calque
+async function heatRender(env,res){
   const {NX,NY,N,bb}=env,cv=document.createElement("canvas");cv.width=NX;cv.height=NY;const g=cv.getContext("2d"),img=g.createImageData(NX,NY);
-  for(let k=0;k<N;k++){const v=res.score[k];if(v===-2){img.data.set([60,60,60,170],k*4);continue}if(v<0)continue;const [r,gg,b]=gradRGB(v);img.data.set([r,gg,b,255],k*4)}
+  for(let k=0;k<N;k++){const v=res.score[k];if(v===-2){img.data.set([90,90,90,140],k*4);continue}if(v<0)continue;const [r,gg,b]=gradRGB(v);img.data.set([r,gg,b,Math.round(255*(.15+.55*Math.min(1,v/.65)))],k*4)}
   g.putImageData(img,0,0);
-  const msg=`Forêt analysée sur ${Math.round(env.R)} km autour du point : ${res.nForest.toLocaleString("fr-FR")} carrés de ${Math.round(env.cell*1000)} m${res.nCut?`, dont ${res.nCut.toLocaleString("fr-FR")} en coupe récente (gris foncé)`:""}. Coins retenus : indice d'au moins ${Math.round(res.T*100)}/100 · ${spName(res.sp)} · ${MODE_LAB[res.mode]}.`;
-  const saved={bb,url:cv.toDataURL(),zones:res.zones,msg,la0:env.la0,lo0:env.lo0,R:env.R,sp:res.sp,mode:res.mode,t:Date.now(),mv:MODEL_V};
-  LS.set("heat",saved);heatShow(saved);
+  const msg=`Forêt analysée sur ${Math.round(env.R)} km autour du point : ${res.nForest.toLocaleString("fr-FR")} carrés de ${Math.round(env.cell*1000)} m${res.nCut?`, dont ${res.nCut.toLocaleString("fr-FR")} en coupe récente (gris foncé)`:""}. `+
+    (res.flat?`Indice nul partout · ${spName(res.sp)} · ${MODE_LAB[res.mode]}.`:`Coins retenus : les 10 % de forêt les mieux notés du secteur (indice d'au moins ${Math.round(res.T*100)}/100) · ${spName(res.sp)} · ${MODE_LAB[res.mode]}.`);
+  const saved={bb,url:cv.toDataURL(),cand:res.cand,zones:[],msg,la0:env.la0,lo0:env.lo0,R:env.R,sp:res.sp,mode:res.mode,t:Date.now(),mv:MODEL_V};
+  await heatAccess(saved);heatShow(saved);
+  if(LS.get("tripOn",false))tripTimes(true);
 }
+// intensité des couleurs (bouton de la légende) : normales, légères, ou masquées pour lire le plan dessous.
+// Sur le plan IGN, le calque est en mode « produit » : routes, chemins et noms restent lisibles sous la couleur.
+const OPS=[[1,"normales"],[.45,"légères"],[0,"masquées"]];
+function heatOpApply(){if(!map)return;const o=(OPS[LS.get("heatOp",0)]||OPS[0])[0],hp=map.getPane("heatPane"),xp=map.getPane("hexPane");
+  if(hp){hp.style.opacity=o;hp.style.mixBlendMode=base&&base.options.lid==="ortho"?"normal":"multiply"}if(xp)xp.style.opacity=.72*o}
+// ---- accès aux coins : route goudronnée ouverte aux voitures la plus proche (BD TOPO), hors chemins, pistes et routes forestières ----
+function pavedURL(la,lo,d){const a=d/KY,b=d/(111.32*Math.cos(la*Math.PI/180));
+  const f=`BBOX(geometrie,${(la-a).toFixed(5)},${(lo-b).toFixed(5)},${(la+a).toFixed(5)},${(lo+b).toFixed(5)},'urn:ogc:def:crs:EPSG::4326') AND nature IN ('Route à 1 chaussée','Route à 2 chaussées','Rond-point') AND acces_vehicule_leger='Libre' AND (cpx_toponyme_route_nommee IS NULL OR NOT cpx_toponyme_route_nommee ILIKE '%foresti%') AND (nom_collaboratif_gauche IS NULL OR NOT nom_collaboratif_gauche ILIKE '%foresti%')`;
+  return"https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=BDTOPO_V3:troncon_de_route&COUNT=2000&OUTPUTFORMAT=application/json&PROPERTYNAME=geometrie&CQL_FILTER="+encodeURIComponent(f)}
+// route la plus proche d'un point, cherchée dans un carré de ± d km : {d (km), la, lo}, ou null s'il n'y en a pas à moins de d km
+async function nearestRoad(la,lo,d){const r=await tfetch(pavedURL(la,lo,d),12000);if(!r.ok)throw new Error(r.status);const lines=[];
+  for(const f of (await r.json()).features||[]){const g=f.geometry;if(g)(g.type==="MultiLineString"?g.coordinates:[g.coordinates]).forEach(p=>lines.push(p.map(c=>[c[1],c[0]])))}
+  const n=nearOnLines(la,lo,lines,111.32*Math.cos(la*Math.PI/180));return n&&n.d<=d?n:null}
+// reprend l'accès et le temps de trajet déjà connus d'un même coin (même centre)
+const zKey=z=>z.la.toFixed(5)+","+z.lo.toFixed(5);
+function mergeAcc(src,dst){const m=new Map((src||[]).map(z=>[zKey(z),z]));
+  for(const z of dst||[]){const s=m.get(zKey(z));if(s&&s!==z)for(const k of["rd","rdK","ala","alo","trip"])if(s[k]!=null)z[k]=s[k]}}
+const fmtM=m=>m<1000?m+" m":fr(m/1000,m%1000?1:0)+" km";
+// coins proposés : les 10 meilleurs candidats ; avec « Route goudronnée à moins de », les 10 meilleurs qui la respectent.
+// Sans filtre, la route est cherchée jusqu'à 1 km, pour l'information.
+async function heatAccess(sv){const D=(+LS.get("bAcc",0))/1000,look=D||1,cand=sv.cand||sv.zones||[],out=[],say=t=>$("hMsg").textContent=t;let fail=0;
+  mergeAcc(sv.zones,cand);
+  for(let i=0;i<cand.length&&(D?out.length<10:i<10);i+=4){const part=cand.slice(i,D?i+4:Math.min(i+4,10));
+    say(`Routes goudronnées autour des coins… ${i+part.length} sur ${D?cand.length:Math.min(10,cand.length)}`);
+    await Promise.all(part.map(async z=>{if(z.rd!=null||z.rdK>=look)return;if(!navigator.onLine){fail++;return}
+      try{const n=await nearestRoad(z.la,z.lo,look);z.rdK=look;if(n){z.rd=n.d;z.ala=n.la;z.alo=n.lo}}catch(e){fail++}}));
+    for(const z of part)if(!D||z.rd!=null&&z.rd<=D)out.push(z)}
+  sv.zones=fail&&D?cand.slice(0,10):out.slice(0,10);
+  sv.acc=fail?`Routes indisponibles (connexion ?)${D?" : filtre d'accès non appliqué":""}.`
+    :D?`Filtre : route goudronnée à moins de ${fmtM(D*1000)}${out.length<10?` (${out.length} coin${out.length>1?"s":""} sur les ${cand.length} meilleurs)`:""}.`:"";
+  LS.set("heat",sv)}
+// ligne d'accès d'un coin : route goudronnée la plus proche, temps de trajet en voiture depuis ta position
+const fmtMin=m=>m<60?Math.max(1,Math.round(m))+" min":Math.floor(m/60)+" h "+String(Math.round(m%60)).padStart(2,"0");
+function accTxt(z){const r=z.rd!=null?`route goudronnée à ${fmtM(Math.max(10,Math.round(z.rd*100)*10))}`:z.rdK?`route goudronnée à plus de ${fmtM(z.rdK*1000)}`:"";
+  return[r,z.trip?`<span aria-hidden="true">🚗</span> ${fmtMin(z.trip.min)} en voiture (${Math.round(z.trip.km)} km)`:""].filter(Boolean).join(" · ")}
 // affiche une carte calculée (en direct ou enregistrée : elle reste visible hors ligne)
 function heatShow(sv){
   // l'espèce et la période affichées sont celles de la carte montrée (utile au rechargement)
   if(sv.sp){$("hSp").value=sv.sp;$("bSp").value=sv.sp;$("cSp").value=sv.sp;showRel(sv.sp)}
   if(sv.mode&&sv.mode!==hMode){hMode=sv.mode;LS.set("hMode",hMode);document.querySelectorAll("#hMode .chip").forEach(b=>b.classList.toggle("on",b.dataset.m===hMode))}
-  if(!map.getPane("heatPane")){const hp=map.createPane("heatPane");hp.style.zIndex=395;hp.style.opacity=.75}
+  if(!map.getPane("heatPane"))map.createPane("heatPane").style.zIndex=395;
+  heatOpApply();
   if(heatOverlay)map.removeLayer(heatOverlay);heatOverlay=L.imageOverlay(sv.url,[[sv.bb[1],sv.bb[0]],[sv.bb[3],sv.bb[2]]],{pane:"heatPane"}).addTo(map);
   if(heatLayer)heatLayer.clearLayers();else heatLayer=L.layerGroup().addTo(map);
   L.circle([sv.la0,sv.lo0],{radius:sv.R*1000,color:"#7a4a22",weight:1.5,fill:false,dashArray:"5 5",interactive:false}).addTo(heatLayer);
   sv.zones.forEach((z,n)=>L.marker([z.la,z.lo],{icon:L.divIcon({className:"",iconSize:[22,22],iconAnchor:[11,11],html:`<div class="brank" style="background:#7a1f12">${n+1}</div>`})})
     .on("click",()=>{map.setView([z.la,z.lo],15);heatPopup(L.latLng(z.la,z.lo))}).addTo(heatLayer));
-  $("hMsg").textContent=sv.msg+(Date.now()-sv.t>36e5?` Calculée ${ageTxt(sv.t)}.`:"")+(sv.mv!==MODEL_V?" Calculée avec la version précédente du modèle : touche « Chercher » pour la mettre à jour.":"");
-  const box=$("hList");box.innerHTML=sv.zones.length?"":'<p class="note">Aucune zone au-dessus du seuil.</p>';
-  sv.zones.forEach((z,n)=>{const d=document.createElement("div");d.className="spot";
-    d.innerHTML=`<span class="dot" style="background:${gradColor(z.v)}"></span><div><b>${n+1}. ${Math.round(z.v*100)}/100 · ${LV[lvl(z.v)].act}</b> <span class="note">${z.ha<10?z.ha.toFixed(1).replace(".",","):Math.round(z.ha)} ha</span><small>${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} ${compass(z.dx,z.dy)} · ${Math.round(z.alt)} m · versant ${azName(z.az)} · ${TREE_N[z.ess]||z.ess} · ${PUB_N[z.pub||0]}</small></div><button class="btn" style="padding:6px 9px" aria-label="Relief et versants de la zone ${n+1}" title="Relief et versants">⛰</button>`;
+  $("hMsg").textContent=sv.msg+(sv.acc?" "+sv.acc:"")+(Date.now()-sv.t>36e5?` Calculée ${ageTxt(sv.t)}.`:"")+(sv.mv!==MODEL_V?" Calculée avec la version précédente du modèle : touche « Chercher » pour la mettre à jour.":"");
+  const box=$("hList");box.innerHTML="";
+  sv.zones.forEach((z,n)=>{const d=document.createElement("div"),acc=accTxt(z);d.className="spot";
+    d.innerHTML=`<span class="dot" style="background:${gradColor(z.v)}"></span><div><b>${n+1}. ${Math.round(z.v*100)}/100 · ${LV[lvl(z.v)].act}</b> <span class="note">${z.ha<10?z.ha.toFixed(1).replace(".",","):Math.round(z.ha)} ha</span><small>${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} ${compass(z.dx,z.dy)} · ${Math.round(z.alt)} m · versant ${azName(z.az)} · ${TREE_N[z.ess]||z.ess} · ${PUB_N[z.pub||0]}</small>${acc?`<small>${acc}</small>`:""}</div><button class="btn" style="padding:6px 9px" aria-label="Relief et versants de la zone ${n+1}" title="Relief et versants">⛰</button>`;
     d.querySelector("button").onclick=e=>{e.stopPropagation();openReliefAt(z.la,z.lo)};
     d.onclick=()=>{$("map").scrollIntoView({behavior:RM?"auto":"smooth",block:"center"});map.setView([z.la,z.lo],15);heatPopup(L.latLng(z.la,z.lo))};box.appendChild(d)});
-  bestSummary(sv.zones[0]&&{...sv.zones[0],desc:`versant ${azName(sv.zones[0].az)}, ${TREE_N[sv.zones[0].ess]||sv.zones[0].ess}, ${Math.round(sv.zones[0].alt)} m`});
+  if(sv.zones.length||!(sv.cand&&sv.cand.length))bestSummary(sv.zones[0]&&{...sv.zones[0],desc:`versant ${azName(sv.zones[0].az)}, ${TREE_N[sv.zones[0].ess]||sv.zones[0].ess}, ${Math.round(sv.zones[0].alt)} m`});
+  else $("bSum").textContent=`Aucun des ${sv.cand.length} meilleurs coins n'est à moins de ${fmtM(+LS.get("bAcc",0))} d'une route goudronnée : choisis une distance plus grande ou un rayon plus large.`;
   legend($("hSp").value,hMode);
 }
 async function heatRun(center,R){
@@ -2211,13 +2270,43 @@ async function heatRun(center,R){
   try{const [la0,lo0]=center;
     if(!heatEnv||Math.abs(heatEnv.la0-la0)>1e-6||Math.abs(heatEnv.lo0-lo0)>1e-6||heatEnv.R!==R)heatEnv=await heatBuild(la0,lo0,R,say);
     say("Calcul de l'indice…");await new Promise(r=>setTimeout(r,0));
-    heatRes=heatScore(heatEnv,$("hSp").value,hMode);heatRender(heatEnv,heatRes);
-    map.fitBounds([[heatEnv.bb[1],heatEnv.bb[0]],[heatEnv.bb[3],heatEnv.bb[2]]]);
+    heatRes=heatScore(heatEnv,$("hSp").value,hMode);
+    map.fitBounds([[heatEnv.bb[1],heatEnv.bb[0]],[heatEnv.bb[3],heatEnv.bb[2]]]);await heatRender(heatEnv,heatRes);
   }catch(e){say("Carte continue impossible : "+e.message)}finally{heatBusy=false}
 }
 // changement d'espèce ou de période : seul l'indice est recalculé
 async function heatRescore(){if(!heatEnv||heatBusy)return;heatBusy=true;
-  try{$("hMsg").textContent="Calcul de l'indice…";await new Promise(r=>setTimeout(r,0));heatRes=heatScore(heatEnv,$("hSp").value,hMode);heatRender(heatEnv,heatRes)}finally{heatBusy=false}}
+  try{$("hMsg").textContent="Calcul de l'indice…";await new Promise(r=>setTimeout(r,0));heatRes=heatScore(heatEnv,$("hSp").value,hMode);await heatRender(heatEnv,heatRes)}finally{heatBusy=false}}
+// « Route goudronnée à moins de » : seul le choix des coins change (les candidats sont gardés avec la carte)
+$("bAcc").value=String(LS.get("bAcc",0));
+$("bAcc").onchange=async()=>{LS.set("bAcc",+$("bAcc").value);const sv=LS.get("heat",null);if(!sv||heatBusy)return;heatBusy=true;
+  try{await heatAccess(sv);heatShow(sv)}finally{heatBusy=false}if(LS.get("tripOn",false))tripTimes(true)};
+// ---- temps de trajet en voiture, calculé comme un GPS (service d'itinéraire de l'IGN) : de ta position jusqu'à la route
+// goudronnée la plus proche de chaque coin. Ta position n'est envoyée qu'à ce service : à ta demande, puis à chaque recherche.
+async function tripTimes(auto){const sv=LS.get("heat",null),say=t=>$("tripMsg").textContent=t;
+  if(!sv||!sv.zones||!sv.zones.length){if(!auto)say("Lance d'abord une recherche : le temps de trajet porte sur les coins trouvés.");return}
+  if(!navigator.geolocation){say("Localisation non disponible sur cet appareil.");return}
+  // recalcul automatique (nouvelle recherche, filtre changé) : seulement si la localisation est déjà autorisée
+  if(auto)try{if((await navigator.permissions.query({name:"geolocation"})).state!=="granted")return}catch(e){return}
+  if(!navigator.onLine){say("Pas de réseau : le temps de trajet se calcule en ligne.");return}
+  say("Recherche de ta position…");$("tripBtn").disabled=true;
+  try{let p;try{p=await new Promise((ok,ko)=>navigator.geolocation.getCurrentPosition(ok,ko,{timeout:20000,maximumAge:3e5}))}
+    catch(e){say(e.code===1?"Position refusée : autorise la localisation pour ce site.":"Position indisponible (GPS ?).");return}
+    const la=p.coords.latitude,lo=p.coords.longitude,same=sv.trip&&kmTo(sv.trip.la,sv.trip.lo,la,lo).d<1,zs=sv.zones;let done=0,fail=0;
+    LS.set("tripOn",true);
+    for(let i=0;i<zs.length;i+=3)await Promise.all(zs.slice(i,i+3).map(async z=>{
+      try{if(!(same&&z.trip)){
+          // arrivée : la route goudronnée la plus proche du coin, cherchée de plus en plus loin
+          for(const d of[1,3,8]){if(z.ala!=null||z.rdK>=d)continue;const n=await nearestRoad(z.la,z.lo,d);z.rdK=d;if(n){z.rd=n.d;z.ala=n.la;z.alo=n.lo}}
+          if(z.ala==null)throw new Error("aucune route");
+          const r=await tfetch(`https://data.geopf.fr/navigation/itineraire?resource=bdtopo-valhalla&profile=car&optimization=fastest&start=${lo.toFixed(5)},${la.toFixed(5)}&end=${z.alo.toFixed(5)},${z.ala.toFixed(5)}&geometryFormat=geojson&getSteps=false&getBbox=false&timeUnit=minute&distanceUnit=kilometer`,15000);
+          if(!r.ok)throw new Error(r.status);const j=await r.json();if(!(j.duration>=0))throw new Error("réponse");z.trip={min:j.duration,km:j.distance}}}
+      catch(e){fail++;delete z.trip}
+      say(`Temps de trajet… ${++done} sur ${zs.length}`)}));
+    sv.trip={la,lo,t:Date.now()};mergeAcc(zs,sv.cand);LS.set("heat",sv);heatShow(sv);
+    say(fail===zs.length?"Temps de trajet indisponibles (connexion ?).":`Temps de trajet en voiture depuis ta position, jusqu'à la route goudronnée la plus proche de chaque coin${fail?` (${fail} non calculé${fail>1?"s":""})`:""}. Ta position n'est envoyée qu'au service d'itinéraire de l'IGN.`)}
+  finally{$("tripBtn").disabled=false}}
+$("tripBtn").onclick=()=>tripTimes(false);
 // détail d'un point touché sur la carte continue
 function heatPopup(ll){const env=heatEnv;let html=`<div style="font-size:13px;min-width:190px">`;
   if(env&&heatRes){const i=Math.floor((ll.lng-env.bb[0])*env.kx/env.cell),j=Math.floor((env.bb[3]-ll.lat)*KY/env.cell),k=j*env.NX+i;
@@ -2278,7 +2367,7 @@ function guideDraw(){terr.raf=0;const zs=guideZones();$("guide").style.display=t
   if(!terr.pos){$("gDist").textContent="…";$("gDir").textContent="Recherche de ta position (GPS)…";$("gAcc").textContent="";return}
   const g=kmTo(terr.pos[0],terr.pos[1],z.la,z.lo),brg=(Math.atan2(g.dx,g.dy)*180/Math.PI+360)%360;
   $("gDist").textContent=g.d<1?Math.round(g.d*1000)+" m":fr(g.d)+" km";
-  $("gDir").textContent=`vers le ${DIR[compass(g.dx,g.dy)]}`+(terr.head==null?" · flèche : nord en haut":"");
+  $("gDir").textContent=vers(compass(g.dx,g.dy))+(terr.head==null?" · flèche : nord en haut":"");
   $("gAcc").textContent=`GPS à ${Math.round(terr.acc)} m près · versant ${azName(z.az)}, ${Math.round(z.alt)} m`;
   $("gArrow").style.transform=`rotate(${Math.round(brg-(terr.head||0))}deg)`}
 const guideLater=()=>{if(!terr.raf)terr.raf=requestAnimationFrame(guideDraw)};
@@ -2447,7 +2536,7 @@ async function openRelief(h){
     <p class="note">Relief au pas de ${Math.round(cell*1000)} m (RGE Alti) ; la météo est celle de l'hexagone, corrigée de l'altitude et du versant de chaque cellule.</p>`;
   // carte de l'hexagone : plan IGN, cellules en transparence, contour, meilleur endroit
   if(relMap){relMap.remove();relMap=null}
-  relMap=L.map("relMap",{zoomControl:true,attributionControl:false});
+  relMap=L.map("relMap",{zoomControl:true,attributionControl:false});L.control.scale({imperial:false,maxWidth:100}).addTo(relMap);
   new CachedLayer("",{lid:"plan",maxZoom:19,maxNativeZoom:19}).addTo(relMap);
   const ob=[[la2-NY*cell/KY,lo1],[la2,lo1+NX*cell/kx]];L.imageOverlay(cv.toDataURL(),ob,{opacity:.55}).addTo(relMap);
   L.polygon(cs,{color:"#7a4a22",weight:2,fill:false,dashArray:"6 4",interactive:false}).addTo(relMap);
@@ -2512,8 +2601,10 @@ $("nearBtn").onclick=()=>{if(!navigator.geolocation){$("qMsg").textContent="Loca
     {enableHighAccuracy:true,timeout:20000,maximumAge:60000})};
 // phrase de synthèse en tête des meilleurs coins
 const WHEN={now:"aujourd'hui",tom:"demain",fc:"cette semaine"};
-function bestSummary(z){if(!z){$("bSum").textContent="Aucun coin ne se détache pour l'instant : conditions peu favorables.";return}
-  const l=LV[lvl(z.v)];$("bSum").innerHTML=`Meilleure chance ${WHEN[hMode]} : à ${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} vers le ${DIR[compass(z.dx,z.dy)]}, ${z.desc} — <span class="lvl" style="background:${l.c};color:${lvl(z.v)>=3?"#fff":lvl(z.v)>=1?"#1a1a1a":"var(--text)"}">${Math.round(z.v*100)}/100 · ${l.act}</span>`}
+function bestSummary(z){if(!z){$("bSum").textContent="Aucun coin ne se détache : l'indice est nul partout pour ce champignon en ce moment.";return}
+  const l=LV[lvl(z.v)];$("bSum").innerHTML=`Meilleure chance ${WHEN[hMode]} : à ${z.d<1?Math.round(z.d*1000)+" m":z.d.toFixed(1).replace(".",",")+" km"} ${vers(compass(z.dx,z.dy))}, ${z.desc} — <span class="lvl" style="background:${l.c};color:${lvl(z.v)>=3?"#fff":lvl(z.v)>=1?"#1a1a1a":"var(--text)"}">${Math.round(z.v*100)}/100 · ${l.act}</span>`+
+    // conditions faibles partout : les coins restent classés, mais il faut le dire
+    (lvl(z.v)<2?`<span class="note" style="display:block;font-weight:400;margin-top:4px">${lvl(z.v)?"Conditions faibles dans tout le secteur":"Rien à espérer en ce moment dans ce secteur"} : ces coins sont seulement les mieux placés (essences, altitude, versant). Essaie « Sur la semaine » ou un autre champignon.</span>`:"")}
 $("hSize").onchange=()=>{LS.set("hSize",$("hSize").value);drawGrid();drawHexes()};
 // taille d'hexagone de la dernière analyse, pour retrouver les hexagones enregistrés au rechargement
 $("hSize").value=LS.get("hSize",null)||(Object.values(hexStore.hex).pop()||{size:5}).size;
